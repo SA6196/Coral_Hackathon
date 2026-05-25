@@ -1,0 +1,12 @@
+[
+  {
+    "package_name": "lodash",
+    "cve_id": "CVE-2026-1111",
+    "severity": "critical"
+  },
+  {
+    "package_name": "jsonwebtoken",
+    "cve_id": "CVE-2026-2222",
+    "severity": "high"
+  }
+]

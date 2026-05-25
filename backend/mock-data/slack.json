@@ -1,0 +1,12 @@
+[
+  {
+    "user": "alex",
+    "channel": "#security",
+    "message": "Payment API behaving strangely"
+  },
+  {
+    "user": "john",
+    "channel": "#backend",
+    "message": "Auth service throwing token errors"
+  }
+]
