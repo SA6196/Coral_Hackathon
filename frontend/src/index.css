@@ -1,0 +1,95 @@
+/* ===== CORAL SECURITY COMMAND CENTER — GLOBAL STYLES ===== */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Core palette */
+  --bg-void: #020409;
+  --bg-deep: #060c18;
+  --bg-card: rgba(6, 16, 38, 0.85);
+  --bg-card-hover: rgba(8, 22, 52, 0.95);
+  --bg-glass: rgba(14, 30, 64, 0.6);
+
+  /* Accent colors */
+  --coral-primary: #ff4d6d;
+  --coral-secondary: #c9184a;
+  --coral-glow: rgba(255, 77, 109, 0.35);
+  --cyan-primary: #00d4ff;
+  --cyan-glow: rgba(0, 212, 255, 0.25);
+  --purple-primary: #a855f7;
+  --purple-glow: rgba(168, 85, 247, 0.25);
+  --green-primary: #00ff9d;
+  --green-glow: rgba(0, 255, 157, 0.25);
+  --amber-primary: #fbbf24;
+  --amber-glow: rgba(251, 191, 36, 0.25);
+  --orange-primary: #f97316;
+  --orange-glow: rgba(249, 115, 22, 0.25);
+  --red-primary: #ef4444;
+  --red-glow: rgba(239, 68, 68, 0.3);
+
+  /* Typography */
+  --font-main: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Orbitron', sans-serif;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-glow-cyan: rgba(0, 212, 255, 0.3);
+  --border-glow-coral: rgba(255, 77, 109, 0.3);
+
+  /* Shadows */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-glow-red: 0 0 30px rgba(239, 68, 68, 0.2), 0 0 60px rgba(239, 68, 68, 0.08);
+  --shadow-glow-cyan: 0 0 30px rgba(0, 212, 255, 0.2), 0 0 60px rgba(0, 212, 255, 0.08);
+  --shadow-glow-green: 0 0 30px rgba(0, 255, 157, 0.2), 0 0 60px rgba(0, 255, 157, 0.08);
+
+  /* Animations */
+  --transition-fast: 0.15s ease;
+  --transition-med: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--bg-void);
+  color: #e2e8f0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.5);
+}
+
+/* Selection */
+::selection {
+  background: rgba(0, 212, 255, 0.2);
+  color: #fff;
+}
