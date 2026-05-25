@@ -1,0 +1,2 @@
+{"vuln_id": "CVE-2026-1111", "package_name": "backend-api", "severity": "CRITICAL", "description": "Hardcoded credential exposure discovered in configuration"}
+{"vuln_id": "CVE-2026-2222", "package_name": "frontend-app", "severity": "LOW", "description": "Minor styling vulnerability"}

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coral.AI SecOps Incident Analyzer & Copilot</title>
+    <link rel="stylesheet" href="index.css">
+    <!-- FontAwesome for neat icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header Block -->
+    <header>
+        <div class="logo-section">
+            <i class="fa-solid fa-shield-halved" style="color: var(--color-cyan); font-size: 1.4rem;"></i>
+            <h1>CORAL.AI SECOPS</h1>
+            <span class="logo-badge">Copilot v1.0</span>
+        </div>
+        <div class="header-status">
+            <div class="status-indicator">
+                <span class="status-dot" id="db-status-dot"></span>
+                <span>Coral DB: Connected</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot" id="ai-status-dot"></span>
+                <span id="ai-status-text">AI Engine: Online</span>
+            </div>
+            <div class="key-input-container">
+                <i class="fa-solid fa-key" style="color: var(--text-muted); font-size: 0.75rem;"></i>
+                <input type="password" id="openai-key-input" placeholder="Paste OpenAI API Key...">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main>
+        
+        <!-- Left Column: Search & System Health / Anomalies -->
+        <section class="sidebar-left">
+            
+            <!-- Natural Language Search Panel -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <span>NL Query Engine</span>
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--color-cyan);"></i>
+                </div>
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="nl-search-input" placeholder="e.g. 'Show critical incidents from today'">
+                        <button class="search-btn" id="nl-search-btn">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                    <div class="nl-query-info" id="generated-query-log">
+                        → Coral Query: SELECT * FROM mock_security;
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threat Score Widget -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <span>Threat Dashboard</span>
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <div class="score-card">
+                    <div class="score-display">
+                        <div class="score-value" id="threat-score-val">78/100</div>
+                        <div class="score-label">Risk Rating</div>
+                    </div>
+                    <div style="border-left: 1px solid var(--border-glass); height: 40px;"></div>
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: var(--color-critical);" id="system-status-text">DEGRADED</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Active Threat Pattern</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anomaly Detection Alerts -->
+            <div class="glass-panel" style="flex: 1;">
+                <div class="panel-title">
+                    <span>Anomaly Detection</span>
+                    <span class="badge badge-critical" style="font-size: 0.6rem;" id="anomaly-badge-count">2 Alerts</span>
+                </div>
+                <div class="anomaly-list" id="anomaly-container">
+                    <!-- Shimmer Loader -->
+                    <div class="anomaly-card shimmer" style="height: 80px;"></div>
+                </div>
+            </div>
+            
+        </section>
+
+        <!-- Center Column: Incident Grid & AI Investigation Report -->
+        <section class="center-panel">
+            
+            <!-- Security Incidents Log Table -->
+            <div class="glass-panel">
+                <div class="panel-title">
+                    <span>Correlated Threat Matrix Logs</span>
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <div class="log-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Incident</th>
+                                <th>Severity</th>
+                                <th>Author</th>
+                                <th>Vulnerability</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body">
+                            <!-- Populated dynamically -->
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                                    <i class="fa-solid fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Loading incidents...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Deep Dive Investigation Details Tabs -->
+            <div class="glass-panel" style="flex: 1;">
+                <div class="panel-title">
+                    <span>Deep-dive Security Analysis</span>
+                    <button class="tab-btn active" id="trigger-investigate-btn" style="background: rgba(0, 200, 255, 0.15); border: 1px solid var(--color-cyan); color: var(--color-cyan); font-size: 0.75rem; cursor: pointer; padding: 0.25rem 0.6rem;">
+                        <i class="fa-solid fa-bolt" style="margin-right: 0.3rem;"></i> Run AI Scan
+                    </button>
+                </div>
+                
+                <div class="details-tabs">
+                    <button class="tab-btn active" onclick="switchTab('tab-correlation')">Correlation Evidence</button>
+                    <button class="tab-btn" onclick="switchTab('tab-report')">AI Security Report</button>
+                    <button class="tab-btn" onclick="switchTab('tab-remediation')">Remediation Engine</button>
+                </div>
+
+                <div class="scanner-animation" id="scanner-bar"></div>
+
+                <!-- Tab 1: Correlation Map -->
+                <div class="tab-content active" id="tab-correlation">
+                    <div class="correlation-map">
+                        <div class="map-node active" id="node-commit">
+                            <div class="node-icon"><i class="fa-brands fa-git-alt"></i></div>
+                            <div class="node-title">GitHub Commit</div>
+                            <div class="node-desc" id="node-commit-desc">f10ba89</div>
+                        </div>
+                        <div class="map-connector active" id="connector-1"></div>
+                        <div class="map-node active" id="node-chat">
+                            <div class="node-icon"><i class="fa-regular fa-comment-dots"></i></div>
+                            <div class="node-title">Developer Chat</div>
+                            <div class="node-desc" id="node-chat-desc">alice_dev</div>
+                        </div>
+                        <div class="map-connector active" id="connector-2"></div>
+                        <div class="map-node active" id="node-vuln">
+                            <div class="node-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="node-title">Vulnerability</div>
+                            <div class="node-desc" id="node-vuln-desc">CVE-2026-9912</div>
+                        </div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.15); padding: 0.85rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+                        <div style="font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--color-cyan);">Incident Scenario Summary</div>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4;" id="correlation-summary-text">
+                            Select an incident above to visualize the telemetry correlation.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tab 2: AI Security Report Markdown -->
+                <div class="tab-content" id="tab-report">
+                    <div class="report-markdown" id="ai-report-box">
+                        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+                            Click "Run AI Scan" to trigger the automated SecOps agent analysis.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Remediation Engine Actions -->
+                <div class="tab-content" id="tab-remediation">
+                    <div class="remediation-section" id="remediation-box">
+                        <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
+                            Select an incident to fetch automated fixes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Column: Interactive Copilot Terminal Chat -->
+        <section class="sidebar-right">
+            
+            <div class="glass-panel chat-console">
+                <div class="panel-title" style="padding: 1rem 1rem 0.5rem 1rem;">
+                    <span>SecOps AI Copilot</span>
+                    <i class="fa-solid fa-robot" style="color: var(--color-cyan);"></i>
+                </div>
+                
+                <!-- Chat Feed -->
+                <div class="chat-messages" id="chat-messages-container">
+                    <div class="chat-msg assistant">
+                        <h3>Hi, I am your SecOps Copilot!</h3>
+                        <p>I can help you review repository vulnerabilities, audit security scores, and suggest remediation steps.</p>
+                        <p>Try asking me:</p>
+                        <ul style="padding-left: 1rem; margin-top: 0.3rem;">
+                            <li><a href="#" class="suggested-prompt" onclick="sendSuggested('Why is SEC-101 risky?')">"Why is SEC-101 risky?"</a></li>
+                            <li><a href="#" class="suggested-prompt" onclick="sendSuggested('How do I fix SEC-102?')">"How do I fix SEC-102?"</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Chat Input Section -->
+                <div class="chat-input-area">
+                    <input type="text" id="chat-user-input" placeholder="Ask copilot about logs or CVEs...">
+                    <button class="chat-send-btn" id="chat-send-btn">Send</button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer style="text-align: center; font-size: 0.7rem; color: var(--text-muted); padding: 1.5rem 0; border-top: 1px solid var(--border-glass);">
+        Coral.AI Automated SecOps Threat Matrix Platform. Done for Hackathon presentation.
+    </footer>
+
+    <!-- App JavaScript Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
