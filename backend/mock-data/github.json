@@ -12,5 +12,12 @@
     "title": "Updated auth middleware",
     "package_name": "jsonwebtoken",
     "merged_at": "2026-05-25T11:00:00Z"
+  },
+  {
+    "pr_id": 103,
+    "author": "mike",
+    "title": "Updated express routes",
+    "package_name": "express",
+    "merged_at": "2026-05-25T12:00:00Z"
   }
 ]
