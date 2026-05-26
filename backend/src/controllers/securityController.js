@@ -1,10 +1,24 @@
 const { joinSecurityData } = require("../coral/joinData");
 
+const {
+  runSecurityAnalysis
+} = require("../coral/queryEngine");
+
+/*
+|--------------------------------------------------------------------------
+| SECURITY SUMMARY
+|--------------------------------------------------------------------------
+*/
+
 const getSecuritySummary = async (req, res) => {
 
-  const incidents = joinSecurityData();
+  const joinedData = joinSecurityData();
+
+  const incidents =
+    runSecurityAnalysis(joinedData);
 
   const summary = {
+
     total_incidents: incidents.length,
 
     critical: incidents.filter(
@@ -22,6 +36,7 @@ const getSecuritySummary = async (req, res) => {
     safe: incidents.filter(
       i => i.vulnerability.severity === "safe"
     ).length,
+
   };
 
   res.status(200).json({
@@ -31,13 +46,22 @@ const getSecuritySummary = async (req, res) => {
 
 };
 
+/*
+|--------------------------------------------------------------------------
+| HIGH RISK INCIDENTS
+|--------------------------------------------------------------------------
+*/
+
 const getHighRiskIncidents = async (req, res) => {
 
-  const incidents = joinSecurityData();
+  const joinedData = joinSecurityData();
+
+  const analyzedData =
+    runSecurityAnalysis(joinedData);
 
   res.status(200).json({
     success: true,
-    data: incidents
+    data: analyzedData
   });
 
 };

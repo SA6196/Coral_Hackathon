@@ -10,5 +10,29 @@
     "title": "Added admin dashboard",
     "package_name": "jsonwebtoken",
     "merged_at": "2026-05-25T11:00:00Z"
+  },
+  {
+  "author": "alex",
+  "title": "Added AWS secret key",
+  "package_name": "aws-sdk",
+  "merged_at": "2026-05-26T09:00:00Z"
+  },
+  {
+  "author": "mike",
+  "title": "Updated README docs",
+  "package_name": "none",
+  "merged_at": "2026-05-26T10:00:00Z"
+  },
+  {
+  "author": "john",
+  "title": "Updated authentication middleware",
+  "package_name": "bcrypt",
+  "merged_at": "2026-05-26T11:00:00Z"
+  },
+  {
+  "author": "rahul",
+  "title": "Integrated OAuth login",
+  "package_name": "jsonwebtoken",
+  "merged_at": "2026-05-26T12:00:00Z"
   }
 ]

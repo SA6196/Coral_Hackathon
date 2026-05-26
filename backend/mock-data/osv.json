@@ -1,12 +1,28 @@
 [
   {
     "package_name": "stripe",
-    "cve_id": "CVE-2026-9999",
+    "cve": "CVE-2026-9999",
     "severity": "critical"
   },
   {
     "package_name": "jsonwebtoken",
-    "cve_id": "CVE-2026-7777",
+    "cve": "CVE-2026-7777",
     "severity": "high"
-  }
+  },
+  {
+  "cve": "CVE-2026-9999",
+  "severity": "critical"
+  },
+  {
+  "cve": "NO_CVE_FOUND",
+  "severity": "safe"
+  },
+  {
+  "cve": "CVE-2026-4444",
+  "severity": "medium"
+  },
+  {
+  "cve": "CVE-2026-7777",
+  "severity": "high"
+}
 ]

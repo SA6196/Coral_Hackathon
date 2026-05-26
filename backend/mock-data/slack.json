@@ -6,5 +6,21 @@
   {
     "channel": "#backend",
     "message": "JWT authentication behaving unexpectedly"
-  }
+  },
+  {
+  "channel": "#security",
+  "message": "Possible AWS key exposure detected"
+  },
+  {
+  "channel": "#docs",
+  "message": "Documentation update only"
+  },
+  {
+  "channel": "#backend",
+  "message": "Authentication behaving differently after update"
+  },
+  {
+  "channel": "#auth",
+  "message": "JWT authentication failing intermittently"
+}
 ]
