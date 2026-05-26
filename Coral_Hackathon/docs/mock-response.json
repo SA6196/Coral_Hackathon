@@ -1,0 +1,14 @@
+[
+  {
+    "incident_id": "CORAL-1",
+    "severity": "critical",
+    "summary": "AWS secret key exposed in production repository",
+    "action": "ROLLBACK_DEPLOYMENT"
+  },
+  {
+    "incident_id": "CORAL-2",
+    "severity": "high",
+    "summary": "JWT vulnerability detected in authentication service",
+    "action": "SECURITY_REVIEW_REQUIRED"
+  }
+]
