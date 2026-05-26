@@ -1,4 +1,0 @@
-message_id,username,channel,message_text
-msg_001,will_turner,"#general","Hey crew, is the server running?"
-msg_002,elizabeth_swann,"#security-alerts","Oh no! Look at commit e5f6g7h8, did someone leak a key?!"
-msg_003,jack_sparrow,"#random","Where is the rum gone?"
