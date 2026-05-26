@@ -10,19 +10,23 @@
     "severity": "high"
   },
   {
-  "cve": "CVE-2026-9999",
-  "severity": "critical"
+    "package_name": "aws-sdk",
+    "cve": "CVE-2026-8888",
+    "severity": "critical"
   },
   {
-  "cve": "NO_CVE_FOUND",
-  "severity": "safe"
+    "package_name": "none",
+    "cve": "NO_CVE_FOUND",
+    "severity": "safe"
   },
   {
-  "cve": "CVE-2026-4444",
-  "severity": "medium"
+    "package_name": "bcrypt",
+    "cve": "CVE-2026-4444",
+    "severity": "medium"
   },
   {
-  "cve": "CVE-2026-7777",
-  "severity": "high"
-}
+    "package_name": "jsonwebtoken",
+    "cve": "CVE-2026-7777",
+    "severity": "high"
+  }
 ]

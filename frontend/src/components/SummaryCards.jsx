@@ -85,7 +85,7 @@ function SummaryCards({ summary }) {
   return (
     <section aria-label="Security Summary">
       <div className="section-label">
-        <span className="section-label-text">// threat overview</span>
+        <span className="section-label-text">Threat Overview</span>
         <div className="section-label-line" />
       </div>
 

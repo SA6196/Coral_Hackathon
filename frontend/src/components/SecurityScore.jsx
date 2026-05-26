@@ -85,7 +85,7 @@ function SecurityScore({ summary }) {
       transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
       aria-label={`Security Score: ${score} out of 100`}
     >
-      <div className="score-card-title">// security score</div>
+      <div className="score-card-title">Security Score</div>
 
       {/* Grade badge */}
       <div

@@ -258,7 +258,7 @@ function IncidentFeed({ incidents }) {
     <section className="incident-feed-section" aria-label="High Risk Incidents">
       <div className="feed-header">
         <div className="section-label" style={{ marginBottom: 0, flex: 1 }}>
-          <span className="section-label-text">// high risk incidents</span>
+          <span className="section-label-text">High Risk Incidents</span>
           <div className="section-label-line" />
         </div>
 

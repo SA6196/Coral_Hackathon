@@ -131,7 +131,7 @@ function App() {
 
         {/* Score + Chart row */}
         <div className="section-label">
-          <span className="section-label-text">// analytics</span>
+          <span className="section-label-text">Analytics</span>
           <div className="section-label-line" />
         </div>
 
