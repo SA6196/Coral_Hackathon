@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiSend, FiCpu, FiX, FiMessageCircle, FiZap, FiChevronDown } from "react-icons/fi";
+import {
+  FiSend, FiCpu, FiX, FiMessageCircle, FiZap, FiChevronDown,
+  FiShield, FiRotateCcw, FiKey, FiUser, FiTerminal, FiAlertTriangle,
+} from "react-icons/fi";
 import { chatWithCopilot } from "../services/api";
 
 /* ─── tiny markdown-to-JSX renderer ──────────────────────────────────────── */
@@ -37,22 +40,68 @@ function inlineFormat(text) {
     .replace(/\*([^*]+)\*/g, '<em>$1</em>');
 }
 
-/* ─── Suggestion chips ────────────────────────────────────────────────────── */
-const SUGGESTIONS = [
-  "Why is SEC-101 critical?",
-  "How do I fix the lodash issue?",
-  "Explain the contractor_x anomaly",
-  "What's the rollback procedure?",
-  "Show me the secrets detection findings",
+/* ─── Categorized suggestion chips ───────────────────────────────────────── */
+const SUGGESTION_GROUPS = [
+  {
+    label: "Triage",
+    icon: FiAlertTriangle,
+    color: "#f97316",
+    chips: [
+      "Why is SEC-101 critical?",
+      "What's the blast radius of this incident?",
+      "Which developer introduced this vulnerability?",
+    ],
+  },
+  {
+    label: "Rollback",
+    icon: FiRotateCcw,
+    color: "#ef4444",
+    chips: [
+      "What's the rollback procedure?",
+      "How do I revert the vulnerable commit safely?",
+      "Is it safe to redeploy after the revert?",
+    ],
+  },
+  {
+    label: "Secrets",
+    icon: FiKey,
+    color: "#a855f7",
+    chips: [
+      "Show me the secrets detection findings",
+      "How do I rotate the exposed API keys?",
+      "How do I scrub secrets from git history?",
+    ],
+  },
+  {
+    label: "Fix",
+    icon: FiShield,
+    color: "#00d4ff",
+    chips: [
+      "How do I fix the lodash issue?",
+      "What npm command patches this CVE?",
+      "Show the remediation CLI commands",
+    ],
+  },
+  {
+    label: "Developer",
+    icon: FiUser,
+    color: "#00ff9d",
+    chips: [
+      "Explain the contractor_x anomaly",
+      "What other PRs did this developer merge?",
+      "Should I revoke developer access temporarily?",
+    ],
+  },
 ];
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 export default function AICopilot({ activeIncidentId = 1 }) {
   const [open, setOpen]       = useState(false);
+  const [activeGroup, setActiveGroup] = useState(0);
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "👋 I'm your **SecOps AI Copilot** powered by Coral.\n\nAsk me anything about your security incidents — CVE details, remediation steps, risk analysis, or developer behavior.",
+      text: "👋 I'm your **SecOps AI Copilot** powered by Coral.\n\nI can help you:\n* 🔍 **Triage** — explain CVEs, blast radius, developer context\n* ⚡ **Rollback** — guide you through safe git reverts\n* 🔑 **Secrets** — rotate credentials & scrub git history\n* 🛡️ **Fix** — provide exact npm/pip patch commands\n\nSelect a category below or ask me anything.",
     },
   ]);
   const [input, setInput]     = useState("");
@@ -209,19 +258,40 @@ export default function AICopilot({ activeIncidentId = 1 }) {
               <div ref={bottomRef} />
             </div>
 
-            {/* Suggestion chips */}
+            {/* Categorized Suggestion chips */}
             {messages.length < 3 && (
               <div className="copilot-suggestions">
-                {SUGGESTIONS.map((s, i) => (
-                  <button
-                    key={i}
-                    className="copilot-chip"
-                    onClick={() => send(s)}
-                    disabled={loading}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {/* Category tabs */}
+                <div className="copilot-suggestion-tabs">
+                  {SUGGESTION_GROUPS.map((g, i) => {
+                    const Icon = g.icon;
+                    return (
+                      <button
+                        key={i}
+                        className={`copilot-suggestion-tab ${activeGroup === i ? "copilot-suggestion-tab-active" : ""}`}
+                        style={activeGroup === i ? { borderColor: g.color + "66", color: g.color, background: g.color + "18" } : {}}
+                        onClick={() => setActiveGroup(i)}
+                      >
+                        <Icon size={10} />
+                        {g.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Chips for active group */}
+                <div className="copilot-chip-group">
+                  {SUGGESTION_GROUPS[activeGroup].chips.map((s, i) => (
+                    <button
+                      key={i}
+                      className="copilot-chip"
+                      onClick={() => send(s)}
+                      disabled={loading}
+                      style={{ borderColor: SUGGESTION_GROUPS[activeGroup].color + "44" }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

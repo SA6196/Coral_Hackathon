@@ -9,7 +9,8 @@ const cors = require("cors");
 const morgan = require("morgan");
 
 const securityRoutes = require("./routes/securityRoutes");
-const coralRoutes = require("./routes/coralRoutes");
+const coralRoutes    = require("./routes/coralRoutes");
+const aiRoutes       = require("./routes/aiRoutes");
 
 const app = express();
 
@@ -44,6 +45,7 @@ app.get("/", (req, res) => {
 
 app.use("/api", securityRoutes);
 app.use("/api", coralRoutes);
+app.use("/api", aiRoutes);   // AI Investigation, Chat, Remediation, NL Search
 
 /*
 |--------------------------------------------------------------------------

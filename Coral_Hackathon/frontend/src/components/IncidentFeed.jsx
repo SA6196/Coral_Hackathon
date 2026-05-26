@@ -18,6 +18,7 @@ import {
 } from "react-icons/fi";
 import { FaSlack } from "react-icons/fa";
 import AIInvestigation from "./AIInvestigation";
+import RemediationCenter from "./RemediationCenter";
 
 const SEVERITY_MAP = {
   critical: {
@@ -238,6 +239,9 @@ function IncidentCard({ item, index }) {
             >
               {/* AI Investigation + Remediation tabs */}
               <AIInvestigation logId={toLogId(item.incident_id)} />
+
+              {/* ─── Remediation CLI Center ─── */}
+              <RemediationCenter item={item} />
 
               <div
                 style={{
