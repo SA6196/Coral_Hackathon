@@ -13,8 +13,11 @@ import {
   FiMessageSquare,
   FiClock,
   FiCpu,
+  FiKey,
+  FiShield,
 } from "react-icons/fi";
 import { FaSlack } from "react-icons/fa";
+import AIInvestigation from "./AIInvestigation";
 
 const SEVERITY_MAP = {
   critical: {
@@ -62,6 +65,16 @@ function getActionLabel(action) {
   }
 }
 
+/* Map incident_id like "CORAL-1" or "SEC-101" to a numeric log id for Flask */
+function toLogId(incidentId) {
+  if (!incidentId) return 1;
+  // "SEC-101" → 101 → map to 1,2,3 by position; "CORAL-3" → 3
+  const num = parseInt(incidentId.replace(/\D/g, ""), 10);
+  if (isNaN(num)) return 1;
+  // Flask mock data has ids 1,2,3; CORAL-1→1, CORAL-2→2, CORAL-3→3
+  return Math.max(1, Math.min(num, 3));
+}
+
 function IncidentCard({ item, index }) {
   const [expanded, setExpanded] = useState(false);
   const severity = item.vulnerability?.severity || "safe";
@@ -82,6 +95,8 @@ function IncidentCard({ item, index }) {
   const action = item.recommended_action || "";
   const slackChannel = item.internal_discussion?.slack_channel || "N/A";
   const slackMsg = item.internal_discussion?.message || "";
+  const secrets = item.secrets_detected;       // Feature 5
+  const policy  = item.policy_violation;       // Feature 3
 
   return (
     <motion.div
@@ -106,6 +121,18 @@ function IncidentCard({ item, index }) {
             <span className={`incident-severity-badge ${cfg.badge}`}>
               {severity}
             </span>
+            {/* Feature 5 — Secrets badge */}
+            {secrets && (
+              <span className="incident-secret-badge">
+                <FiKey size={9} /> SECRET LEAK
+              </span>
+            )}
+            {/* Feature 3 — Policy badge */}
+            {policy && (
+              <span className="incident-policy-badge" title={policy.policy_name}>
+                <FiShield size={9} /> {policy.policy_rule.replace(/_/g, " ")}
+              </span>
+            )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -209,6 +236,9 @@ function IncidentCard({ item, index }) {
               transition={{ duration: 0.3, ease: "easeInOut" }}
               style={{ overflow: "hidden" }}
             >
+              {/* AI Investigation + Remediation tabs */}
+              <AIInvestigation logId={toLogId(item.incident_id)} />
+
               <div
                 style={{
                   marginTop: 16,

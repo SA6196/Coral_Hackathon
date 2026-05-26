@@ -1,0 +1,42 @@
+[
+  {
+    "policy_id": "POL-001",
+    "policy_name": "No Critical CVE Packages",
+    "applies_to": "stripe",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "critical",
+    "owner_team": "security-engineering",
+    "description": "stripe has an active critical CVE. Deployment blocked until patched.",
+    "last_updated": "2026-05-20T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-002",
+    "policy_name": "JWT Library Audit Required",
+    "applies_to": "jsonwebtoken",
+    "policy_rule": "AUDIT_REQUIRED",
+    "severity": "high",
+    "owner_team": "auth-team",
+    "description": "All JWT library changes require a security audit before merging to main.",
+    "last_updated": "2026-05-18T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-003",
+    "policy_name": "AWS SDK Secrets Risk",
+    "applies_to": "aws-sdk",
+    "policy_rule": "SECRETS_RISK",
+    "severity": "critical",
+    "owner_team": "platform-team",
+    "description": "aws-sdk usage must be reviewed for hardcoded credentials and secret exposure.",
+    "last_updated": "2026-05-22T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-004",
+    "policy_name": "bcrypt Version Control",
+    "applies_to": "bcrypt",
+    "policy_rule": "REVIEW_REQUIRED",
+    "severity": "medium",
+    "owner_team": "auth-team",
+    "description": "bcrypt updates require lead review due to auth system sensitivity.",
+    "last_updated": "2026-05-15T00:00:00Z"
+  }
+]

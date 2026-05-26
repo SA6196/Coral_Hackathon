@@ -6,6 +6,8 @@ import {
   FiAlertCircle,
   FiCheckCircle,
   FiActivity,
+  FiKey,
+  FiShield,
 } from "react-icons/fi";
 
 const cardConfigs = [
@@ -53,6 +55,24 @@ const cardConfigs = [
     className: "card-safe",
     trend: "Clear to deploy",
     corner: "#00ff9d",
+  },
+  {
+    key: "secrets",
+    label: "Secrets Detected",
+    dataKey: "secrets_detected",
+    icon: FiKey,
+    className: "card-critical",
+    trend: "Rotate immediately",
+    corner: "#ef4444",
+  },
+  {
+    key: "policy",
+    label: "Policy Violations",
+    dataKey: "policy_violations",
+    icon: FiShield,
+    className: "card-high",
+    trend: "Notion policy breach",
+    corner: "#f97316",
   },
 ];
 

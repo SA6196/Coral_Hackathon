@@ -1,0 +1,236 @@
+# ============================================================
+# CORAL SOURCE SPECIFICATION — coral-sources.yaml
+# Defines all data sources for the Coral Security Agent
+# Coral reads this file to learn schema, handle auth,
+# pagination, rate limits, and caching automatically.
+# ============================================================
+
+version: "1.0"
+agent: "coral-security-monitor"
+description: "Enterprise Security & Compliance Monitor — GitHub + Slack + OSV + Notion"
+
+# ── Global settings ──────────────────────────────────────────
+settings:
+  cache_ttl_seconds: 300
+  max_rows_per_source: 1000
+  join_strategy: "hash"          # hash | nested_loop | merge
+  schema_learning: true
+  auto_paginate: true
+
+# ── Data Sources ─────────────────────────────────────────────
+sources:
+
+  # ── 1. GitHub ────────────────────────────────────────────
+  - name: github
+    type: rest_api
+    description: "GitHub commits, PRs, and code changes"
+    base_url: "https://api.github.com"
+    auth:
+      type: bearer_token
+      env_var: GITHUB_TOKEN
+    rate_limit:
+      requests_per_minute: 60
+      backoff_strategy: exponential
+    schema:
+      table: github_commits
+      primary_key: pr_id
+      columns:
+        - name: pr_id
+          type: integer
+        - name: author
+          type: string
+          join_key: true          # used for cross-source JOINs
+        - name: title
+          type: string
+        - name: package_name
+          type: string
+          join_key: true          # joins with osv.package_name & notion.applies_to
+        - name: merged_at
+          type: timestamp
+        - name: commit_diff
+          type: text
+          description: "Full diff content — scanned for secrets"
+    mock_data_path: "./mock-data/github.json"
+
+  # ── 2. Slack ─────────────────────────────────────────────
+  - name: slack
+    type: rest_api
+    description: "Slack messages and internal security discussions"
+    base_url: "https://slack.com/api"
+    auth:
+      type: bearer_token
+      env_var: SLACK_BOT_TOKEN
+    rate_limit:
+      requests_per_minute: 50
+      backoff_strategy: linear
+    schema:
+      table: slack_messages
+      primary_key: message_ts
+      columns:
+        - name: user
+          type: string
+          join_key: true          # joins with github.author
+        - name: channel
+          type: string
+        - name: message
+          type: text
+        - name: timestamp
+          type: timestamp
+    mock_data_path: "./mock-data/slack.json"
+
+  # ── 3. OSV (Open Source Vulnerabilities) ─────────────────
+  - name: osv
+    type: rest_api
+    description: "OSV vulnerability intelligence database"
+    base_url: "https://api.osv.dev/v1"
+    auth:
+      type: none
+    rate_limit:
+      requests_per_minute: 100
+    schema:
+      table: vulnerabilities
+      primary_key: cve_id
+      columns:
+        - name: package_name
+          type: string
+          join_key: true          # joins with github.package_name
+        - name: cve_id
+          type: string
+        - name: severity
+          type: enum
+          values: [critical, high, medium, low, safe]
+        - name: cvss_score
+          type: float
+        - name: published_at
+          type: timestamp
+    mock_data_path: "./mock-data/osv.json"
+
+  # ── 4. Notion ────────────────────────────────────────────
+  - name: notion
+    type: rest_api
+    description: "Internal policy documents and compliance rules"
+    base_url: "https://api.notion.com/v1"
+    auth:
+      type: bearer_token
+      env_var: NOTION_TOKEN
+    rate_limit:
+      requests_per_minute: 30
+      backoff_strategy: exponential
+    schema:
+      table: policies
+      primary_key: policy_id
+      columns:
+        - name: policy_name
+          type: string
+        - name: applies_to
+          type: string
+          join_key: true          # joins with github.package_name
+        - name: policy_rule
+          type: enum
+          values: [BANNED_PACKAGE, SECRETS_RISK, AUDIT_REQUIRED, REVIEW_REQUIRED]
+        - name: severity
+          type: enum
+          values: [critical, high, medium]
+        - name: owner_team
+          type: string
+        - name: last_updated
+          type: timestamp
+    mock_data_path: "./mock-data/notion.json"
+
+# ── Coral SQL Query Definitions ───────────────────────────────
+queries:
+
+  - id: full_security_join
+    description: "Master security query — joins all 4 sources"
+    sql: |
+      SELECT
+        g.pr_id,
+        g.author,
+        g.title           AS commit_title,
+        g.package_name,
+        g.merged_at,
+        o.cve_id,
+        o.severity,
+        o.cvss_score,
+        s.channel         AS slack_channel,
+        s.message         AS slack_message,
+        n.policy_name,
+        n.policy_rule,
+        n.owner_team
+      FROM github_commits  AS g
+      LEFT JOIN vulnerabilities AS o ON g.package_name = o.package_name
+      LEFT JOIN slack_messages  AS s ON g.author       = s.user
+      LEFT JOIN policies        AS n ON g.package_name = n.applies_to
+      ORDER BY
+        CASE o.severity
+          WHEN 'critical' THEN 1
+          WHEN 'high'     THEN 2
+          WHEN 'medium'   THEN 3
+          ELSE 4
+        END,
+        g.merged_at DESC
+
+  - id: critical_incidents
+    description: "Only critical/high severity with policy violations"
+    sql: |
+      SELECT
+        g.author,
+        g.title,
+        g.package_name,
+        o.cve_id,
+        o.severity,
+        n.policy_rule
+      FROM github_commits  AS g
+      JOIN vulnerabilities AS o ON g.package_name = o.package_name
+      JOIN policies        AS n ON g.package_name = n.applies_to
+      WHERE o.severity IN ('critical', 'high')
+      ORDER BY g.merged_at DESC
+
+  - id: developer_risk_profile
+    description: "Risk leaderboard grouped by developer"
+    sql: |
+      SELECT
+        g.author,
+        COUNT(*)                                    AS total_incidents,
+        SUM(CASE WHEN o.severity='critical' THEN 1 ELSE 0 END) AS critical_count,
+        SUM(CASE WHEN o.severity='high'     THEN 1 ELSE 0 END) AS high_count,
+        MAX(g.merged_at)                            AS last_incident
+      FROM github_commits  AS g
+      JOIN vulnerabilities AS o ON g.package_name = o.package_name
+      GROUP BY g.author
+      ORDER BY critical_count DESC, high_count DESC
+
+  - id: secrets_scan
+    description: "Commits that contain potential secret leaks"
+    sql: |
+      SELECT
+        g.author,
+        g.title,
+        g.package_name,
+        g.merged_at,
+        s.channel,
+        s.message
+      FROM github_commits AS g
+      LEFT JOIN slack_messages AS s ON g.author = s.user
+      WHERE g.title ILIKE '%secret%'
+         OR g.title ILIKE '%password%'
+         OR g.title ILIKE '%credential%'
+         OR g.title ILIKE '%api_key%'
+         OR g.title ILIKE '%aws%'
+         OR g.title ILIKE '%token%'
+
+  - id: policy_violations
+    description: "Packages that violate internal Notion policies"
+    sql: |
+      SELECT
+        g.author,
+        g.package_name,
+        n.policy_name,
+        n.policy_rule,
+        n.owner_team,
+        o.severity
+      FROM github_commits  AS g
+      JOIN policies        AS n ON g.package_name = n.applies_to
+      LEFT JOIN vulnerabilities AS o ON g.package_name = o.package_name
+      WHERE n.policy_rule IN ('BANNED_PACKAGE','SECRETS_RISK')
+      ORDER BY o.severity DESC
