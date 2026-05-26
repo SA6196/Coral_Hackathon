@@ -1,23 +1,14 @@
 [
   {
-    "pr_id": 101,
-    "author": "alex",
-    "title": "Added payment API",
-    "package_name": "lodash",
+    "author": "shivay",
+    "title": "Integrated payment gateway",
+    "package_name": "stripe",
     "merged_at": "2026-05-25T10:00:00Z"
   },
   {
-    "pr_id": 102,
-    "author": "john",
-    "title": "Updated auth middleware",
+    "author": "rahul",
+    "title": "Added admin dashboard",
     "package_name": "jsonwebtoken",
     "merged_at": "2026-05-25T11:00:00Z"
-  },
-  {
-    "pr_id": 103,
-    "author": "mike",
-    "title": "Updated express routes",
-    "package_name": "express",
-    "merged_at": "2026-05-25T12:00:00Z"
   }
 ]

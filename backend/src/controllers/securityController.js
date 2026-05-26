@@ -1,40 +1,48 @@
-const {
-  getSecurityReport,
-  getSecuritySummary,
-  getHighRiskIncidents
-} = require("../services/securityService");
+const { joinSecurityData } = require("../coral/joinData");
 
-const fetchSecurityReport = (req, res) => {
-  const report = getSecurityReport();
+const getSecuritySummary = async (req, res) => {
 
-  res.status(200).json({
-    success: true,
-    count: report.length,
-    data: report
-  });
-};
+  const incidents = joinSecurityData();
 
-const fetchSecuritySummary = (req, res) => {
-  const summary = getSecuritySummary();
+  const summary = {
+    total_incidents: incidents.length,
+
+    critical: incidents.filter(
+      i => i.vulnerability.severity === "critical"
+    ).length,
+
+    high: incidents.filter(
+      i => i.vulnerability.severity === "high"
+    ).length,
+
+    medium: incidents.filter(
+      i => i.vulnerability.severity === "medium"
+    ).length,
+
+    safe: incidents.filter(
+      i => i.vulnerability.severity === "safe"
+    ).length,
+  };
 
   res.status(200).json({
     success: true,
     data: summary
   });
+
 };
 
-const fetchHighRiskIncidents = (req, res) => {
-  const incidents = getHighRiskIncidents();
+const getHighRiskIncidents = async (req, res) => {
+
+  const incidents = joinSecurityData();
 
   res.status(200).json({
     success: true,
-    count: incidents.length,
     data: incidents
   });
+
 };
 
 module.exports = {
-  fetchSecurityReport,
-  fetchSecuritySummary,
-  fetchHighRiskIncidents
+  getSecuritySummary,
+  getHighRiskIncidents
 };

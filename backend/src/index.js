@@ -1,23 +1,53 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
+const morgan = require("morgan");
 
 const securityRoutes = require("./routes/securityRoutes");
+const coralRoutes = require("./routes/coralRoutes");
 
 const app = express();
 
+/*
+|--------------------------------------------------------------------------
+| MIDDLEWARE
+|--------------------------------------------------------------------------
+*/
+
 app.use(cors());
 app.use(express.json());
+app.use(morgan("dev"));
 
-app.use("/api", securityRoutes);
+/*
+|--------------------------------------------------------------------------
+| ROOT
+|--------------------------------------------------------------------------
+*/
 
 app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: "Coral Command Center Backend Running"
+    message: "Backend Running Successfully"
   });
 });
 
-const PORT = 5000;
+/*
+|--------------------------------------------------------------------------
+| ROUTES
+|--------------------------------------------------------------------------
+*/
+
+app.use("/api", securityRoutes);
+app.use("/api", coralRoutes);
+
+/*
+|--------------------------------------------------------------------------
+| SERVER
+|--------------------------------------------------------------------------
+*/
+
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);

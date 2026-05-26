@@ -7,8 +7,5 @@ const API = axios.create({
 export const getSummary = () =>
   API.get("/security-summary");
 
-export const getReport = () =>
-  API.get("/security-report");
-
 export const getHighRisk = () =>
   API.get("/high-risk-incidents");

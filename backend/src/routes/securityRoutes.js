@@ -3,24 +3,12 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  fetchSecurityReport,
-  fetchSecuritySummary,
-  fetchHighRiskIncidents
+  getSecuritySummary,
+  getHighRiskIncidents
 } = require("../controllers/securityController");
 
-router.get(
-  "/security-report",
-  fetchSecurityReport
-);
+router.get("/security-summary", getSecuritySummary);
 
-router.get(
-  "/security-summary",
-  fetchSecuritySummary
-);
-
-router.get(
-  "/high-risk-incidents",
-  fetchHighRiskIncidents
-);
+router.get("/high-risk-incidents", getHighRiskIncidents);
 
 module.exports = router;

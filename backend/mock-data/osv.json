@@ -1,12 +1,12 @@
 [
   {
-    "package_name": "lodash",
-    "cve_id": "CVE-2026-1111",
+    "package_name": "stripe",
+    "cve_id": "CVE-2026-9999",
     "severity": "critical"
   },
   {
     "package_name": "jsonwebtoken",
-    "cve_id": "CVE-2026-2222",
+    "cve_id": "CVE-2026-7777",
     "severity": "high"
   }
 ]

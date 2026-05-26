@@ -1,12 +1,10 @@
 [
   {
-    "user": "alex",
-    "channel": "#security",
-    "message": "Payment API behaving strangely"
+    "channel": "#payments",
+    "message": "Payment service acting suspiciously"
   },
   {
-    "user": "john",
     "channel": "#backend",
-    "message": "Auth service throwing token errors"
+    "message": "JWT authentication behaving unexpectedly"
   }
 ]

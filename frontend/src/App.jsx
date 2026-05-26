@@ -101,8 +101,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+
+  loadData();
+
+}, [loadData]);
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} onRetry={loadData} />;
