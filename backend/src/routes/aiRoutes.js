@@ -734,30 +734,31 @@ router.post("/chat", async (req, res, next) => {
   const allIncidents = getIncidents();
   const inc = getIncidentById(log_id);
 
-  // Check if OpenAI Key is configured
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (apiKey && apiKey !== "sk-your-key-here" && apiKey.trim().length > 0) {
-    try {
-      // 1. Format the database context for prompt injection
-      const incidentSummaryList = allIncidents.map(i => {
-        return `- ID: ${i.incident_id}, Severity: ${i.vulnerability?.severity}, Score: ${i.risk_score}, Package: ${i.package_details?.package_name || "none"}, Developer: ${i.pr_details?.developer || "unknown"}, Title: ${i.pr_details?.title || "none"}, Action: ${i.recommended_action || "none"}`;
-      }).join("\n");
+  // ─── AI Service Integrations (OpenAI & Gemini) ─────────────────────
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
 
-      const activeIncidentContext = JSON.stringify({
-        id: inc.incident_id,
-        severity: inc.vulnerability?.severity,
-        cve: inc.vulnerability?.cve,
-        cvss: inc.vulnerability?.cvss,
-        package: inc.package_details?.package_name,
-        developer: inc.pr_details?.developer,
-        pr_title: inc.pr_details?.title,
-        merged_at: inc.pr_details?.merged_at,
-        slack_discussion: inc.internal_discussion,
-        policy_violation: inc.policy_violation,
-        summary: inc.ai_summary
-      }, null, 2);
 
-      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center.
+  // 1. Build the database context for prompt injection
+  const incidentSummaryList = allIncidents.map(i => {
+    return `- ID: ${i.incident_id}, Severity: ${i.vulnerability?.severity}, Score: ${i.risk_score}, Package: ${i.package_details?.package_name || "none"}, Developer: ${i.pr_details?.developer || "unknown"}, Title: ${i.pr_details?.title || "none"}, Action: ${i.recommended_action || "none"}`;
+  }).join("\n");
+
+  const activeIncidentContext = JSON.stringify({
+    id: inc.incident_id,
+    severity: inc.vulnerability?.severity,
+    cve: inc.vulnerability?.cve,
+    cvss: inc.vulnerability?.cvss,
+    package: inc.package_details?.package_name,
+    developer: inc.pr_details?.developer,
+    pr_title: inc.pr_details?.title,
+    merged_at: inc.pr_details?.merged_at,
+    slack_discussion: inc.internal_discussion,
+    policy_violation: inc.policy_violation,
+    summary: inc.ai_summary
+  }, null, 2);
+
+  const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center.
 Your role is to analyze threat logs, dependency audits, Slack messages, Notion policy databases, and assist the user (security manager or developer) with security evaluations, rollbacks, and remediations.
 
 Here is the complete security state of the company:
@@ -774,7 +775,9 @@ Guidelines for responding:
 4. Format your output using clean GitHub-style Markdown (including headings, tables, code blocks, or alert block quotes where helpful).
 5. If the user asks about general security, explain how Coral Virtual SQL engine compiles tables or how branch status gates prevent vulnerable merges.`;
 
-      // 2. Perform OpenAI Completions Call
+  // 2. OpenAI API Path
+  if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
+    try {
       const response = await axios.post("https://api.openai.com/v1/chat/completions", {
         model: "gpt-4o-mini",
         messages: [
@@ -785,7 +788,7 @@ Guidelines for responding:
         max_tokens: 1000
       }, {
         headers: {
-          "Authorization": `Bearer ${apiKey.trim()}`,
+          "Authorization": `Bearer ${openaiKey.trim()}`,
           "Content-Type": "application/json"
         },
         timeout: 10000
@@ -801,12 +804,59 @@ Guidelines for responding:
         reply,
         timestamp: new Date().toISOString(),
       });
-      
     } catch (err) {
       console.error("[CHAT_AI_ERROR]", err.message, err.response?.data || "");
-      // If the API call fails, log it and fall back to local rule-based responses
+      // Fall through to try Gemini if configured, or fallback
     }
   }
+
+  // 3. Gemini API Path (Generous free-tier integration)
+  if (geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
+    try {
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+        {
+          contents: [
+            {
+              parts: [
+                { text: message }
+              ]
+            }
+          ],
+          systemInstruction: {
+            parts: [
+              { text: systemPrompt }
+            ]
+          },
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1000
+          }
+        },
+        {
+          headers: {
+            "Content-Type": "application/json"
+          },
+          timeout: 10000
+        }
+      );
+
+      const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply from Gemini service";
+
+      return res.json({
+        success: true,
+        mode: "coral-ai-v2-gemini",
+        intent: "REAL_LLM_CHAT",
+        incident_id: inc.incident_id,
+        reply,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[CHAT_GEMINI_ERROR]", err.message, err.response?.data || "");
+      // Fall through to local fallback
+    }
+  }
+
 
   // ── FALLBACK MODE (Classify intent and generate template-based response) ──
   const intent = classifyIntent(message);
