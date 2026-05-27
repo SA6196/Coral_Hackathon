@@ -18,10 +18,18 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 
-const githubData = require("../../mock-data/github.json");
-const osvData    = require("../../mock-data/osv.json");
-const slackData  = require("../../mock-data/slack.json");
-const notionData = require("../../mock-data/notion.json");
+const fs = require("fs");
+const path = require("path");
+
+function getMockData(filename) {
+  try {
+    const data = fs.readFileSync(path.join(__dirname, "../../mock-data", filename), "utf-8");
+    return JSON.parse(data);
+  } catch (e) {
+    console.warn(`[WARN] Could not read ${filename}, returning empty array.`);
+    return [];
+  }
+}
 
 // ── In-memory cache (Feature 7: Caching) ────────────────────────────
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -29,7 +37,7 @@ let _cache = null;
 let _cacheTs = 0;
 
 // ── Build lookup maps for O(1) key-based joins ──────────────────────
-function buildIndexes() {
+function buildIndexes(osvData, slackData, notionData) {
   // OSV: package_name → vulnerability record
   const osvByPackage = {};
   for (const vuln of osvData) {
@@ -68,7 +76,12 @@ const joinSecurityData = () => {
     return { data: _cache, cache_hit: true, cached_at: new Date(_cacheTs).toISOString() };
   }
 
-  const { osvByPackage, slackByAuthor, notionByPackage } = buildIndexes();
+  const githubData = getMockData("github.json");
+  const osvData = getMockData("osv.json");
+  const slackData = getMockData("slack.json");
+  const notionData = getMockData("notion.json");
+
+  const { osvByPackage, slackByAuthor, notionByPackage } = buildIndexes(osvData, slackData, notionData);
 
   // ── The Coral JOIN ─────────────────────────────────────────────────
   const joined = githubData.map((commit, idx) => {

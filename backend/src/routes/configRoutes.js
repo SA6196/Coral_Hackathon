@@ -9,11 +9,16 @@ const osvData    = require("../../mock-data/osv.json");
 const slackData  = require("../../mock-data/slack.json");
 const notionData = require("../../mock-data/notion.json");
 
+const { syncAllData } = require("../coral/fetchRealData");
+
 // In-memory token store (never written to disk)
 const runtimeTokens = {
   github: process.env.GITHUB_TOKEN || null,
+  github_repo: process.env.GITHUB_REPO || null,
   slack:  process.env.SLACK_BOT_TOKEN || null,
+  slack_channel: process.env.SLACK_CHANNEL || null,
   notion: process.env.NOTION_TOKEN || null,
+  notion_db: process.env.NOTION_DB || null,
 };
 
 /* ── GET /api/source-status ───────────────────────────────────────── */
@@ -89,14 +94,43 @@ router.get("/source-status", (req, res) => {
 router.post("/config-sources", (req, res) => {
   const { github, slack, notion } = req.body;
   if (github?.token)   runtimeTokens.github = github.token;
+  if (github?.repo)    runtimeTokens.github_repo = github.repo;
   if (slack?.token)    runtimeTokens.slack  = slack.token;
+  if (slack?.channel)  runtimeTokens.slack_channel = slack.channel;
   if (notion?.token)   runtimeTokens.notion = notion.token;
+  if (notion?.db)      runtimeTokens.notion_db = notion.db;
+  
   invalidateCache();
   res.json({
     success: true,
     message: "Tokens saved in memory. Cache invalidated.",
     configured: Object.keys(runtimeTokens).filter(k => runtimeTokens[k]),
     note: "Tokens stored in-memory only. For persistence add to .env file.",
+  });
+});
+
+/* ── POST /api/sync-real-data ─────────────────────────────────────── */
+router.post("/sync-real-data", async (req, res) => {
+  const results = await syncAllData({
+    githubRepo: runtimeTokens.github_repo,
+    githubToken: runtimeTokens.github,
+    slackChannel: runtimeTokens.slack_channel,
+    slackToken: runtimeTokens.slack,
+    notionDb: runtimeTokens.notion_db,
+    notionToken: runtimeTokens.notion
+  });
+
+  // Since mock-data files are overwritten, we need to completely restart Node to force require() to reload JSON.
+  // In a real app we'd use a database, but here we can just clear the require cache or tell the user to restart.
+  Object.keys(require.cache).forEach(key => {
+    if (key.includes("mock-data")) delete require.cache[key];
+  });
+  invalidateCache();
+
+  res.json({
+    success: true,
+    message: "Live sync complete. Require cache cleared.",
+    results
   });
 });
 
