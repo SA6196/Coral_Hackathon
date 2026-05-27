@@ -1,64 +1,41 @@
-# Node dependencies
 node_modules/
-**/node_modules/
+/backend/node_modules/
+/frontend/node_modules/
 
-# Environment variables
-.env
-.env.*
-!.env.example
-
-# Build output
+# Build artifacts
 dist/
 build/
-**/dist/
-**/build/
+out/
+/frontend/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
 
 # Logs
-logs/
-*.log
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
-*.log.*
+yarn-error.log*
+*.log
+.system_generated/
+appDataDir/
+.gemini/
 
-# Local runtime files
-*.local
-*.pid
-
-# OS and editor files
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-.vscode/
+
+# IDEs and Editors
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+.vscode/
+*.swp
+*.swo
 
-# Coverage
-coverage/
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-security.db
-backend/*.db
-backend/*.sqlite*
-frontend/*.db
-
-# Vercel / deployment
-.vercel
-
-# Misc
-*.tgz
-*.cache
-
-# Python support files
-__pycache__/
-*.py[cod]
-venv/
-.venv/
-
-# Secrets baseline
-.secrets.baseline
+# Mock data (We keep the defaults, but ignore temporary sync artifacts if any)
+# Note: We intentionally do NOT ignore mock-data/*.json so the app can start without API keys
