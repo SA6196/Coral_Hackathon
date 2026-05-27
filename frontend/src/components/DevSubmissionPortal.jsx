@@ -1,9 +1,9 @@
 /**
- * DevSubmissionPortal.jsx
+ * WebhookDashboard.jsx
  * ─────────────────────────────────────────────────────────────────────
- * Rebuilt Developer Security Ingestion dashboard for Security Managers.
- * Displays real-time GitHub webhook data, developer risk leaderboards,
- * and a Webhook API sandbox to simulate commit alerts during demos.
+ * Developer Security Ingestion dashboard for Security Managers.
+ * Displays real-time GitHub webhook data and developer risk leaderboards.
+ * Connect via GitHub org webhook — no developer ever touches this portal.
  * ─────────────────────────────────────────────────────────────────────
  */
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -11,14 +11,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FiAlertOctagon, FiAlertTriangle, FiAlertCircle, FiCheckCircle,
   FiKey, FiShield, FiRefreshCw, FiGitPullRequest, FiBarChart2,
-  FiGitMerge, FiCode, FiChevronDown, FiChevronUp, FiCopy, FiCheck,
-  FiCpu, FiActivity, FiTerminal, FiTerminal as FiBox, FiBookOpen, FiUser
+  FiGitMerge, FiChevronDown, FiChevronUp, FiCopy, FiCheck,
+  FiCpu, FiActivity, FiTerminal, FiBookOpen, FiUser
 } from "react-icons/fi";
 import {
   getWebhookEvents,
   getWebhookStats,
-  getWebhookConfig,
-  postWebhookEvent
+  getWebhookConfig
 } from "../services/api";
 import { useToast } from "./Toast";
 
@@ -39,77 +38,7 @@ const ACTION_LABELS = {
   SAFE_TO_DEPLOY:            "✅ Safe to Deploy",
 };
 
-/* ── API Webhook Sandbox templates ──────────────────────────────────── */
-const SANDBOX_TEMPLATES = [
-  {
-    name: "🔴 Critical RCE: vm2 package in auth-service",
-    event: "push",
-    payload: {
-      ref: "refs/heads/main",
-      pusher: { name: "sarah_dev", email: "sarah@company.com" },
-      repository: { full_name: "company/auth-service" },
-      commits: [
-        {
-          id: "a7d9f2c3b4a5e6f7",
-          message: "npm install vm2\n\nAdd sandbox runner for untrusted user scripts",
-          package_name: "vm2",
-          modified: ["package.json", "src/runner.js"]
-        }
-      ]
-    }
-  },
-  {
-    name: "🔑 Secret Leak: AWS Credentials in payment-gateway",
-    event: "push",
-    payload: {
-      ref: "refs/heads/feature-s3-upload",
-      pusher: { name: "alex_ops", email: "alex@company.com" },
-      repository: { full_name: "company/payment-gateway" },
-      commits: [
-        {
-          id: "f2c3d4e5a6b7c8d9",
-          message: "Set credentials for upload\n\nexport const AWS_KEY = 'AKIAIOSFODNN7EXAMPLE'",
-          package_name: "none",
-          modified: ["src/config/s3.js"]
-        }
-      ]
-    }
-  },
-  {
-    name: "📋 Banned Package Policy: node-serialize in billing",
-    event: "push",
-    payload: {
-      ref: "refs/heads/main",
-      pusher: { name: "sarah_dev", email: "sarah@company.com" },
-      repository: { full_name: "company/billing-service" },
-      commits: [
-        {
-          id: "b1c2d3e4f5a6b7c8",
-          message: "npm i node-serialize\n\nImplement process communication serializer",
-          package_name: "node-serialize",
-          modified: ["package.json"]
-        }
-      ]
-    }
-  },
-  {
-    name: "✅ Clean PR: Standard UI code in dashboard",
-    event: "pull_request",
-    action: "opened",
-    payload: {
-      action: "opened",
-      repository: { full_name: "company/dashboard" },
-      pull_request: {
-        number: 45,
-        html_url: "https://github.com/company/dashboard/pull/45",
-        title: "Clean dashboard layout and widgets",
-        body: "Refactored UI widgets for metrics panel",
-        user: { login: "john_backend" },
-        head: { ref: "feature-metrics", sha: "e8f9a0b1c2d3e4f5" }
-      }
-    }
-  }
-];
+
 
 /* ── Webhook Event Detail Card ─────────────────────────────────────── */
 function EventCard({ event, index }) {
@@ -337,18 +266,12 @@ function DetailTile({ label, value, highlight, mono }) {
 export default function DevSubmissionPortal() {
   const toast = useToast();
   const [panelOpen, setPanelOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState("stream"); // stream | registry | setup | sandbox
+  const [activeTab, setActiveTab] = useState("stream"); // stream | registry | setup
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  /* Sandbox State */
-  const [selectedTemplateIdx, setSelectedTemplateIdx] = useState(0);
-  const [sandboxPayload, setSandboxPayload] = useState("");
-  const [sandboxSending, setSandboxSending] = useState(false);
-  const [sandboxResponse, setSandboxResponse] = useState(null);
 
   const statsInterval = useRef(null);
 
@@ -380,19 +303,13 @@ export default function DevSubmissionPortal() {
 
   useEffect(() => {
     loadData();
-    // Poll stats silently to show dynamic sandbox outcomes
+    // Poll stats silently to refresh live data
     statsInterval.current = setInterval(() => loadData(true), 15000);
     return () => clearInterval(statsInterval.current);
   }, [loadData]);
 
-  /* Synchronize sandbox payload when template is selected */
-  useEffect(() => {
-    const tmpl = SANDBOX_TEMPLATES[selectedTemplateIdx];
-    if (tmpl) {
-      setSandboxPayload(JSON.stringify(tmpl.payload, null, 2));
-      setSandboxResponse(null);
-    }
-  }, [selectedTemplateIdx]);
+
+
 
   /* Copy Webhook URL to clipboard */
   const handleCopyUrl = () => {
@@ -403,51 +320,7 @@ export default function DevSubmissionPortal() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /* Sandbox webhook dispatcher */
-  const handleDispatchSandbox = async () => {
-    setSandboxSending(true);
-    setSandboxResponse(null);
-    try {
-      let parsed = null;
-      try {
-        parsed = JSON.parse(sandboxPayload);
-      } catch {
-        toast.error("Malformed JSON payload in editor");
-        setSandboxSending(false);
-        return;
-      }
 
-      const template = SANDBOX_TEMPLATES[selectedTemplateIdx];
-      const eventType = template?.event || "push";
-
-      toast.info(`Dispatching simulated '${eventType}' webhook event...`);
-
-      const res = await postWebhookEvent(parsed, eventType);
-
-      setSandboxResponse({
-        status: res.status,
-        statusText: res.statusText,
-        data: res.data
-      });
-
-      if (res.data?.success) {
-        toast.success(`Webhook received. Ingested ${res.data.processed} event logs.`);
-        // Reload list immediately
-        await loadData(true);
-      } else {
-        toast.error("Endpoint rejected webhook payload");
-      }
-    } catch (err) {
-      toast.error(err.userMessage || "Failed to dispatch webhook event");
-      setSandboxResponse({
-        status: err.response?.status || 500,
-        statusText: err.response?.statusText || "Internal Error",
-        data: err.response?.data || { error: err.message }
-      });
-    } finally {
-      setSandboxSending(false);
-    }
-  };
 
   return (
     <section
@@ -540,9 +413,7 @@ export default function DevSubmissionPortal() {
               <TabButton active={activeTab === "setup"} onClick={() => setActiveTab("setup")}>
                 <FiBookOpen size={12} /> GitHub Integration Setup
               </TabButton>
-              <TabButton active={activeTab === "sandbox"} onClick={() => setActiveTab("sandbox")}>
-                <FiTerminal size={12} /> Webhook API Sandbox
-              </TabButton>
+
             </div>
 
             <div style={{ padding: 20 }}>
@@ -746,152 +617,7 @@ export default function DevSubmissionPortal() {
                 </div>
               )}
 
-              {/* ── TAB 4: WEBHOOK API SANDBOX ──────────────────────────────── */}
-              {activeTab === "sandbox" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 20 }}>
-                  
-                  {/* Left Side: Payload selection and Dispatch */}
-                  <div>
-                    <div style={{ display: "flex", gap: 10, flexDirection: "column", marginBottom: 14 }}>
-                      <label style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
-                        Select Commit Payload template to dispatch:
-                      </label>
-                      <select
-                        value={selectedTemplateIdx}
-                        onChange={e => setSelectedTemplateIdx(parseInt(e.target.value))}
-                        style={{
-                          width: "100%",
-                          background: "#080c14",
-                          border: "1px solid rgba(0,212,255,0.25)",
-                          borderRadius: 8,
-                          padding: "8px 12px",
-                          color: "#fff",
-                          fontSize: 12,
-                          outline: "none"
-                        }}
-                      >
-                        {SANDBOX_TEMPLATES.map((tmpl, idx) => (
-                          <option key={idx} value={idx}>{tmpl.name}</option>
-                        ))}
-                      </select>
-                    </div>
 
-                    {/* Payload JSON Editor */}
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", display: "flex", alignItems: "center", gap: 4 }}>
-                          <FiCode size={11} /> Webhook Body JSON (Edit payload parameters as needed)
-                        </span>
-                        <span style={{ fontSize: 8.5, color: "#a855f7", fontWeight: 700 }}>
-                          EVENT: {SANDBOX_TEMPLATES[selectedTemplateIdx]?.event?.toUpperCase()}
-                        </span>
-                      </div>
-                      <textarea
-                        value={sandboxPayload}
-                        onChange={e => setSandboxPayload(e.target.value)}
-                        disabled={sandboxSending}
-                        rows={12}
-                        style={{
-                          width: "100%",
-                          background: "rgba(0,0,0,0.3)",
-                          border: "1px solid rgba(0,212,255,0.15)",
-                          borderRadius: 8,
-                          padding: 12,
-                          color: "#00d4ff",
-                          fontSize: 10.5,
-                          fontFamily: "var(--font-mono)",
-                          outline: "none",
-                          resize: "none",
-                          lineHeight: 1.4
-                        }}
-                      />
-                    </div>
-
-                    <button
-                      onClick={handleDispatchSandbox}
-                      disabled={sandboxSending}
-                      style={{
-                        width: "100%",
-                        padding: "11px 0",
-                        background: sandboxSending ? "rgba(0,212,255,0.05)" : "linear-gradient(135deg, rgba(255, 77, 109, 0.25), rgba(255, 77, 109, 0.1))",
-                        border: `1px solid ${sandboxSending ? "rgba(255,255,255,0.05)" : "rgba(255, 77, 109, 0.4)"}`,
-                        borderRadius: 8,
-                        cursor: sandboxSending ? "not-allowed" : "pointer",
-                        color: sandboxSending ? "rgba(255,255,255,0.3)" : "#fff",
-                        fontSize: 12,
-                        fontWeight: 700,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                        boxShadow: "0 4px 12px rgba(255, 77, 109, 0.15)"
-                      }}
-                    >
-                      {sandboxSending ? (
-                        <>
-                          <FiRefreshCw size={13} style={{ animation: "spin 0.8s linear infinite" }} />
-                          Ingesting Webhook Event Payload...
-                        </>
-                      ) : (
-                        <>
-                          <FiTerminal size={12} />
-                          Dispatch Webhook Event
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Right Side: Response Inspector */}
-                  <div style={{
-                    background: "rgba(0,0,0,0.25)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 10,
-                    padding: 16,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
-                      <FiActivity size={12} /> API RESPONSE INSPECTOR
-                    </div>
-
-                    {sandboxResponse ? (
-                      <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-                        <div style={{
-                          display: "flex", justifyContent: "space-between", alignItems: "center",
-                          padding: "6px 10px", background: sandboxResponse.status < 300 ? "rgba(0,255,157,0.08)" : "rgba(239,68,68,0.08)",
-                          border: `1px solid ${sandboxResponse.status < 300 ? "rgba(0,255,157,0.2)" : "rgba(239,68,68,0.2)"}`,
-                          borderRadius: 6, marginBottom: 12
-                        }}>
-                          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>HTTP Status Code</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: sandboxResponse.status < 300 ? "#00ff9d" : "#ef4444" }}>
-                            {sandboxResponse.status} {sandboxResponse.statusText}
-                          </span>
-                        </div>
-
-                        <div style={{ flex: 1, minHeight: 180, position: "relative" }}>
-                          <pre style={{
-                            position: "absolute", top: 0, bottom: 0, left: 0, right: 0,
-                            background: "#080c14", padding: 12, borderRadius: 6,
-                            color: "rgba(255,255,255,0.75)", fontSize: 9.5, overflow: "auto",
-                            border: "1px solid rgba(255,255,255,0.05)", margin: 0,
-                            fontFamily: "var(--font-mono)"
-                          }}>
-                            {JSON.stringify(sandboxResponse.data, null, 2)}
-                          </pre>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{
-                        flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                        color: "rgba(255,255,255,0.25)", fontSize: 11, textAlign: "center", gap: 10, padding: "40px 0"
-                      }}>
-                        <FiTerminal size={24} style={{ opacity: 0.3 }} />
-                        <span>Dispatch a simulated commit payload to inspect the live API response.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         )}
