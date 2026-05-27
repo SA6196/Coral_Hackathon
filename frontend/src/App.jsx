@@ -1,22 +1,24 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import Header           from "./components/Header";
-import SummaryCards     from "./components/SummaryCards";
-import SeverityChart    from "./components/SeverityChart";
-import IncidentFeed     from "./components/IncidentFeed";
-import SecurityScore    from "./components/SecurityScore";
-import ParticleBackground from "./components/ParticleBackground";
-import NLSearchBar      from "./components/NLSearchBar";
-import AICopilot        from "./components/AICopilot";
-import CoralQueryViewer from "./components/CoralQueryViewer";
-import SchemaViewer     from "./components/SchemaViewer";
+import Header              from "./components/Header";
+import SummaryCards        from "./components/SummaryCards";
+import SeverityChart       from "./components/SeverityChart";
+import IncidentFeed        from "./components/IncidentFeed";
+import SecurityScore       from "./components/SecurityScore";
+import ParticleBackground  from "./components/ParticleBackground";
+import NLSearchBar         from "./components/NLSearchBar";
+import AICopilot           from "./components/AICopilot";
+import CoralQueryViewer    from "./components/CoralQueryViewer";
+import SchemaViewer        from "./components/SchemaViewer";
+import NotionPoliciesPanel from "./components/NotionPoliciesPanel";
+import SourceStatusPanel   from "./components/SourceStatusPanel";
 
 import { getSummary, getHighRisk } from "./services/api";
 
 import "./App.css";
 
-/* ── Loading screen log messages ────────────────────────────────── */
+/* ── Loading screen ────────────────────────────────────────────────── */
 const LOAD_LOGS = [
   "Initializing Coral agent…",
   "Reading coral-sources.yaml…",
@@ -34,7 +36,7 @@ function LoadingScreen() {
   const [logIndex, setLogIndex] = useState(0);
   useEffect(() => {
     if (logIndex >= LOAD_LOGS.length - 1) return;
-    const t = setTimeout(() => setLogIndex((i) => i + 1), 300);
+    const t = setTimeout(() => setLogIndex(i => i + 1), 300);
     return () => clearTimeout(t);
   }, [logIndex]);
   return (
@@ -67,7 +69,7 @@ function ErrorScreen({ message, onRetry }) {
       <div className="error-title">Connection Failed</div>
       <div className="error-msg">{message}</div>
       <div className="error-msg" style={{ opacity: 0.5, fontSize: 12 }}>
-        Make sure the backend is running on port 5000
+        Make sure the backend is running: <code style={{ color: "#00d4ff" }}>cd backend && npm start</code>
       </div>
       <button className="retry-btn" onClick={onRetry}>↻ Retry Connection</button>
     </div>
@@ -75,33 +77,38 @@ function ErrorScreen({ message, onRetry }) {
 }
 
 function App() {
-  const [summary,   setSummary]   = useState(null);
-  const [incidents, setIncidents] = useState([]);
-  const [coralMeta, setCoralMeta] = useState(null);  // Feature 7: cache info
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [summary,    setSummary]    = useState(null);
+  const [incidents,  setIncidents]  = useState([]);
+  const [coralMeta,  setCoralMeta]  = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadData = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
       const [summaryRes, incidentsRes] = await Promise.all([
         getSummary(),
         getHighRisk(),
-        new Promise((r) => setTimeout(r, 2800)), // dramatic startup
+        new Promise(r => setTimeout(r, loading ? 2800 : 0)),
       ]);
       setSummary(summaryRes.data.data);
       setIncidents(incidentsRes.data.data);
-      // Capture coral_meta from either response
       setCoralMeta(incidentsRes.data.coral_meta || summaryRes.data.coral_meta || null);
     } catch (err) {
       setError(err.message || "Failed to connect to backend");
     } finally {
       setLoading(false);
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Called by Header's live-refresh countdown and manual refresh button
+  const handleRefreshed = useCallback(() => {
+    setRefreshKey(k => k + 1);
+  }, []);
 
   if (loading) return <LoadingScreen />;
   if (error)   return <ErrorScreen message={error} onRetry={loadData} />;
@@ -112,33 +119,38 @@ function App() {
       <div className="grid-bg" aria-hidden="true" />
 
       <div className="app-content">
-        <Header />
 
-        {/* ── Coral banner ───────────────────────────────────────── */}
+        {/* ── Header: clickable badges + live refresh + export ───────── */}
+        <Header onRefreshed={handleRefreshed} />
+
+        {/* ── Coral powered banner ───────────────────────────────────── */}
         <div className="coral-powered">
           <div className="coral-powered-dot" />
           <span>
             Powered by <strong style={{ color: "#ff4d6d" }}>Coral</strong>
-            {" "}— 4-source SQL JOIN · Schema learning · Caching · Secret detection · Policy enforcement
+            {" "}— 4-source SQL JOIN · Schema learning · Caching · Secret detection · Policy enforcement · MCP
           </span>
           {coralMeta?.cache_hit && (
-            <span className="coral-powered-cache">⚡ Cache hit · {coralMeta.expires_in_seconds}s TTL remaining</span>
+            <span className="coral-powered-cache">⚡ Cache hit · {coralMeta.expires_in_seconds}s TTL</span>
           )}
         </div>
 
-        {/* ── Feature 4: Coral SQL Query Viewer ─────────────────── */}
-        <CoralQueryViewer coralMeta={coralMeta} />
+        {/* ── Source Status Panel ────────────────────────────────────── */}
+        <SourceStatusPanel onRefreshed={handleRefreshed} />
 
-        {/* ── Feature 6: Schema Learning Viewer ─────────────────── */}
-        <SchemaViewer />
-
-        {/* ── Feature 1: NL → SQL Search ────────────────────────── */}
+        {/* ── NL → SQL Search ────────────────────────────────────────── */}
         <NLSearchBar />
 
-        {/* ── Summary cards (with secrets + policy counts) ──────── */}
+        {/* ── Coral SQL Query Viewer ─────────────────────────────────── */}
+        <CoralQueryViewer coralMeta={coralMeta} />
+
+        {/* ── Schema Learning Viewer ─────────────────────────────────── */}
+        <SchemaViewer />
+
+        {/* ── Summary cards ──────────────────────────────────────────── */}
         <SummaryCards summary={summary} />
 
-        {/* ── Analytics row ─────────────────────────────────────── */}
+        {/* ── Analytics row ──────────────────────────────────────────── */}
         <div className="section-label">
           <span className="section-label-text">Analytics</span>
           <div className="section-label-line" />
@@ -148,10 +160,13 @@ function App() {
           <SeverityChart summary={summary} />
         </div>
 
-        {/* ── Incident feed (with AI invest + remediation tabs) ─── */}
+        {/* ── Notion Policy Violations Panel ─────────────────────────── */}
+        <NotionPoliciesPanel />
+
+        {/* ── Incident Feed (each card has Remediation + AI Invest) ──── */}
         <IncidentFeed incidents={incidents} />
 
-        {/* ── Footer ────────────────────────────────────────────── */}
+        {/* ── Footer ─────────────────────────────────────────────────── */}
         <footer className="footer">
           <span>◈ Coral</span> Security Command Center &nbsp;·&nbsp;
           GitHub + Slack + OSV + Notion &nbsp;·&nbsp;
@@ -160,7 +175,7 @@ function App() {
         </footer>
       </div>
 
-      {/* ── Floating AI Copilot ─────────────────────────────────── */}
+      {/* ── Floating AI Copilot ────────────────────────────────────── */}
       <AICopilot activeIncidentId={1} />
     </div>
   );
