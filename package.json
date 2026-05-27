@@ -5,5 +5,8 @@
     "postinstall": "cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm run build",
     "start": "cd backend && npm start"
+  },
+  "engines": {
+    "node": ">=20.19.0"
   }
 }
