@@ -4,6 +4,7 @@ const express  = require("express");
 const cors     = require("cors");
 const morgan   = require("morgan");
 const rateLimit = require("express-rate-limit");
+const path     = require("path");
 
 const securityRoutes = require("./routes/securityRoutes");
 const coralRoutes    = require("./routes/coralRoutes");
@@ -73,7 +74,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.json({
     success: true,
     message: "Coral Security Command Center API v2.0",
@@ -101,7 +102,18 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* ─── 404 handler ─────────────────────────────────────────────────────── */
+/* ─── Serve Frontend (Single-Host Bundle) ─────────────────────────────── */
+const frontendDistPath = path.join(__dirname, "../../frontend/dist");
+app.use(express.static(frontendDistPath));
+
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.startsWith("/api")) {
+    return res.sendFile(path.join(frontendDistPath, "index.html"));
+  }
+  next();
+});
+
+/* ─── 404 handler (For API routes) ────────────────────────────────────── */
 app.use((req, res) => {
   res.status(404).json({ success: false, error: `Route not found: ${req.path}` });
 });

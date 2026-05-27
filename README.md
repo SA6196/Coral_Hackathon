@@ -1,147 +1,150 @@
-
-
 # Coral Security Command Center
 
-AI-powered enterprise cybersecurity monitoring platform built during the Coral Hackathon.
-
-Coral Security Command Center continuously monitors GitHub activity, Slack discussions, and vulnerability intelligence feeds to detect, correlate, and explain security threats in real time.
+> AI-driven cyber defense for hackathon judges: a polished security command center that correlates GitHub, Slack, and vulnerability intelligence in real time.
 
 ---
 
-# Features
+## Why this project wins
 
-* GitHub commit monitoring
-* Slack security discussion analysis
-* AI-powered risk summarization
-* CVE / OSV vulnerability correlation
-* Enterprise security dashboard
-* Critical incident detection
-* Risk scoring engine
-* Remediation recommendations
+Coral is designed to stand out in a security hackathon by combining a strong threat narrative with a clean deployment path.
+- Rapid demo readiness using mock data
+- Realistic security telemetry from GitHub, Slack, and OSV
+- AI investigation guidance plus remediation playbooks
+- Separate backend API and React frontend for modern cloud deployment
 
 ---
 
-# Problem Statement
+## What it does
 
-Modern companies use:
+- Detects high-risk GitHub activity and secret exposure patterns
+- Correlates code changes with Slack conversations and vulnerability feeds
+- Produces risk summaries, incident details, and remediation advice
+- Supports webhook event simulation for live demo storytelling
+- Provides an AI co-pilot for security investigation
 
-* GitHub for source code
-* Slack for communication
-* Open-source dependencies
+---
 
-Security teams cannot manually monitor:
+## Architecture
 
-* secret leaks
-* risky package updates
-* vulnerability disclosures
-* suspicious internal discussions
+`	ext
+GitHub / Slack / OSV / policy feeds
+                   ?
+              Coral backend
+                   ?
+         AI risk analysis engine
+                   ?
+         React dashboard frontend
+`
 
-Our system acts as an AI-powered cybersecurity analyst that automatically correlates security signals across multiple platforms.
+---
 
+## Tech stack
 
+- Backend: Node.js, Express, dotenv
+- Frontend: React, Vite, Axios, Recharts, Framer Motion
+- Deployment: Railway for backend, Vercel for frontend
 
-# Architecture
+---
 
-```text
-GitHub → Security Events
-Slack → Internal Discussions
-OSV → Vulnerability Intelligence
-           ↓
-        Coral Engine
-           ↓
-    AI Risk Correlation
-           ↓
- Enterprise Security Dashboard
-```
+## Quick start
 
+### Backend
 
-
-# Tech Stack
-
-## Frontend
-
-* React
-* Vite
-* TailwindCSS
-
-## Backend
-
-* Node.js
-* Express.js
-
-## AI / Security
-
-* Coral
-* CVE / OSV Intelligence
-* Risk Analysis Engine
-
-
-
-# Project Structure
-
-```text
-Coral_Hackathon/
-│
-├── frontend/
-├── backend/
-├── Coral_queries/
-├── demo_flow/
-├── docs/
-└── README.md
-```
-
-
-
-# Demo Scenario
-
-## Simulated Incident Flow
-
-1. Developer exposes production API key
-2. Slack discussion reports suspicious behavior
-3. OSV detects critical vulnerability
-4. Coral correlates all events
-5. Dashboard raises critical security alert
-6. AI recommends remediation action
-
-
-
-
-
-# Local Setup
-
-## Backend
-
-```bash
+`ash
 cd backend
 npm install
 npm start
-```
+`
 
-Runs on:
+Backend API: http://localhost:5000
 
-```text
-http://localhost:5000
-```
+### Frontend
 
-
-
-## Frontend
-
-```bash
+`ash
 cd frontend
 npm install
 npm run dev
-```
+`
 
-Runs on:
+Frontend: http://localhost:5173
 
-```text
-http://localhost:5173
-```
+> The frontend uses VITE_API_URL when set, otherwise it defaults to http://localhost:5000/api.
 
 ---
 
+## Environment variables
 
-# Vision
+Create a ackend/.env file with the values you need:
 
-Our goal is to build an intelligent enterprise security monitoring platform capable of proactively identifying and explaining cyber threats before they become production incidents.
+`ash
+OPENAI_API_KEY=
+GEMINI_API_KEY=
+GITHUB_TOKEN=
+SLACK_BOT_TOKEN=
+NOTION_TOKEN=
+FRONTEND_URL=https://your-frontend-domain.com
+PUBLIC_URL=https://your-frontend-domain.com
+`
+
+> OPENAI_API_KEY enables AI chat features. All other keys are optional for demo mode.
+
+---
+
+## Deployment guide
+
+### Backend (Railway)
+
+1. Import the repo into Railway.
+2. Set the service root to ackend.
+3. Verify the start command is 
+ode src/index.js.
+4. Add env vars: FRONTEND_URL, PUBLIC_URL, OPENAI_API_KEY, and any real integration tokens.
+
+### Frontend (Vercel)
+
+1. Import the repo into Vercel.
+2. Set the project root to rontend.
+3. Build command: 
+pm run build
+4. Output directory: dist
+5. Set VITE_API_URL=https://<backend-url>/api
+
+---
+
+## Demo flow
+
+- Use the initial mock data to show a threat scenario immediately.
+- Open the dashboard and highlight the incident correlation panels.
+- Trigger the Webhook Sandbox to simulate a GitHub event.
+- Show the AI co-pilot explaining remediation steps.
+
+---
+
+## Project structure
+
+`	ext
+backend/        # Express API and security engine
+frontend/       # Vite React dashboard
+Coral_queries/  # Coral query examples
+demo_flow/      # demo sequence and storytelling notes
+docs/           # supporting docs and mock responses
+README.md       # project overview and setup
+`
+
+---
+
+## Notes for winning
+
+- Start the pitch with a security incident story.
+- Demonstrate fast mock-data onboarding first.
+- Highlight that this is deployable and cloud-ready.
+- Close with the AI guidance + remediation workflow.
+
+---
+
+## Need extra help?
+
+I can also add:
+- a deploy.md with one-click instructions
+- GitHub Actions deployment automation
+- a fallback single-host backend + frontend bundle
