@@ -351,44 +351,69 @@ function generateDeveloperContext(inc, allIncidents, q) {
   // Find all incidents by this developer
   const devIncidents = allIncidents.filter(i => i.pr_details?.developer === dev);
   const totalRisk = devIncidents.reduce((sum, i) => sum + (i.risk_score || 0), 0);
-  const avgRisk = Math.round(totalRisk / devIncidents.length);
+  const avgRisk = Math.round(totalRisk / devIncidents.length) || 0;
   const criticalCount = devIncidents.filter(i => i.vulnerability?.severity === "critical").length;
   const highCount = devIncidents.filter(i => i.vulnerability?.severity === "high").length;
+  const safeCount = devIncidents.filter(i => i.vulnerability?.severity === "safe" || i.vulnerability?.severity === "medium").length;
   const secretLeaks = devIncidents.filter(i => i.secrets_detected).length;
   
-  const riskLevel = avgRisk >= 80 ? "🔴 HIGH RISK" : avgRisk >= 50 ? "🟠 MODERATE" : "🟢 LOW RISK";
+  // Calculate Anomaly Score (Hackathon Winning Logic)
+  const anomalyScore = Math.min(100, Math.round((avgRisk * 0.4) + (criticalCount * 15) + (secretLeaks * 30)));
+  
+  let persona = "🟢 Secure Contributor";
+  if (secretLeaks > 0 && criticalCount > 0) persona = "🚨 Insider Threat / Compromised Account";
+  else if (criticalCount >= 2) persona = "🟠 High-Risk Operator";
+  else if (avgRisk >= 40 || highCount > 0) persona = "🟡 Careless Committer";
+
+  const isHighRisk = anomalyScore >= 60;
 
   return `## 👤 Developer Risk Profile — ${dev}
 
-**Overall Risk Rating:** ${riskLevel} (avg score: ${avgRisk}/100)
+> **Behavioral Persona:** ${persona}
+> **Trust Score:** ${100 - anomalyScore}/100 | **Anomaly Factor:** ${anomalyScore}%
 
-### Activity Summary
+### 📊 Behavioral Analytics
+\`\`\`mermaid
+pie title Risk Distribution for ${dev}
+  "Critical Incidents": ${criticalCount}
+  "High Risk Incidents": ${highCount}
+  "Secret Leaks": ${secretLeaks}
+  "Safe / Resolved": ${safeCount}
+\`\`\`
+
 | Metric | Value |
 |--------|-------|
 | Total PRs merged | ${devIncidents.length} |
-| Critical incidents | ${criticalCount} |
-| High-risk incidents | ${highCount} |
+| Critical / High CVEs | ${criticalCount} / ${highCount} |
 | Secret leaks | ${secretLeaks} |
 | Average risk score | ${avgRisk}/100 |
 
-### Recent Incidents by ${dev}
-${devIncidents.map((i, idx) => `${idx + 1}. **${i.incident_id}** — ${i.pr_details?.title || "Unknown PR"}
+### 🚨 Recent Risky Commits
+${devIncidents.slice(0, 3).map((i, idx) => `${idx + 1}. **${i.incident_id}** — ${i.pr_details?.title || "Unknown PR"}
    - Severity: **${i.vulnerability?.severity?.toUpperCase()}** | Risk: ${i.risk_score}/100
-   - Package: \`${i.package_details?.package_name}\` | CVE: \`${i.vulnerability?.cve}\`
-   - Slack: "${i.internal_discussion?.message?.slice(0, 80)}..."`
-).join("\n\n")}
+   - Package: \`${i.package_details?.package_name}\` | CVE: \`${i.vulnerability?.cve}\``
+).join("\n")}
 
-### Current Incident
-**${inc.incident_id}:** ${inc.ai_summary}
+### ⚡ 1-Click Containment Playbook
+${isHighRisk ? 
+  `⚠️ **${dev} has tripped high-severity behavioral alarms. Execute the following immediately:**
 
-### Recommendation
-${criticalCount > 0 || secretLeaks > 0 ? 
-  `⚠️ **${dev} has ${criticalCount} critical incident(s) and ${secretLeaks} secret leak(s). Consider:**
-- Temporarily restricting merge permissions pending security review
-- Mandatory security training session
-- Code review requirement from senior engineer for next 30 days
-- Security onboarding refresher` :
-  `✅ **${dev}'s risk profile is acceptable.** Continue standard monitoring and ensure they complete the CVE awareness training.`}`;
+**1. Revoke GitHub Merge Access:**
+\`\`\`bash
+gh api repos/:owner/:repo/collaborators/${dev} --method DELETE
+\`\`\`
+
+**2. Force MFA Re-authentication & Session Clear:**
+\`\`\`bash
+aws iam update-login-profile --user-name ${dev} --password-reset-required
+\`\`\`
+
+**3. Quarantine & Notify SOC Team:**
+\`\`\`bash
+curl -X POST $SLACK_WEBHOOK_URL \\
+  -d '{"text":"🚨 *Insider Threat Protocol Activated* \\nUser: ${dev} \\nAction: All sessions revoked pending security review."}'
+\`\`\`` :
+  `✅ **${dev}'s behavioral anomaly score is low.** No immediate containment necessary. Continue automated monitoring.`}`;
 }
 
 function generatePolicyResponse(inc) {
@@ -772,8 +797,9 @@ Guidelines for responding:
 1. Always base your replies on the provided context where applicable.
 2. Provide technical, step-by-step guidance.
 3. Be professional, direct, and concise. Do not write filler.
-4. Format your output using clean GitHub-style Markdown (including headings, tables, code blocks, or alert block quotes where helpful).
-5. If the user asks about general security, explain how Coral Virtual SQL engine compiles tables or how branch status gates prevent vulnerable merges.`;
+4. Format your output using clean GitHub-style Markdown.
+5. **HACKATHON WINNING DIRECTIVE:** Whenever the user asks about a specific developer or their risk profile, you MUST calculate a "Developer Trust Score", assign them a Behavioral Risk Persona (e.g., 🚨 Insider Threat, 🟡 Careless Committer, 🟢 Secure Contributor), provide exact 1-Click Containment bash scripts (like revoking GitHub access via \`gh api\` or Slack webhooks), and output a \`\`\`mermaid pie chart summarizing their incident distribution (Critical vs High vs Safe vs Leaks).
+6. If the user asks about general security, explain how Coral Virtual SQL engine compiles tables or how branch status gates prevent vulnerable merges.`;
 
   // 2. OpenAI API Path
   if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
