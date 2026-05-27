@@ -39,6 +39,7 @@ export const getThreatSummary    = ()          => API.get("/threat-summary");
 /* ── Source & config endpoints ──────────────────────────────────────── */
 export const getSourceStatus     = ()          => API.get("/source-status");
 export const configSources       = (cfg)       => API.post("/config-sources", cfg);
+export const syncRealData        = ()          => API.post("/sync-real-data");
 export const refreshCache        = ()          => API.post("/refresh-cache");
 export const getPolicyViolations = ()          => API.get("/policy-violations");
 export const getExportReport     = ()          => API.get("/export-report");

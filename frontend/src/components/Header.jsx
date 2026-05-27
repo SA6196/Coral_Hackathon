@@ -16,7 +16,7 @@ import {
   FiCheck, FiExternalLink, FiPrinter, FiFileText,
   FiAlertTriangle, FiChevronDown,
 } from "react-icons/fi";
-import { refreshCache, configSources, getExportReport } from "../services/api";
+import { refreshCache, configSources, getExportReport, syncRealData } from "../services/api";
 
 /* ── Live clock ──────────────────────────────────────────────────────── */
 function LiveClock() {
@@ -70,7 +70,7 @@ const SOURCE_META = {
     color: "#e2e8f0",
     icon: <span style={{ fontSize: 18 }}>📄</span>,
     fields: [
-      { key: "database_id", label: "Policy Database ID", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", type: "text", help: "From the Notion database URL" },
+      { key: "db", label: "Policy Database ID", placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", type: "text", help: "From the Notion database URL" },
       { key: "token", label: "Integration Token", placeholder: "secret_xxxxxxxxxxxx", type: "password", help: "Notion → Settings → Integrations" },
     ],
     docsUrl: "https://developers.notion.com/docs/create-a-notion-integration",
@@ -378,6 +378,55 @@ function LiveRefreshIndicator({ onRefreshed }) {
   );
 }
 
+/* ── Sync Live Data Button ────────────────────────────────────────────── */
+function SyncLiveDataButton() {
+  const [syncing, setSyncing] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await syncRealData();
+      setDone(true);
+      setTimeout(() => {
+        setDone(false);
+        window.location.reload(); // Reload to pick up all the new live data seamlessly
+      }, 1500);
+    } catch (err) {
+      alert("Failed to sync live data. Please check backend connection and keys.");
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={handleSync}
+      disabled={syncing}
+      style={{
+        display: "flex", alignItems: "center", gap: 6,
+        background: done 
+          ? "linear-gradient(135deg,rgba(0,255,157,0.15),rgba(0,255,157,0.08))"
+          : "linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05))",
+        border: done ? "1px solid rgba(0,255,157,0.4)" : "1px solid rgba(251,191,36,0.4)",
+        borderRadius: 8, padding: "6px 12px",
+        color: done ? "#00ff9d" : "#fbbf24",
+        fontSize: 11, fontWeight: 600, cursor: syncing ? "wait" : "pointer",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {done ? (
+        <><FiCheck size={12} /> Synced & Reloading!</>
+      ) : syncing ? (
+        <><FiRefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Fetching APIs…</>
+      ) : (
+        <><span>⚡</span> Sync Live Data</>
+      )}
+    </motion.button>
+  );
+}
+
 /* ── Export Report Button ─────────────────────────────────────────────── */
 function ExportReportButton() {
   const [open,        setOpen]       = useState(false);
@@ -554,6 +603,8 @@ function Header({ onRefreshed }) {
           <LiveRefreshIndicator onRefreshed={onRefreshed} />
 
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Sync Live button */}
+            <SyncLiveDataButton />
             {/* Export button */}
             <ExportReportButton />
             <div className="header-status">
