@@ -120,7 +120,7 @@ app.use((req, res) => {
 
 /* ─── Graceful shutdown ───────────────────────────────────────────────── */
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Coral Security API v2.0 running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔒 CORS whitelist: localhost:5173, localhost:3000`);
