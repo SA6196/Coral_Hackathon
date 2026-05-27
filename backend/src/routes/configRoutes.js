@@ -1,11 +1,13 @@
-/**
- * configRoutes.js — Source config, status, export, refresh, policy-violations
- */
 const express = require("express");
 const router  = express.Router();
 
 const { joinSecurityData, invalidateCache, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }                             = require("../coral/queryEngine");
+
+const githubData = require("../../mock-data/github.json");
+const osvData    = require("../../mock-data/osv.json");
+const slackData  = require("../../mock-data/slack.json");
+const notionData = require("../../mock-data/notion.json");
 
 // In-memory token store (never written to disk)
 const runtimeTokens = {
@@ -29,7 +31,7 @@ router.get("/source-status", (req, res) => {
       env_var: "GITHUB_TOKEN",
       rate_limit: "60 req/min",
       last_synced: new Date(now - 120_000).toISOString(),
-      records: 3,
+      records: githubData.length,
     },
     {
       id: "slack", name: "Slack",
@@ -42,7 +44,7 @@ router.get("/source-status", (req, res) => {
       env_var: "SLACK_BOT_TOKEN",
       rate_limit: "50 req/min",
       last_synced: new Date(now - 65_000).toISOString(),
-      records: 3,
+      records: slackData.length,
     },
     {
       id: "osv", name: "OSV Database",
@@ -55,7 +57,7 @@ router.get("/source-status", (req, res) => {
       env_var: null,
       rate_limit: "100 req/min",
       last_synced: new Date(now - 30_000).toISOString(),
-      records: 3,
+      records: osvData.length,
       is_public: true,
     },
     {
@@ -69,7 +71,7 @@ router.get("/source-status", (req, res) => {
       env_var: "NOTION_TOKEN",
       rate_limit: "30 req/min",
       last_synced: new Date(now - 90_000).toISOString(),
-      records: 3,
+      records: notionData.length,
     },
   ];
 

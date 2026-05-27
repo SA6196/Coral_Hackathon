@@ -13,8 +13,11 @@ import CoralQueryViewer    from "./components/CoralQueryViewer";
 import SchemaViewer        from "./components/SchemaViewer";
 import NotionPoliciesPanel from "./components/NotionPoliciesPanel";
 import SourceStatusPanel   from "./components/SourceStatusPanel";
+import ErrorBoundary       from "./components/ErrorBoundary";
+import DevSubmissionPortal from "./components/DevSubmissionPortal";
+import { useToast }        from "./components/Toast";
 
-import { getSummary, getHighRisk } from "./services/api";
+import { getSummary, getHighRisk, getExportReport } from "./services/api";
 
 import "./App.css";
 
@@ -69,7 +72,7 @@ function ErrorScreen({ message, onRetry }) {
       <div className="error-title">Connection Failed</div>
       <div className="error-msg">{message}</div>
       <div className="error-msg" style={{ opacity: 0.5, fontSize: 12 }}>
-        Make sure the backend is running: <code style={{ color: "#00d4ff" }}>cd backend && npm start</code>
+        Make sure the backend is running: <code style={{ color: "#00d4ff" }}>cd backend &amp;&amp; npm start</code>
       </div>
       <button className="retry-btn" onClick={onRetry}>↻ Retry Connection</button>
     </div>
@@ -77,12 +80,14 @@ function ErrorScreen({ message, onRetry }) {
 }
 
 function App() {
+  const toast = useToast();
   const [summary,    setSummary]    = useState(null);
   const [incidents,  setIncidents]  = useState([]);
   const [coralMeta,  setCoralMeta]  = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [exporting,  setExporting]  = useState(false);
 
   const loadData = useCallback(async () => {
     setError(null);
@@ -96,7 +101,7 @@ function App() {
       setIncidents(incidentsRes.data.data);
       setCoralMeta(incidentsRes.data.coral_meta || summaryRes.data.coral_meta || null);
     } catch (err) {
-      setError(err.message || "Failed to connect to backend");
+      setError(err.userMessage || err.message || "Failed to connect to backend");
     } finally {
       setLoading(false);
     }
@@ -105,10 +110,35 @@ function App() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Called by Header's live-refresh countdown and manual refresh button
   const handleRefreshed = useCallback(() => {
     setRefreshKey(k => k + 1);
-  }, []);
+    toast.info("Dashboard refreshed");
+  }, [toast]);
+
+  /* ── Export report as JSON download ─────────────────────────────── */
+  const handleExport = useCallback(async () => {
+    if (exporting) return;
+    setExporting(true);
+    toast.info("Generating report…");
+    try {
+      const res = await getExportReport();
+      const blob = new Blob(
+        [JSON.stringify(res.data.report, null, 2)],
+        { type: "application/json" }
+      );
+      const url  = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `coral-security-report-${new Date().toISOString().slice(0,10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Report exported: ${res.data.report.executive_summary.total_incidents} incidents`);
+    } catch (e) {
+      toast.error("Export failed — is the backend running?");
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, toast]);
 
   if (loading) return <LoadingScreen />;
   if (error)   return <ErrorScreen message={error} onRetry={loadData} />;
@@ -121,7 +151,7 @@ function App() {
       <div className="app-content">
 
         {/* ── Header: clickable badges + live refresh + export ───────── */}
-        <Header onRefreshed={handleRefreshed} />
+        <Header onRefreshed={handleRefreshed} onExport={handleExport} exporting={exporting} />
 
         {/* ── Coral powered banner ───────────────────────────────────── */}
         <div className="coral-powered">
@@ -136,19 +166,29 @@ function App() {
         </div>
 
         {/* ── Source Status Panel ────────────────────────────────────── */}
-        <SourceStatusPanel onRefreshed={handleRefreshed} />
+        <ErrorBoundary>
+          <SourceStatusPanel onRefreshed={handleRefreshed} />
+        </ErrorBoundary>
 
         {/* ── NL → SQL Search ────────────────────────────────────────── */}
-        <NLSearchBar />
+        <ErrorBoundary>
+          <NLSearchBar />
+        </ErrorBoundary>
 
         {/* ── Coral SQL Query Viewer ─────────────────────────────────── */}
-        <CoralQueryViewer coralMeta={coralMeta} />
+        <ErrorBoundary>
+          <CoralQueryViewer coralMeta={coralMeta} />
+        </ErrorBoundary>
 
         {/* ── Schema Learning Viewer ─────────────────────────────────── */}
-        <SchemaViewer />
+        <ErrorBoundary>
+          <SchemaViewer />
+        </ErrorBoundary>
 
         {/* ── Summary cards ──────────────────────────────────────────── */}
-        <SummaryCards summary={summary} />
+        <ErrorBoundary>
+          <SummaryCards summary={summary} />
+        </ErrorBoundary>
 
         {/* ── Analytics row ──────────────────────────────────────────── */}
         <div className="section-label">
@@ -156,15 +196,28 @@ function App() {
           <div className="section-label-line" />
         </div>
         <div className="dashboard-row">
-          <SecurityScore summary={summary} />
-          <SeverityChart summary={summary} />
+          <ErrorBoundary>
+            <SecurityScore summary={summary} />
+          </ErrorBoundary>
+          <ErrorBoundary>
+            <SeverityChart summary={summary} />
+          </ErrorBoundary>
         </div>
 
         {/* ── Notion Policy Violations Panel ─────────────────────────── */}
-        <NotionPoliciesPanel />
+        <ErrorBoundary>
+          <NotionPoliciesPanel />
+        </ErrorBoundary>
+
+        {/* ── Developer Submission Portal ─────────────────────────────── */}
+        <ErrorBoundary>
+          <DevSubmissionPortal />
+        </ErrorBoundary>
 
         {/* ── Incident Feed (each card has Remediation + AI Invest) ──── */}
-        <IncidentFeed incidents={incidents} />
+        <ErrorBoundary>
+          <IncidentFeed incidents={incidents} />
+        </ErrorBoundary>
 
         {/* ── Footer ─────────────────────────────────────────────────── */}
         <footer className="footer">
@@ -176,7 +229,9 @@ function App() {
       </div>
 
       {/* ── Floating AI Copilot ────────────────────────────────────── */}
-      <AICopilot activeIncidentId={1} />
+      <ErrorBoundary>
+        <AICopilot activeIncidentId={1} />
+      </ErrorBoundary>
     </div>
   );
 }

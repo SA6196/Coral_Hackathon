@@ -1,39 +1,122 @@
 [
   {
+    "pr_id": 101,
+    "author": "alice_dev",
+    "title": "Add temporary database auth credentials",
+    "package_name": "postgresql-client",
+    "merged_at": "2026-05-25T10:15:00Z",
+    "commit_diff": "DB_PASSWORD=supersecret123 DB_USER=admin HOST=prod.db.internal"
+  },
+  {
+    "pr_id": 102,
+    "author": "bob_engineer",
+    "title": "Upgrade lodash to 4.17.20 and clean lockfile",
+    "package_name": "lodash",
+    "merged_at": "2026-05-25T14:30:00Z",
+    "commit_diff": "npm install lodash@4.17.20 --save"
+  },
+  {
+    "pr_id": 103,
+    "author": "contractor_x",
+    "title": "Inject mock testing hooks in setup script",
+    "package_name": "node-setup",
+    "merged_at": "2026-05-25T19:05:00Z",
+    "commit_diff": "exec(shell_command) // test hook"
+  },
+  {
+    "pr_id": 104,
     "author": "Shivay",
-    "title": "Integrated payment gateway",
+    "title": "Integrated payment gateway with stripe",
     "package_name": "stripe",
-    "merged_at": "2026-05-25T10:00:00Z"
+    "merged_at": "2026-05-25T10:00:00Z",
+    "commit_diff": "npm install stripe@14.5.0"
   },
   {
+    "pr_id": 105,
     "author": "Rahul",
-    "title": "Added admin dashboard",
+    "title": "Added admin dashboard with JWT authentication",
     "package_name": "jsonwebtoken",
-    "merged_at": "2026-05-25T11:00:00Z"
+    "merged_at": "2026-05-25T11:00:00Z",
+    "commit_diff": "jwt.sign(payload, SECRET_KEY)"
   },
   {
-  "author": "Alex",
-  "title": "Added AWS secret key",
-  "package_name": "aws-sdk",
-  "merged_at": "2026-05-26T09:00:00Z"
+    "pr_id": 106,
+    "author": "Alex",
+    "title": "Added AWS secret key for S3 bucket access",
+    "package_name": "aws-sdk",
+    "merged_at": "2026-05-26T09:00:00Z",
+    "commit_diff": "aws_secret_key = 'AKIA1234ABCD5678EFGH'"
   },
   {
-  "author": "Mike",
-  "title": "Updated README docs",
-  "package_name": "none",
-  "merged_at": "2026-05-26T10:00:00Z"
+    "pr_id": 107,
+    "author": "Mike",
+    "title": "Updated README docs and configuration guides",
+    "package_name": "none",
+    "merged_at": "2026-05-26T10:00:00Z",
+    "commit_diff": "Documentation update only"
   },
   {
-  "author": "John",
-  "title": "Updated authentication middleware",
-  "package_name": "bcrypt",
-  "merged_at": "2026-05-26T11:00:00Z"
+    "pr_id": 108,
+    "author": "John",
+    "title": "Updated authentication middleware with bcrypt",
+    "package_name": "bcrypt",
+    "merged_at": "2026-05-26T11:00:00Z",
+    "commit_diff": "bcrypt.hash(password, 10)"
   },
   {
-  "author": "Rahul",
-  "title": "Integrated OAuth login",
-  "package_name": "jsonwebtoken",
-  "merged_at": "2026-05-26T12:00:00Z"
+    "pr_id": 109,
+    "author": "Rahul",
+    "title": "Integrated OAuth login with jsonwebtoken",
+    "package_name": "jsonwebtoken",
+    "merged_at": "2026-05-26T12:00:00Z",
+    "commit_diff": "const token = jwt.sign(user, process.env.JWT_SECRET)"
+  },
+  {
+    "pr_id": 110,
+    "author": "alice_dev",
+    "title": "Fix SQL injection vulnerability in user query",
+    "package_name": "pg",
+    "merged_at": "2026-05-26T13:00:00Z",
+    "commit_diff": "db.query('SELECT * FROM users WHERE id = $1', [userId])"
+  },
+  {
+    "pr_id": 111,
+    "author": "sara_sec",
+    "title": "Add rate limiting middleware to prevent DDoS",
+    "package_name": "express-rate-limit",
+    "merged_at": "2026-05-26T14:00:00Z",
+    "commit_diff": "rateLimit({ windowMs: 15 * 60 * 1000, max: 100 })"
+  },
+  {
+    "pr_id": 112,
+    "author": "contractor_x",
+    "title": "Add eval() call for dynamic config loading",
+    "package_name": "vm2",
+    "merged_at": "2026-05-26T15:00:00Z",
+    "commit_diff": "eval(userSuppliedConfig) // dynamic loading"
+  },
+  {
+    "pr_id": 113,
+    "author": "bob_engineer",
+    "title": "Upgrade axios to fix prototype pollution",
+    "package_name": "axios",
+    "merged_at": "2026-05-26T16:00:00Z",
+    "commit_diff": "npm install axios@1.6.8"
+  },
+  {
+    "pr_id": 114,
+    "author": "priya_devops",
+    "title": "Add docker deployment configuration",
+    "package_name": "dockerode",
+    "merged_at": "2026-05-27T09:00:00Z",
+    "commit_diff": "Docker configuration for container deployment"
+  },
+  {
+    "pr_id": 115,
+    "author": "John",
+    "title": "Add XSS protection headers to all routes",
+    "package_name": "helmet",
+    "merged_at": "2026-05-27T10:00:00Z",
+    "commit_diff": "app.use(helmet()) // adds XSS protection"
   }
-  
 ]

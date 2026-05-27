@@ -1,26 +1,92 @@
 [
   {
-    "channel": "#payments",
-    "message": "Payment service acting suspiciously"
+    "message_ts": "2026-05-25T10:20:00Z",
+    "user": "alice_dev",
+    "channel": "#security-alerts",
+    "message": "Hey team, I committed the postgres credentials to the dev branch so CI/CD works. Please don't merge to main yet!"
   },
   {
+    "message_ts": "2026-05-25T14:35:00Z",
+    "user": "bob_engineer",
     "channel": "#backend",
-    "message": "JWT authentication behaving unexpectedly"
+    "message": "Just upgraded lodash dependencies. Can someone review the build logs? The prototype pollution CVE should be fixed now."
   },
   {
-  "channel": "#security",
-  "message": "Possible AWS key exposure detected"
+    "message_ts": "2026-05-25T19:10:00Z",
+    "user": "contractor_x",
+    "channel": "#dev-ops",
+    "message": "I added a testing hook to execute shell scripts on dev nodes. It speeds up local execution."
   },
   {
-  "channel": "#docs",
-  "message": "Documentation update only"
+    "message_ts": "2026-05-25T10:05:00Z",
+    "user": "Shivay",
+    "channel": "#payments",
+    "message": "Payment service acting suspiciously after stripe integration. Seeing random 500 errors."
   },
   {
-  "channel": "#backend",
-  "message": "Authentication behaving differently after update"
+    "message_ts": "2026-05-25T11:10:00Z",
+    "user": "Rahul",
+    "channel": "#backend",
+    "message": "JWT authentication behaving unexpectedly after dashboard update. Users getting logged out randomly."
   },
   {
-  "channel": "#auth",
-  "message": "JWT authentication failing intermittently"
-}
+    "message_ts": "2026-05-26T09:05:00Z",
+    "user": "Alex",
+    "channel": "#security",
+    "message": "Possible AWS key exposure detected in latest commit. The AKIA key format matches real credentials. Rotating now."
+  },
+  {
+    "message_ts": "2026-05-26T10:10:00Z",
+    "user": "Mike",
+    "channel": "#docs",
+    "message": "Documentation update only - no security concerns."
+  },
+  {
+    "message_ts": "2026-05-26T11:05:00Z",
+    "user": "John",
+    "channel": "#auth",
+    "message": "bcrypt is working fine. Authentication middleware update looks clean."
+  },
+  {
+    "message_ts": "2026-05-26T12:05:00Z",
+    "user": "Rahul",
+    "channel": "#auth",
+    "message": "JWT authentication failing intermittently after OAuth integration. Tokens expiring too fast."
+  },
+  {
+    "message_ts": "2026-05-26T13:05:00Z",
+    "user": "alice_dev",
+    "channel": "#security-alerts",
+    "message": "Found raw SQL query in user endpoint - could be injectable. Patching now with parameterized queries."
+  },
+  {
+    "message_ts": "2026-05-26T14:05:00Z",
+    "user": "sara_sec",
+    "channel": "#security",
+    "message": "Rate limiting middleware is live. We were getting hammered with 10k req/min from bots."
+  },
+  {
+    "message_ts": "2026-05-26T15:05:00Z",
+    "user": "contractor_x",
+    "channel": "#dev-ops",
+    "message": "eval() is needed for dynamic config. I know it looks bad but it's sandboxed... probably."
+  },
+  {
+    "message_ts": "2026-05-26T16:05:00Z",
+    "user": "bob_engineer",
+    "channel": "#backend",
+    "message": "Axios upgrade done. The prototype pollution issue in older versions was nasty."
+  },
+  {
+    "message_ts": "2026-05-27T09:05:00Z",
+    "user": "priya_devops",
+    "channel": "#infra",
+    "message": "Docker deployment config added. Containers are isolated but we should review the dockerode permissions."
+  },
+  {
+    "message_ts": "2026-05-27T10:05:00Z",
+    "user": "John",
+    "channel": "#security",
+    "message": "Helmet.js headers added. XSS protection, HSTS, and CSP are all enabled now."
+  }
 ]

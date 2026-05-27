@@ -39,3 +39,20 @@ coverage/
 
 # Misc
 *.local
+
+# SQLite database files (never commit these!)
+*.db
+*.sqlite
+*.sqlite3
+security.db
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Secrets
+.env.local
+.env.production
+.secrets.baseline

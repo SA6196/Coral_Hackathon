@@ -103,7 +103,7 @@ export default function AIInvestigation({ logId = 1 }) {
         setRemed(res.data.remediation);
       }
     } catch {
-      setError("Flask backend unreachable (port 5001). Make sure `python app.py` is running.");
+      setError("Backend unreachable (port 5000). Make sure `cd backend && npm start` is running.");
     } finally {
       setLoading(false);
     }

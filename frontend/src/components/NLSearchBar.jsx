@@ -56,8 +56,8 @@ export default function NLSearchBar({ onResults }) {
     } catch (err) {
       setError(
         err?.response?.status === 404
-          ? "Flask backend not running (port 5001)."
-          : err.message || "Search failed"
+          ? "Backend not running — start with: cd backend && npm start"
+          : err.userMessage || err.message || "Search failed"
       );
     } finally {
       setLoading(false);

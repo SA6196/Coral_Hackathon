@@ -141,7 +141,7 @@ export default function AICopilot({ activeIncidentId = 1 }) {
         ...prev,
         {
           role: "assistant",
-          text: "⚠️ Could not reach the AI backend. Make sure Flask is running on port 5001.",
+          text: "⚠️ Could not reach the backend. Make sure the Node server is running: `cd backend && npm start`",
           error: true,
         },
       ]);
@@ -200,9 +200,9 @@ export default function AICopilot({ activeIncidentId = 1 }) {
                   className="copilot-select"
                   aria-label="Select active incident"
                 >
-                  <option value={1}>SEC-101</option>
-                  <option value={2}>SEC-102</option>
-                  <option value={3}>SEC-103</option>
+                  {Array.from({ length: 15 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={n}>CORAL-{n}</option>
+                  ))}
                 </select>
                 <FiChevronDown size={12} className="copilot-select-arrow" />
               </div>

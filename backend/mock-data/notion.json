@@ -1,12 +1,12 @@
 [
   {
     "policy_id": "POL-001",
-    "policy_name": "No Critical CVE Packages",
+    "policy_name": "No Critical CVE Payment Packages",
     "applies_to": "stripe",
     "policy_rule": "BANNED_PACKAGE",
     "severity": "critical",
     "owner_team": "security-engineering",
-    "description": "stripe has an active critical CVE. Deployment blocked until patched.",
+    "description": "stripe has an active critical CVE (CVE-2026-9999). Deployment blocked until patched to >= 14.6.0.",
     "last_updated": "2026-05-20T00:00:00Z"
   },
   {
@@ -16,7 +16,7 @@
     "policy_rule": "AUDIT_REQUIRED",
     "severity": "high",
     "owner_team": "auth-team",
-    "description": "All JWT library changes require a security audit before merging to main.",
+    "description": "All JWT library changes require a security audit before merging to main. Token forgery risk.",
     "last_updated": "2026-05-18T00:00:00Z"
   },
   {
@@ -26,7 +26,7 @@
     "policy_rule": "SECRETS_RISK",
     "severity": "critical",
     "owner_team": "platform-team",
-    "description": "aws-sdk usage must be reviewed for hardcoded credentials and secret exposure.",
+    "description": "aws-sdk usage must be reviewed for hardcoded credentials. Use IAM roles or AWS Secrets Manager.",
     "last_updated": "2026-05-22T00:00:00Z"
   },
   {
@@ -36,7 +36,47 @@
     "policy_rule": "REVIEW_REQUIRED",
     "severity": "medium",
     "owner_team": "auth-team",
-    "description": "bcrypt updates require lead review due to auth system sensitivity.",
+    "description": "bcrypt updates require lead review due to auth system sensitivity. Timing attacks possible.",
     "last_updated": "2026-05-15T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-005",
+    "policy_name": "Database Credentials Policy",
+    "applies_to": "postgresql-client",
+    "policy_rule": "SECRETS_RISK",
+    "severity": "critical",
+    "owner_team": "security-engineering",
+    "description": "No database credentials may be committed to source control. Use environment variables or vault.",
+    "last_updated": "2026-05-24T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-006",
+    "policy_name": "VM2 Banned — Sandbox Escape",
+    "applies_to": "vm2",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "critical",
+    "owner_team": "security-engineering",
+    "description": "vm2 is permanently banned due to CVE-2023-29017 allowing complete sandbox escape and host code execution.",
+    "last_updated": "2023-04-10T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-007",
+    "policy_name": "Docker Socket Access Review",
+    "applies_to": "dockerode",
+    "policy_rule": "REVIEW_REQUIRED",
+    "severity": "medium",
+    "owner_team": "platform-team",
+    "description": "Any package accessing Docker socket requires security review. Container escape vectors must be assessed.",
+    "last_updated": "2026-05-10T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-008",
+    "policy_name": "Lodash Prototype Pollution Ban",
+    "applies_to": "lodash",
+    "policy_rule": "AUDIT_REQUIRED",
+    "severity": "high",
+    "owner_team": "security-engineering",
+    "description": "lodash versions below 4.17.21 are prohibited due to prototype pollution. Audit any usage patterns.",
+    "last_updated": "2021-01-01T00:00:00Z"
   }
 ]
