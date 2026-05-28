@@ -16,7 +16,32 @@ const express    = require("express");
 const router     = express.Router();
 const crypto     = require("crypto");
 const axios      = require("axios");
+const fs         = require("fs");
+const path       = require("path");
 const { scanForSecrets } = require("../utils/secretScanner");
+const { invalidateCache } = require("../coral/joinData");
+
+function syncToMockDb(record, commitDiff) {
+  try {
+    const githubPath = path.join(__dirname, "../../mock-data/github.json");
+    const data = JSON.parse(fs.readFileSync(githubPath, "utf-8"));
+    const newEntry = {
+      pr_id: Math.floor(Math.random() * 900000) + 100000,
+      author: record.developer,
+      title: record.pr_title,
+      package_name: record.package_name,
+      merged_at: record.received_at,
+      commit_diff: commitDiff || "Commit from live webhook"
+    };
+    data.unshift(newEntry);
+    fs.writeFileSync(githubPath, JSON.stringify(data, null, 2));
+    
+    invalidateCache("default");
+    console.log(`[SYNC] Appended live webhook ${record.id} to github.json and invalidated cache.`);
+  } catch (err) {
+    console.error("[SYNC_ERROR] Failed to sync to mock DB:", err.message);
+  }
+}
 
 // Helper to post status to GitHub API
 async function postCommitStatusToGitHub(repo, sha, record) {
@@ -429,6 +454,9 @@ router.post("/webhook/github", (req, res) => {
       results.push(record);
       console.log(`[WEBHOOK] ${id} | push | ${pusher} → ${repo}:${branch} | ${analysis.vuln.severity?.toUpperCase()} | score:${analysis.risk}`);
       
+      // Sync into historical feed
+      syncToMockDb(record, commit.message);
+
       // Real-time commit status gate update
       postCommitStatusToGitHub(repo, commit.id, record);
     });
@@ -488,6 +516,9 @@ router.post("/webhook/github", (req, res) => {
       results.push(record);
       console.log(`[WEBHOOK] ${id} | PR#${pr.number} | ${developer} → ${repo} | ${analysis.vuln.severity?.toUpperCase()} | score:${analysis.risk}`);
       
+      // Sync into historical feed
+      syncToMockDb(record, pr.body);
+
       // Real-time commit status gate update for PR head
       postCommitStatusToGitHub(repo, pr.head?.sha, record);
     }
