@@ -22,7 +22,7 @@ When a threat is detected, Coral doesn't just alert you. It spins up an **AI-pow
 
 ---
 
-## ✨ Hackathon-Winning Features
+## ✨Features
 
 *   **Live Data Sync Engine**: Don't rely on mock data. Coral connects to live repositories via the GitHub API, cross-references dependencies with the Open Source Vulnerability (OSV) API, and pulls live Slack/Notion configurations dynamically. 
 *   **Behavioral Developer Risk Scoring**: An advanced heuristic engine that scores developers based on the severity of their commits, policy violations, and historical behavior (e.g., hardcoding AWS secrets).
