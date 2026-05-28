@@ -943,56 +943,294 @@ Guidelines for responding:
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/investigate?id=<1-N>
 ───────────────────────────────────────────────────────────────────── */
+/* ── Personalized fallbacks ─────────────────────────────────────────── */
+function generatePersonalizedInvestigationReport(inc, allIncidents) {
+  const dev = inc.pr_details?.developer || "Unknown";
+  const sev = inc.vulnerability?.severity || "safe";
+  const cve = inc.vulnerability?.cve || "N/A";
+  const pkg = inc.package_details?.package_name || "unknown";
+  const hasSecret = !!inc.secrets_detected;
+  const hasPolicy = !!inc.policy_violation;
+
+  // Find all incidents by this developer
+  const devIncidents = allIncidents.filter(i => i.pr_details?.developer === dev);
+  const totalRisk = devIncidents.reduce((sum, i) => sum + (i.risk_score || 0), 0);
+  const avgRisk = Math.round(totalRisk / (devIncidents.length || 1)) || 0;
+  const criticalCount = devIncidents.filter(i => i.vulnerability?.severity === "critical").length;
+  const secretLeaks = devIncidents.filter(i => i.secrets_detected).length;
+  
+  const anomalyScore = Math.min(100, Math.round((avgRisk * 0.4) + (criticalCount * 15) + (secretLeaks * 30)));
+  
+  let persona = "🟢 Secure Contributor";
+  if (secretLeaks > 0 && criticalCount > 0) persona = "🚨 Insider Threat / Compromised Account";
+  else if (criticalCount >= 2) persona = "🟠 High-Risk Operator";
+  else if (avgRisk >= 40) persona = "🟡 Careless Committer";
+
+  // Build specialized issue descriptions
+  let issueExplanation = "";
+  let exploitScenarios = "";
+  
+  const devLower = dev.toLowerCase();
+  
+  if (hasSecret) {
+    const secretName = inc.secrets_detected?.findings?.[0]?.name || "API Access Key";
+    issueExplanation = `The developer **${dev}** committed a hardcoded secret (**${secretName}**) directly inside the codebase. Hardcoding secrets in git trees is highly risky as it exposes long-lived authentication keys to any reader of the repository, enabling immediate privilege escalation.`;
+    exploitScenarios = `An attacker gaining read access to this code or repository can immediately steal the exposed **${secretName}** to access our live production infrastructure, bypass multi-factor authentication, and download sensitive customer data.`;
+  } else if (devLower.includes("contractor")) {
+    issueExplanation = `The developer **${dev}** introduced highly suspicious code structures, including dynamic shell execution or \`eval()\` sandbox escapes in \`${pkg}\`. Executing unverified user-supplied input or raw commands dynamically is a classic backdoor pattern, which is banned under SOC2 and internal compliance policies.`;
+    exploitScenarios = `An attacker could exploit this dynamic execution vector to feed remote commands to our servers, resulting in arbitrary shell execution, complete node takeover, and lateral movement across the Kubernetes cluster.`;
+  } else if (pkg === "lodash" || pkg === "axios") {
+    issueExplanation = `The developer **${dev}** merged dependency changes referencing the package \`${pkg}\` which is vulnerable to security exploits (including Prototype Pollution). Upgrade validation is required to ensure nested/transitive components are updated.`;
+    exploitScenarios = `Prototype pollution allows malicious actors to inject properties into global prototypes, causing general application crashes (DoS) or, under specific configurations, remote code execution (RCE) inside Node.js.`;
+  } else if (pkg === "jsonwebtoken") {
+    issueExplanation = `The developer **${dev}** configured JWT token verification/signature operations using the \`${pkg}\` package. Known vulnerabilities in outdated versions allow algorithm confusion attacks or signature bypasses.`;
+    exploitScenarios = `Attackers can modify JWT headers to use symmetric algorithms or 'none' verification, bypassing authorization mechanisms entirely to log in as admin users.`;
+  } else {
+    issueExplanation = `The developer **${dev}** committed modifications in \`${pkg}\` which have been flagged by the security engine due to outdated packages or policy non-compliance.`;
+    exploitScenarios = `Security issues could lead to dependency-injection attacks or localized memory leak issues, decreasing service stability and integrity.`;
+  }
+
+  const slackDiscussion = inc.internal_discussion?.message && inc.internal_discussion.message !== "No internal discussion found."
+    ? `> **Channel:** #${inc.internal_discussion.slack_channel || "security-alerts"}\n> **${dev}:** "${inc.internal_discussion.message}"`
+    : `> No active Slack team discussions found for this incident. Alerts need to be sent immediately.`;
+
+  const report = [
+    `## 🔍 AI Security Investigation — ${inc.incident_id}`,
+    ``,
+    `### 🚨 Threat Overview & Impact`,
+    `- **Severity:** ${sev.toUpperCase()} Risk (Risk Score: **${inc.risk_score}/100**)`,
+    `- **Vulnerability Package:** \`${pkg}\` | **CVE:** \`${cve}\``,
+    `- **Responsible Developer:** **${dev}**`,
+    `- **Introduced In:** PR #${inc.pr_details?.pr_id || "101"} ("${inc.pr_details?.title || "Security fix"}")`,
+    `- **Risk Score:** ${inc.risk_score} (calculated dynamically based on severity and policies)`,
+    ``,
+    `### 👤 Developer Risk Profile Context`,
+    `- **Behavioral Persona:** **${persona}**`,
+    `- **Trust Score:** **${100 - anomalyScore}/100** | **Behavioral Anomaly Factor:** **${anomalyScore}%**`,
+    `- **Developer Track Record:** Introduced **${devIncidents.length}** security incident(s) recently. Average historical incident risk score is **${avgRisk}/100**.`,
+    ``,
+    `### 📖 Deep-Dive Analysis of the Issue`,
+    issueExplanation,
+    ``,
+    `### 💀 Exploit Possibilities & Attack Scenarios`,
+    exploitScenarios,
+    ``,
+    `### 💬 Correlated Social & Chat Evidence`,
+    `A scan of corporate chat logs shows active discussion regarding this commit:`,
+    slackDiscussion,
+    ``,
+    hasPolicy ? `### 📋 Notion Security Policy Violations\nThis commit violates our corporate security policies documented in Notion:\n- **Policy Rule:** \`${inc.policy_violation.policy_rule}\`\n- **Policy Description:** ${inc.policy_violation.description}\n- **Owner Team:** ${inc.policy_violation.owner_team}` : `### 📋 Notion Policy Status\n- **Policy Status:** Compliant. No internal Notion policies are violated by this dependency upgrade.`,
+    ``,
+    `### 🛠️ Immediate Containment Playbook`,
+    `- **Rollback Action:** ${inc.recommended_action === "ROLLBACK_DEPLOYMENT" ? "🚨 Revert commit immediately and scale down the deployment." : "Monitor tests and check for stable versions."}`,
+    `- **Audit Priority:** **${sev === "critical" ? "P0 (Immediate action required)" : sev === "high" ? "P1 (Remediate within 24 hours)" : "P2 (Resolve in next release cycle)"}**`,
+  ].join("\n");
+
+  return report;
+}
+
+function generatePersonalizedRemediationPlan(inc, allIncidents) {
+  const dev = inc.pr_details?.developer || "Unknown";
+  const sev = inc.vulnerability?.severity || "safe";
+  const pkg = inc.package_details?.package_name || "unknown";
+  const cve = inc.vulnerability?.cve || "N/A";
+  const hasSecret = !!inc.secrets_detected;
+  const hasPolicy = !!inc.policy_violation;
+  const commitHash = inc.github?.commit_hash || "HEAD";
+
+  // Build developer customized actions and scripts
+  let title = `Security Hardening Plan — ${inc.incident_id}`;
+  let subtitle = "Standard patching and validation guidelines";
+  let actions = [];
+  let scripts = [];
+  let estTime = "1 Hour";
+
+  const devLower = dev.toLowerCase();
+
+  if (hasSecret) {
+    const secretName = inc.secrets_detected?.findings?.[0]?.name || "Credential";
+    title = `🛡️ ${secretName} Rotation & Clean Guide — ${dev}`;
+    subtitle = `Rotate hardcoded credentials committed by ${dev} and purge history in ${pkg}`;
+    estTime = "45 Minutes";
+    actions = [
+      `Immediately revoke and invalidate the exposed secret key (${secretName}) in the AWS or database console.`,
+      `Purge the secret leak from Git commit history using Git-filter-repo to prevent history leakage.`,
+      `Transition ${dev}'s configuration to load credentials dynamically via process.env from AWS Secrets Manager.`,
+      `Verify the fix by running an automated TruffleHog scanner check locally and in the GitHub actions pipeline.`
+    ];
+    scripts = [
+      `# 1. Revert the commit that exposed secrets\ngit log --oneline -5\ngit revert ${commitHash} --no-edit\ngit push origin HEAD --force-with-lease`,
+      `# 2. Scrub secret from git history safely\npip install git-filter-repo\ngit filter-repo --invert-paths --path <secret-file>`,
+      `# 3. Check for any other active leaks\npip install trufflehog\ntrufflehog git file://. --since-commit HEAD~5`,
+      `# 4. Notify security alerts team on Slack\ncurl -X POST $SLACK_WEBHOOK_URL \\\n  -H 'Content-type: application/json' \\\n  --data '{"text":"🔄 Credential rotation completed for ${inc.incident_id} by ${dev}. Environment is secure."}'`
+    ];
+  } else if (devLower.includes("contractor")) {
+    title = `🛡️ Critical Sandbox & Command Injection Quarantine — contractor_x`;
+    subtitle = `Revert unauthorized setup modifications and backdoor execution hooks in ${pkg}`;
+    estTime = "2 Hours";
+    actions = [
+      `Quarantine the developer contractor_x's push access credentials pending security and code review.`,
+      `Perform a direct git revert to revoke setup scripts and command injection risks in node-setup/vm2.`,
+      `Implement strict 2-person code reviews and merge gates using repository Branch Protection rules.`,
+      `Audit developer local setup environment files for any persistent unauthorized modifications.`
+    ];
+    scripts = [
+      `# 1. Revert contractor_x's unauthorized hooks commit\ngit revert ${commitHash} --no-edit\ngit push origin HEAD --force-with-lease`,
+      `# 2. Reset local pre-commit scripts and verify files\nrm -rf .git/hooks/pre-commit\ngit checkout HEAD -- setup.sh\ngit status`,
+      `# 3. Secure branch protection gates via GitHub CLI\ngh api -X PUT /repos/:owner/:repo/branches/main/protection \\\n  -F required_pull_request_reviews.required_approving_review_count=2`
+    ];
+  } else if (pkg === "lodash" || pkg === "axios") {
+    title = `🛡️ Dependency Patching & Prototype Pollution Validation — ${dev}`;
+    subtitle = `Patch lodash/axios vulnerabilities in ${dev}'s branch and audit transitive dependencies`;
+    estTime = "30 Minutes";
+    actions = [
+      `Upgrade \`${pkg}\` package in package.json to the stable, fully secure version.`,
+      `Audit the lockfile to ensure all sub-dependencies are clean from vulnerable lodash versions.`,
+      `Run automated unit and integration tests to ensure no API compatibility breaking changes.`
+    ];
+    scripts = [
+      `# 1. Install latest secure release version\nnpm install ${pkg}@latest --save`,
+      `# 2. Run high-severity vulnerability audit check\nnpm audit --audit-level=high`,
+      `# 3. Execute application validation test suite\nnpm test && npm run build`
+    ];
+  } else if (pkg === "jsonwebtoken") {
+    title = `🛡️ JWT Authorization Bypass Security Patching — ${dev}`;
+    subtitle = `Secure token validation and upgrade jsonwebtoken for ${dev}'s PR`;
+    estTime = "1 Hour";
+    actions = [
+      `Upgrade vulnerable \`jsonwebtoken\` package to avoid signature authentication bypass vulnerabilities.`,
+      `Review verification middleware logic to verify key encryption algorithm constraints are active.`,
+      `Ensure private signing keys are loaded strictly from the environment and not hardcoded.`
+    ];
+    scripts = [
+      `# 1. Update package version\nnpm install jsonwebtoken@9.0.2 --save`,
+      `# 2. Audit dependencies for nested auth issues\nnpm audit`,
+      `# 3. Test OAuth/JWT authorization tests\nnpm test`
+    ];
+  } else {
+    // Default tailored to developer
+    title = `🛡️ General Security Patching & Code Review — ${dev}`;
+    subtitle = `Audit and verify package updates in ${dev}'s pull request`;
+    estTime = sev === "critical" ? "2 Hours" : "1 Hour";
+    actions = [
+      `Upgrade the \`${pkg}\` library to the latest stable and secure release.`,
+      `Arrange a security pairing review with ${dev} to review the dependency changes.`,
+      `Execute standard package dependency scans and ensure tests pass.`
+    ];
+    scripts = [
+      `# 1. Install latest package dependency version\nnpm install ${pkg}@latest`,
+      `# 2. Audit dependency tree\nnpm audit`,
+      `# 3. Rebuild bundle and verify compatibility\nnpm test && npm run build`
+    ];
+  }
+
+  // Adjust scripts or actions based on policy
+  if (hasPolicy) {
+    actions.push(`Open a Notion Policy Exception report for violating "${inc.policy_violation.policy_name}"`);
+  }
+
+  return {
+    title,
+    subtitle,
+    severity: sev,
+    estimated_time: estTime,
+    actions,
+    scripts
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   GET /api/investigate?id=<1-N>
+───────────────────────────────────────────────────────────────────── */
 router.get("/investigate", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
   const id = sanitizeInput(req.query.id || "1");
   const inc = await getIncidentById(sessionId, id);
+  const allIncidents = await getIncidents(sessionId);
   
   const sev    = inc.vulnerability?.severity || "safe";
   const cve    = inc.vulnerability?.cve      || "N/A";
   const dev    = inc.pr_details?.developer   || "Unknown";
   const pkg    = inc.package_details?.package_name || "unknown";
-  const hasSecret = !!inc.secrets_detected;
-  const hasPolicy = !!inc.policy_violation;
   
-  const report = [
-    `## 🔍 AI Security Investigation — ${inc.incident_id}`,
-    ``,
-    `### Incident Overview`,
-    `- **Severity:** ${sev.toUpperCase()}`,
-    `- **Risk Score:** ${inc.risk_score}/100`,
-    `- **CVE:** \`${cve}\``,
-    `- **Package:** \`${pkg}\``,
-    `- **Developer:** ${dev}`,
-    `- **PR:** ${inc.pr_details?.title || "Unknown PR"}`,
-    `- **Merged:** ${inc.pr_details?.merged_at ? new Date(inc.pr_details.merged_at).toLocaleString() : "N/A"}`,
-    ``,
-    `### AI Analysis`,
-    inc.ai_summary || "No AI summary available.",
-    ``,
-    `### Threat Assessment`,
-    sev === "critical"
-      ? `🚨 **CRITICAL THREAT** — Immediate action required. This vulnerability has a CVSS score in the 9.0–10.0 range. Active exploitation is possible. Every minute of delay increases your exposure window.`
-      : sev === "high"
-      ? `🟠 **HIGH RISK** — Security review mandatory before next deployment. This vulnerability could be exploited under specific conditions. Patch within 24–48 hours.`
-      : sev === "medium"
-      ? `🟡 **MODERATE RISK** — Monitor and test. Patch in the next release cycle. Limited exploitation risk.`
-      : `✅ **LOW RISK** — No immediate action required. Continue standard monitoring and patch in the next routine update.`,
-    ``,
-    hasSecret ? `### 🔑 Secret Exposure\n- **${inc.secrets_detected.count} secret(s)** found in commit or message\n- Highest severity: **${inc.secrets_detected.highest_severity}**\n- **Rotate all exposed credentials immediately**` : null,
-    hasPolicy ? `### 📋 Policy Violation\n- **Policy:** ${inc.policy_violation.policy_name}\n- **Rule:** \`${inc.policy_violation.policy_rule}\`\n- **Owner Team:** ${inc.policy_violation.owner_team}\n- ${inc.policy_violation.description}` : null,
-    ``,
-    `### Recommended Action`,
-    `> **${(inc.recommended_action || "SAFE_TO_DEPLOY").replace(/_/g, " ")}**`,
-    ``,
-    `### Internal Intelligence`,
-    `- **Slack Channel:** ${inc.internal_discussion?.slack_channel || "N/A"}`,
-    `- **Discussion:** "${inc.internal_discussion?.message || "No discussion found."}"`,
-  ].filter(l => l !== null).join("\n");
-  
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  let report = "";
+  let mode = "coral-ai-v2";
+
+  if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
+    try {
+      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
+Analyze the following security incident and generate a deeply personalized, professional, and unique security investigation report in markdown.
+Explain:
+1. SUMMARY: What was found, what package, CVE, and what the business risk is.
+2. DEVELOPER PERSONALIZATION: Who the developer is (${dev}), what their behavioral risk persona is, their risk profile history, and how this relates to their specific commit or Slack message: "${inc.internal_discussion?.message || ""}".
+3. ROOT CAUSE & SEVERITY: Why this vulnerability matters and what exploit possibilities exist.
+4. DETAILED RECOMMENDATIONS: Specific steps to contain, remediate, and verify.
+
+Format your response in beautiful GitHub-style Markdown.`;
+
+      const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Investigate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100, Slack: ${inc.internal_discussion?.message}` }
+        ],
+        temperature: 0.2,
+        max_tokens: 1000
+      }, {
+        headers: {
+          "Authorization": `Bearer ${openaiKey.trim()}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 10000
+      });
+      report = response.data?.choices?.[0]?.message?.content || "";
+      mode = "live";
+    } catch (err) {
+      console.error("[INVESTIGATE_AI_ERROR]", err.message);
+    }
+  }
+
+  if (!report && geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
+    try {
+      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
+Analyze the following security incident and generate a deeply personalized, professional, and unique security investigation report in markdown.
+Explain:
+1. SUMMARY: What was found, what package, CVE, and what the business risk is.
+2. DEVELOPER PERSONALIZATION: Who the developer is (${dev}), what their behavioral risk persona is, their risk profile history, and how this relates to their specific commit or Slack message: "${inc.internal_discussion?.message || ""}".
+3. ROOT CAUSE & SEVERITY: Why this vulnerability matters and what exploit possibilities exist.
+4. DETAILED RECOMMENDATIONS: Specific steps to contain, remediate, and verify.
+
+Format your response in beautiful GitHub-style Markdown.`;
+
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+        {
+          contents: [
+            { parts: [{ text: `Investigate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100, Slack: ${inc.internal_discussion?.message}` }] }
+          ],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1000 }
+        },
+        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+      );
+      report = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      mode = "live";
+    } catch (err) {
+      console.error("[INVESTIGATE_GEMINI_ERROR]", err.message);
+    }
+  }
+
+  if (!report) {
+    report = generatePersonalizedInvestigationReport(inc, allIncidents);
+    mode = "mocked";
+  }
+
   res.json({
     success: true,
-    mode: "coral-ai-v2",
+    mode,
     ai_analysis_markdown: report,
     extracted_logs: [{
       id: inc.incident_id,
@@ -1012,44 +1250,110 @@ router.get("/remediate", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
   const id  = sanitizeInput(req.query.id || "1");
   const inc = await getIncidentById(sessionId, id);
+  const allIncidents = await getIncidents(sessionId);
   
   const sev       = inc.vulnerability?.severity || "safe";
   const pkg       = inc.package_details?.package_name || "unknown";
   const dev       = inc.pr_details?.developer || "Unknown";
   const cve       = inc.vulnerability?.cve || "N/A";
-  const hasSecret = !!inc.secrets_detected;
-  const hasPolicy = !!inc.policy_violation;
   
-  const actions = [
-    `Perform a git revert to revoke code modifications introduced by ${dev}: \`git revert HEAD --no-edit\``,
-    hasSecret ? `Rotate all exposed credentials — revoke on platform dashboard then update secrets manager` : null,
-    hasPolicy ? `Open a Policy Exception in Notion for "${inc.policy_violation?.policy_name}" — link incident ${inc.incident_id}` : null,
-    `Upgrade \`${pkg}\` to the latest patched version: \`npm install ${pkg}@latest\``,
-    `Run \`npm audit --audit-level=high\` to verify no remaining vulnerabilities`,
-    `Run your full test suite before redeploying: \`npm test\``,
-    `Notify the security team and document the incident timeline`,
-  ].filter(Boolean);
-  
-  const scripts = [
-    `# Phase 1: Revert the vulnerable commit\ngit log --oneline -5\ngit revert HEAD --no-edit\ngit push origin HEAD --force-with-lease`,
-    hasSecret ? `# Phase 2: Scan and clean secrets\npip install trufflehog\ntrufflehog git file://. --only-verified\n\n# Remove secret file from git history\ngit filter-repo --path <secret-file> --invert-paths --force` : null,
-    `# Phase 3: Patch the vulnerable package\nnpm install ${pkg}@latest\nnpm audit --audit-level=high\nnpm test`,
-    `# Phase 4: Verify and notify\necho "Audit exit code: $?"\ncurl -X POST $SLACK_WEBHOOK_URL \\\n  -H 'Content-type: application/json' \\\n  --data '{"text":"✅ ${inc.incident_id} remediated — ${pkg} patched, ${cve} resolved."}'`,
-  ].filter(Boolean);
-  
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
+
+  let remediationData = null;
+  let mode = "coral-ai-v2";
+
+  if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
+    try {
+      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
+Analyze the following security incident and return a JSON object with a highly personalized remediation plan tailored to the developer (${dev}) and the package (${pkg}).
+The JSON MUST follow this format exactly:
+{
+  "title": "A customized title indicating the developer name and vulnerability",
+  "subtitle": "A customized subtitle summarizing the fix priority",
+  "severity": "${sev}",
+  "estimated_time": "Estimated time (e.g. 30 Minutes, 2 Hours)",
+  "actions": [
+    "Specific personalized action item 1",
+    "Specific personalized action item 2"
+  ],
+  "scripts": [
+    "# Custom bash script step 1\\ncommands...",
+    "# Custom bash script step 2\\ncommands..."
+  ]
+}
+Return ONLY valid JSON, no markdown wrapping, no formatting.`;
+
+      const response = await axios.post("https://api.openai.com/v1/chat/completions", {
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Remediate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100` }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      }, {
+        headers: {
+          "Authorization": `Bearer ${openaiKey.trim()}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 10000
+      });
+      remediationData = JSON.parse(response.data?.choices?.[0]?.message?.content);
+      mode = "live";
+    } catch (err) {
+      console.error("[REMEDIATE_AI_ERROR]", err.message);
+    }
+  }
+
+  if (!remediationData && geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
+    try {
+      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
+Analyze the following security incident and return a JSON object with a highly personalized remediation plan tailored to the developer (${dev}) and the package (${pkg}).
+The JSON MUST follow this format exactly:
+{
+  "title": "A customized title indicating the developer name and vulnerability",
+  "subtitle": "A customized subtitle summarizing the fix priority",
+  "severity": "${sev}",
+  "estimated_time": "Estimated time (e.g. 30 Minutes, 2 Hours)",
+  "actions": [
+    "Specific personalized action item 1",
+    "Specific personalized action item 2"
+  ],
+  "scripts": [
+    "# Custom bash script step 1\\ncommands...",
+    "# Custom bash script step 2\\ncommands..."
+  ]
+}
+Return ONLY valid JSON, no markdown wrapping, no formatting.`;
+
+      const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
+        {
+          contents: [
+            { parts: [{ text: `Remediate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100` }] }
+          ],
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+        },
+        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+      );
+      remediationData = JSON.parse(response.data?.candidates?.[0]?.content?.parts?.[0]?.text);
+      mode = "live";
+    } catch (err) {
+      console.error("[REMEDIATE_GEMINI_ERROR]", err.message);
+    }
+  }
+
+  if (!remediationData) {
+    remediationData = generatePersonalizedRemediationPlan(inc, allIncidents);
+    mode = "mocked";
+  }
+
   res.json({
     success: true,
-    mode: "coral-ai-v2",
-    remediation: {
-      title: `Remediation Plan — ${inc.incident_id}`,
-      subtitle: sev === "critical"
-        ? "Immediate rollback, credential rotation, and patch required"
-        : "Security review and patch required",
-      severity: sev,
-      estimated_time: sev === "critical" ? "1–2 hours" : sev === "high" ? "2–4 hours" : "4–8 hours",
-      actions,
-      scripts,
-    },
+    mode,
+    remediation: remediationData
   });
 });
 

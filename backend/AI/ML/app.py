@@ -72,6 +72,193 @@ def get_client(request_key=None):
 # ------------------------------------------------------------------
 # 🤖 COGNITIVE LAYER: EXPERT DETERMINISTIC INFERENCE
 # ------------------------------------------------------------------
+def generate_personalized_investigation_report(selected_row, all_incidents):
+    dev = selected_row.get("author", "Unknown")
+    sev = selected_row.get("severity", "safe")
+    cve = selected_row.get("vuln_id", "N/A")
+    pkg = selected_row.get("package", "unknown")
+    code = selected_row.get("code", "SEC-UNK")
+    commit_msg = selected_row.get("commit_message", "N/A")
+    chat_msg = selected_row.get("message_text", "No internal discussion found.")
+    
+    # Find all incidents by this developer
+    dev_incidents = [i for i in all_incidents if i.get("author") == dev]
+    sev_scores = {"critical": 95, "high": 75, "medium": 45, "safe": 10}
+    avg_risk = sum(sev_scores.get(str(i.get("severity", "safe")).lower(), 10) for i in dev_incidents)
+    avg_risk = int(round(avg_risk / len(dev_incidents))) if dev_incidents else 10
+    
+    critical_count = len([i for i in dev_incidents if str(i.get("severity")).lower() == "critical"])
+    is_secret = dev == "alice_dev" or code == "SEC-101" or "key" in commit_msg.lower() or "credentials" in commit_msg.lower()
+    secret_leaks = 1 if is_secret else 0
+    
+    anomaly_score = min(100, int((avg_risk * 0.4) + (critical_count * 15) + (secret_leaks * 30)))
+    
+    persona = "🟢 Secure Contributor"
+    if secret_leaks > 0 and critical_count > 0:
+        persona = "🚨 Insider Threat / Compromised Account"
+    elif critical_count >= 2:
+        persona = "🟠 High-Risk Operator"
+    elif avg_risk >= 40:
+        persona = "🟡 Careless Committer"
+        
+    issue_explanation = ""
+    exploit_scenarios = ""
+    
+    dev_lower = dev.lower()
+    
+    if secret_leaks > 0:
+        issue_explanation = f"The developer **{dev}** committed a hardcoded secret directly inside the codebase. Hardcoding secrets in git trees is highly risky as it exposes long-lived authentication keys to any reader of the repository, enabling immediate privilege escalation."
+        exploit_scenarios = f"An attacker gaining read access to this code or repository can immediately steal the exposed credentials to access our live production infrastructure, bypass multi-factor authentication, and download sensitive customer data."
+    elif "contractor" in dev_lower or code == "SEC-103":
+        issue_explanation = f"The developer **{dev}** introduced highly suspicious code structures, including dynamic shell execution or setup script shell hooks. Executing unverified user-supplied input or raw commands dynamically is a classic backdoor pattern, which is banned under SOC2 and internal compliance policies."
+        exploit_scenarios = f"An attacker could exploit this dynamic execution vector to feed remote commands to our servers, resulting in arbitrary shell execution, complete node takeover, and lateral movement across the Kubernetes cluster."
+    elif pkg == "lodash" or pkg == "axios":
+        issue_explanation = f"The developer **{dev}** merged dependency changes referencing the package `{pkg}` which is vulnerable to security exploits (including Prototype Pollution). Upgrade validation is required to ensure nested/transitive components are updated."
+        exploit_scenarios = f"Prototype pollution allows malicious actors to inject properties into global prototypes, causing general application crashes (DoS) or, under specific configurations, remote code execution (RCE) inside Node.js."
+    elif pkg == "jsonwebtoken":
+        issue_explanation = f"The developer **{dev}** configured JWT token verification/signature operations using the `{pkg}` package. Known vulnerabilities in outdated versions allow algorithm confusion attacks or signature bypasses."
+        exploit_scenarios = f"Attackers can modify JWT headers to use symmetric algorithms or 'none' verification, bypassing authorization mechanisms entirely to log in as admin users."
+    else:
+        issue_explanation = f"The developer **{dev}** committed modifications in `{pkg}` which have been flagged by the security engine due to outdated packages or policy non-compliance."
+        exploit_scenarios = f"Security issues could lead to dependency-injection attacks or localized memory leak issues, decreasing service stability and integrity."
+        
+    slack_discussion = f"> **{dev}:** \"{chat_msg}\"" if chat_msg and chat_msg != "No internal discussion found." else "> No active Slack team discussions found for this incident."
+    
+    # Calculate a dynamic risk score
+    risk_score = sev_scores.get(sev.lower(), 10)
+    if secret_leaks > 0:
+        risk_score = min(100, risk_score + 10)
+    if code in ["SEC-101", "SEC-102", "SEC-103"]:
+        risk_score = min(100, risk_score + 15) # Notion policy boost simulation
+        
+    report = f"""## 🔍 AI Security Investigation — {code}
+
+### 🚨 Threat Overview & Impact
+- **Severity:** {sev.upper()} Risk (Risk Score: **{risk_score}/100**)
+- **Vulnerability Package:** `{pkg}` | **CVE:** `{cve}`
+- **Responsible Developer:** **{dev}**
+- **Introduced In:** Commit "{commit_msg}"
+- **Risk Score:** {risk_score} (calculated dynamically based on severity and policies)
+
+### 👤 Developer Risk Profile Context
+- **Behavioral Persona:** **{persona}**
+- **Trust Score:** **{100 - anomaly_score}/100** | **Behavioral Anomaly Factor:** **{anomaly_score}%**
+- **Developer Track Record:** Introduced **{len(dev_incidents)}** security incident(s) recently. Average historical incident risk score is **{avg_risk}/100**.
+
+### 📖 Deep-Dive Analysis of the Issue
+{issue_explanation}
+
+### 💀 Exploit Possibilities & Attack Scenarios
+{exploit_scenarios}
+
+### 💬 Correlated Social & Chat Evidence
+A scan of corporate chat logs shows active discussion regarding this commit:
+{slack_discussion}
+
+### 🛠️ Immediate Containment Playbook
+- **Rollback Action:** Revert commit immediately and scale down the deployment.
+- **Audit Priority:** **{"P0 (Immediate action required)" if sev.lower() == "critical" else "P1 (Remediate within 24 hours)" if sev.lower() == "high" else "P2 (Resolve in next release cycle)"}**
+"""
+    return report
+
+def generate_personalized_remediation_plan(selected_row, all_incidents):
+    dev = selected_row.get("author", "Unknown")
+    sev = selected_row.get("severity", "safe")
+    cve = selected_row.get("vuln_id", "N/A")
+    pkg = selected_row.get("package", "unknown")
+    code = selected_row.get("code", "SEC-UNK")
+    commit_hash = selected_row.get("commit_hash", "HEAD")
+    
+    dev_lower = dev.lower()
+    is_secret = dev == "alice_dev" or code == "SEC-101" or "key" in selected_row.get("commit_message", "").lower() or "credentials" in selected_row.get("commit_message", "").lower()
+    
+    title = f"Security Hardening Plan — {code}"
+    subtitle = "Standard patching and validation guidelines"
+    actions = []
+    scripts = []
+    est_time = "1 Hour"
+    
+    if is_secret:
+        title = f"🛡️ Database/API Credential Rotation & Clean Guide — {dev}"
+        subtitle = f"Rotate hardcoded credentials committed by {dev} and purge history in {pkg}"
+        est_time = "45 Minutes"
+        actions = [
+            f"Immediately revoke and invalidate the exposed secret key in the database console.",
+            f"Purge the secret leak from Git commit history using Git-filter-repo to prevent history leakage.",
+            f"Transition {dev}'s configuration to load credentials dynamically via environment variables.",
+            f"Verify the fix by running an automated TruffleHog scanner check locally."
+        ]
+        scripts = [
+            f"# 1. Revert the commit that exposed secrets\ngit log --oneline -5\ngit revert {commit_hash} --no-edit\ngit push origin HEAD --force-with-lease",
+            f"# 2. Scrub secret from git history safely\npip install git-filter-repo\ngit filter-repo --invert-paths --path <secret-file>",
+            f"# 3. Check for any other active leaks\npip install trufflehog\ntrufflehog git file://. --since-commit HEAD~5"
+        ]
+    elif "contractor" in dev_lower or code == "SEC-103":
+        title = f"🛡️ Critical Sandbox & Command Injection Quarantine — contractor_x"
+        subtitle = f"Revert unauthorized setup modifications and backdoor execution hooks in {pkg}"
+        est_time = "2 Hours"
+        actions = [
+            f"Quarantine the developer contractor_x's push access credentials pending security and code review.",
+            f"Perform a direct git revert to revoke setup scripts and command injection risks in node-setup/vm2.",
+            f"Implement strict 2-person code reviews and merge gates using repository Branch Protection rules."
+        ]
+        scripts = [
+            f"# 1. Revert contractor_x's unauthorized hooks commit\ngit revert {commit_hash} --no-edit\ngit push origin HEAD --force-with-lease",
+            f"# 2. Reset local pre-commit scripts and verify files\nrm -rf .git/hooks/pre-commit\ngit checkout HEAD -- setup.sh\ngit status",
+            f"# 3. Secure branch protection gates via GitHub CLI\ngh api -X PUT /repos/:owner/:repo/branches/main/protection -F required_pull_request_reviews.required_approving_review_count=2"
+        ]
+    elif pkg == "lodash" or pkg == "axios":
+        title = f"🛡️ Dependency Patching & Prototype Pollution Validation — {dev}"
+        subtitle = f"Patch lodash/axios vulnerabilities in {dev}'s branch and audit transitive dependencies"
+        est_time = "30 Minutes"
+        actions = [
+            f"Upgrade `{pkg}` package in package.json to the stable, fully secure version.",
+            f"Audit the lockfile to ensure all sub-dependencies are clean from vulnerable lodash versions.",
+            f"Run automated unit and integration tests to ensure no API compatibility breaking changes."
+        ]
+        scripts = [
+            f"# 1. Install latest secure release version\nnpm install {pkg}@latest --save",
+            f"# 2. Run high-severity vulnerability audit check\nnpm audit --audit-level=high",
+            f"# 3. Execute application validation test suite\nnpm test && npm run build"
+        ]
+    elif pkg == "jsonwebtoken":
+        title = f"🛡️ JWT Authorization Bypass Security Patching — {dev}"
+        subtitle = f"Secure token validation and upgrade jsonwebtoken for {dev}'s PR"
+        est_time = "1 Hour"
+        actions = [
+            f"Upgrade vulnerable `jsonwebtoken` package to avoid signature authentication bypass vulnerabilities.",
+            f"Review verification middleware logic to verify key encryption algorithm constraints are active.",
+            f"Ensure private signing keys are loaded strictly from the environment and not hardcoded."
+        ]
+        scripts = [
+            f"# 1. Update package version\nnpm install jsonwebtoken@9.0.2 --save",
+            f"# 2. Audit dependencies for nested auth issues\nnpm audit",
+            f"# 3. Test OAuth/JWT authorization tests\nnpm test"
+        ]
+    else:
+        title = f"🛡️ General Security Patching & Code Review — {dev}"
+        subtitle = f"Audit and verify package updates in {dev}'s pull request"
+        est_time = "2 Hours" if sev.lower() == "critical" else "1 Hour"
+        actions = [
+            f"Upgrade the `{pkg}` library to the latest stable and secure release.",
+            f"Arrange a security pairing review with {dev} to review the dependency changes.",
+            f"Execute standard package dependency scans and ensure tests pass."
+        ]
+        scripts = [
+            f"# 1. Install latest package dependency version\nnpm install {pkg}@latest",
+            f"# 2. Audit dependency tree\nnpm audit",
+            f"# 3. Rebuild bundle and verify compatibility\nnpm test && npm run build"
+        ]
+        
+    return {
+        "title": title,
+        "subtitle": subtitle,
+        "severity": sev,
+        "estimated_time": est_time,
+        "actions": actions,
+        "scripts": scripts
+    }
+
 def run_cognitive_nlp_analysis(incident_matrix, client=None):
     """
     Runs security log incident analysis using OpenAI or a detailed local template.
@@ -87,27 +274,11 @@ def run_cognitive_nlp_analysis(incident_matrix, client=None):
     pkg = incident_matrix.get('package', 'N/A')
 
     if not client:
-        # Fallback to high-quality template if OpenAI is offline
+        # Goated fallback personalization report
+        raw_records = run_coral_engine()
+        rows = raw_records.get("rows", [])
         return {
-            "report": f"""### 🚨 SECURITY REPORT ({code})
-            
-#### 1. SUMMARY
-Critical security alert identified. Developer **{author}** introduced a high-risk change related to **{pkg}**. 
-* **Business Risk**: {impact}
-* **Correlation Evidence**: Commit message "{commit_msg}" correlates directly with private chat alerts stating: *"{chat_msg}"*.
-
-#### 2. ROOT CAUSE & WHY IT MATTERS
-* **Why this matters**: Insecure handling of `{pkg}` vulnerabilities directly compromises internal service integrity. If left unpatched, it exposes live databases or services to untrusted execution vectors.
-* **Exploit Possibilities**: Exploitation of `{vuln_id}` could lead to full credentials leaking or unauthorized shell execution depending on server permissions.
-
-#### 3. RISK SCORE & SEVERITY IMPACT
-* **Risk Score**: `9.8 / 10` (**{severity}** Severity)
-* **Severity Impact**: Host take-over, administrative data compromise, and potential compliance violation of security standards (SOC2, GDPR).
-
-#### 4. REMEDIATION & ROLLBACK SUGGESTIONS
-* **Immediate Rollback**: Revert commit `{incident_matrix.get('commit_hash', 'HEAD')}` immediately.
-* **Remediation**: Upgrade package `{pkg}` to secure release version, purge leaked configuration secrets, rotate database keys, and set up branch protection rules to prevent direct force pushes.
-"""
+            "report": generate_personalized_investigation_report(incident_matrix, rows)
         }
 
     system_guardrail = (
@@ -144,7 +315,6 @@ Critical security alert identified. Developer **{author}** introduced a high-ris
             temperature=0.15,
             max_tokens=1200
         )
-        # Fix: Accessed index [0] to get the response content
         return {"report": response.choices[0].message.content}
     except Exception as e:
         return {"error": f"LLM Gateway Exception: {str(e)}"}
@@ -172,52 +342,68 @@ def get_logs():
 def investigate_pipeline():
     """
     Correlates incident data and runs cognitive NLP analysis.
-    Query param: ?id=<log_id> (default 1)
+    Query param: ?id=<log_id> (default 1) — accepts integers OR strings like CORAL-1, WH-2, SEC-101
     """
-    log_id = request.args.get('id', default=1, type=int)
     raw_records = run_coral_engine()
-    
+
     if not raw_records or "error" in raw_records:
         return jsonify({"status": "error", "message": "Coral engine failed"}), 500
 
     rows = raw_records.get("rows", [])
+
+    # ── Robust ID resolution ────────────────────────────────────────
+    # Accepts: integer 1, string "1", or prefixed strings "CORAL-1" / "WH-2" / "SEC-101"
+    raw_id = request.args.get('id', default="1")
+    log_id = None
+    try:
+        log_id = int(raw_id)
+    except (ValueError, TypeError):
+        import re
+        m = re.search(r'(\d+)$', str(raw_id))
+        if m:
+            log_id = int(m.group(1))
+
     selected_row = None
-    for r in rows:
-        if r.get("id") == log_id:
-            selected_row = r
-            break
-            
+    if log_id is not None:
+        # Try exact id match first
+        for r in rows:
+            if r.get("id") == log_id:
+                selected_row = r
+                break
+        # Try 1-based index fallback
+        if not selected_row and 1 <= log_id <= len(rows):
+            selected_row = rows[log_id - 1]
+
     if not selected_row:
         if rows:
             selected_row = rows[0]
         else:
             return jsonify({"status": "error", "message": "No logs found in DB"}), 404
 
-    # Fix: Correct mapping for rows. Extract actual values.
     mapped_context = {
-        "id": selected_row.get("id"),
-        "code": selected_row.get("code", "SEC-UNK"),
-        "commit_hash": selected_row.get("commit_hash", "N/A"),
-        "author": selected_row.get("author", "N/A"),
+        "id":             selected_row.get("id"),
+        "code":           selected_row.get("code", "SEC-UNK"),
+        "commit_hash":    selected_row.get("commit_hash", "N/A"),
+        "author":         selected_row.get("author", "N/A"),
         "commit_message": selected_row.get("commit_message", "N/A"),
-        "message_text": selected_row.get("message_text", "N/A"),
-        "vuln_id": selected_row.get("vuln_id", "N/A"),
-        "severity": selected_row.get("severity", "N/A"),
-        "impact": selected_row.get("impact", "N/A"),
-        "package": selected_row.get("package", "N/A")
+        "message_text":   selected_row.get("message_text", "N/A"),
+        "vuln_id":        selected_row.get("vuln_id", "N/A"),
+        "severity":       selected_row.get("severity", "safe"),
+        "impact":         selected_row.get("impact", "N/A"),
+        "package":        selected_row.get("package", "N/A")
     }
-    
+
     client_obj = get_client()
     ai_result = run_cognitive_nlp_analysis(mapped_context, client=client_obj)
-    
+
     if "error" in ai_result:
         return jsonify({"status": "error", "ai_error": ai_result["error"]}), 400
 
     return jsonify({
-        "status": "success",
-        "extracted_logs": mapped_context,
+        "status":              "success",
+        "extracted_logs":      mapped_context,
         "ai_analysis_markdown": ai_result["report"],
-        "mode": "live" if client_obj else "mocked"
+        "mode":                "live" if client_obj else "mocked"
     }), 200
 
 @app.route('/api/chat', methods=['POST'])
@@ -411,83 +597,44 @@ def query_natural_language():
 @app.route('/api/remediate', methods=['GET'])
 def get_remediation():
     """
-    Returns AI-powered actionable remediation scripts and guidelines for an incident.
-    Query param: ?id=<log_id>
+    Returns personalized AI-powered remediation scripts and guidelines for an incident.
+    Query param: ?id=<log_id>  — accepts integers OR strings like CORAL-1, WH-2
     """
-    log_id = request.args.get('id', default=1, type=int)
     raw_records = run_coral_engine()
     rows = raw_records.get("rows", [])
-    
+
+    # ── Robust ID resolution (same logic as investigate) ───────────
+    raw_id = request.args.get('id', default="1")
+    log_id = None
+    try:
+        log_id = int(raw_id)
+    except (ValueError, TypeError):
+        import re
+        m = re.search(r'(\d+)$', str(raw_id))
+        if m:
+            log_id = int(m.group(1))
+
     selected_row = None
-    for r in rows:
-        if r.get("id") == log_id:
-            selected_row = r
-            break
+    if log_id is not None:
+        for r in rows:
+            if r.get("id") == log_id:
+                selected_row = r
+                break
+        if not selected_row and 1 <= log_id <= len(rows):
+            selected_row = rows[log_id - 1]
+
     if not selected_row and rows:
         selected_row = rows[0]
 
-    code = selected_row.get("code", "SEC-101")
-    pkg = selected_row.get("package", "N/A")
-    commit_hash = selected_row.get("commit_hash", "HEAD")
+    if not selected_row:
+        return jsonify({"status": "error", "message": "No incident found"}), 404
 
-    remediation_suggestions = {
-        "SEC-101": {
-            "title": "Purge Leaked Credentials & Deploy Secret Vault",
-            "actions": [
-                "Upgrade configurations to fetch DB credentials from environments",
-                "Rollback the commit exposing DB password to git tree",
-                "Rotate DB login passwords immediately",
-                "Enable AWS Secrets Manager integration"
-            ],
-            "scripts": [
-                f"# Step 1: Revert leaking commit\ngit revert {commit_hash}",
-                "# Step 2: Install secret scanner pre-commit hook\npip install trufflehog\ntrufflehog git file:///path/to/repo --since-commit HEAD~5",
-                "# Step 3: Set env values\nexport DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id DevDB --query SecretString)"
-            ]
-        },
-        "SEC-102": {
-            "title": "Upgrade Vulnerable NPM Dependencies",
-            "actions": [
-                "Upgrade vulnerable lodash package to secure version",
-                "Run npm/yarn security audit checks",
-                "Audit internal application logic for prototype injections"
-            ],
-            "scripts": [
-                f"# Step 1: Upgrade dependency package\nnpm install {pkg}@4.17.21 --save",
-                "# Step 2: Verify dependency graph security\nnpm audit --audit-level=high",
-                "# Step 3: Rebuild deployment package\nnpm run build && docker build -t app:latest ."
-            ]
-        },
-        "SEC-103": {
-            "title": "Developer Privileges Audit & Branch Guards",
-            "actions": [
-                "Revert raw setup hook script modifications",
-                "Suspend push permissions for developer contractor_x",
-                "Configure Branch Protection rules on your repository"
-            ],
-            "scripts": [
-                f"# Step 1: Reset active hooks\nrm -rf .git/hooks/pre-commit\ngit checkout HEAD -- setup.sh",
-                "# Step 2: Set git repository branch guard (Github CLI)\ngh api -X PUT /repos/:owner/:repo/branches/main/protection -F required_pull_request_reviews.required_approving_review_count=2"
-            ]
-        }
-    }
-
-    data_payload = remediation_suggestions.get(code, {
-        "title": "General Security Hardening & Patching",
-        "actions": [
-            "Upgrade core system packages",
-            "Review developer code alterations",
-            "Run static code scans"
-        ],
-        "scripts": [
-            "git status\n# Review files carefully before committing",
-            "git diff HEAD~1 HEAD"
-        ]
-    })
+    # ── Personalized plan via the AI helper ─────────────────────────
+    data_payload = generate_personalized_remediation_plan(selected_row, rows)
 
     return jsonify({
-        "status": "success",
-        "log_id": log_id,
+        "status":    "success",
+        "log_id":    log_id,
         "remediation": data_payload
     })
 
