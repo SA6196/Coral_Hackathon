@@ -31,10 +31,36 @@ function getMockData(filename) {
   }
 }
 
-// ── In-memory cache (Feature 7: Caching) ────────────────────────────
+// ── Multi-Tenant Stores ──────────────────────────────────────────────
+const sessionStore = {}; // Holds synced raw data arrays per sessionId
+const tokenStore = {};   // Holds runtime tokens per sessionId
+
+// ── In-memory cache (Session aware) ────────────────────────────
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-let _cache = null;
-let _cacheTs = 0;
+const _cache = {};
+const _cacheTs = {};
+
+function setSessionData(sessionId, data) {
+  if (!sessionId) return;
+  sessionStore[sessionId] = data;
+}
+
+function getRuntimeTokens(sessionId) {
+  if (!sessionId) return {};
+  return tokenStore[sessionId] || {
+    github: process.env.GITHUB_TOKEN || null,
+    github_repo: process.env.GITHUB_REPO || null,
+    slack:  process.env.SLACK_BOT_TOKEN || null,
+    slack_channel: process.env.SLACK_CHANNEL || null,
+    notion: process.env.NOTION_TOKEN || null,
+    notion_db: process.env.NOTION_DB || null,
+  };
+}
+
+function setRuntimeTokens(sessionId, tokens) {
+  if (!sessionId) return;
+  tokenStore[sessionId] = { ...getRuntimeTokens(sessionId), ...tokens };
+}
 
 // ── Build lookup maps for O(1) key-based joins ──────────────────────
 function buildIndexes(osvData, slackData, notionData) {
@@ -65,21 +91,22 @@ function buildIndexes(osvData, slackData, notionData) {
 }
 
 /**
- * joinSecurityData()
+ * joinSecurityData(sessionId)
  * Performs the 4-way LEFT JOIN and returns enriched incident rows.
- * Results are cached for CACHE_TTL_MS milliseconds.
+ * Results are cached per session.
  */
-const joinSecurityData = () => {
+const joinSecurityData = (sessionId = "default") => {
   // ── Serve from cache if fresh ──────────────────────────────────────
   const now = Date.now();
-  if (_cache && (now - _cacheTs) < CACHE_TTL_MS) {
-    return { data: _cache, cache_hit: true, cached_at: new Date(_cacheTs).toISOString() };
+  if (_cache[sessionId] && (now - (_cacheTs[sessionId] || 0)) < CACHE_TTL_MS) {
+    return { data: _cache[sessionId], cache_hit: true, cached_at: new Date(_cacheTs[sessionId]).toISOString() };
   }
 
-  const githubData = getMockData("github.json");
-  const osvData = getMockData("osv.json");
-  const slackData = getMockData("slack.json");
-  const notionData = getMockData("notion.json");
+  const sData = sessionStore[sessionId] || {};
+  const githubData = sData.github || getMockData("github.json");
+  const osvData = sData.osv || getMockData("osv.json");
+  const slackData = sData.slack || getMockData("slack.json");
+  const notionData = sData.notion || getMockData("notion.json");
 
   const { osvByPackage, slackByAuthor, notionByPackage } = buildIndexes(osvData, slackData, notionData);
 
@@ -125,23 +152,34 @@ const joinSecurityData = () => {
   });
 
   // ── Update cache ───────────────────────────────────────────────────
-  _cache  = joined;
-  _cacheTs = now;
+  _cache[sessionId] = joined;
+  _cacheTs[sessionId] = now;
 
   return { data: joined, cache_hit: false, cached_at: new Date(now).toISOString() };
 };
 
 /** Force-clear the cache (call after data mutations) */
-const invalidateCache = () => { _cache = null; _cacheTs = 0; };
+const invalidateCache = (sessionId = "default") => {
+  if (sessionId === "all") {
+    Object.keys(_cache).forEach(k => delete _cache[k]);
+    Object.keys(_cacheTs).forEach(k => delete _cacheTs[k]);
+  } else {
+    delete _cache[sessionId];
+    delete _cacheTs[sessionId];
+  }
+};
 
 /** Expose cache metadata for the API response */
-const getCacheInfo = () => ({
-  is_cached:  _cache !== null && (Date.now() - _cacheTs) < CACHE_TTL_MS,
-  cached_at:  _cacheTs ? new Date(_cacheTs).toISOString() : null,
-  ttl_seconds: Math.round(CACHE_TTL_MS / 1000),
-  expires_in_seconds: _cacheTs
-    ? Math.max(0, Math.round((CACHE_TTL_MS - (Date.now() - _cacheTs)) / 1000))
-    : 0,
-});
+const getCacheInfo = (sessionId = "default") => {
+  const ts = _cacheTs[sessionId] || 0;
+  return {
+    is_cached:  !!_cache[sessionId] && (Date.now() - ts) < CACHE_TTL_MS,
+    cached_at:  ts ? new Date(ts).toISOString() : null,
+    ttl_seconds: Math.round(CACHE_TTL_MS / 1000),
+    expires_in_seconds: ts
+      ? Math.max(0, Math.round((CACHE_TTL_MS - (Date.now() - ts)) / 1000))
+      : 0,
+  };
+};
 
-module.exports = { joinSecurityData, invalidateCache, getCacheInfo };
+module.exports = { joinSecurityData, invalidateCache, getCacheInfo, setSessionData, getRuntimeTokens, setRuntimeTokens };

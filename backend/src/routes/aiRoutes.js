@@ -21,13 +21,13 @@ const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }            = require("../coral/queryEngine");
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
-function getIncidents() {
-  const result = joinSecurityData();
+function getIncidents(sessionId) {
+  const result = joinSecurityData(sessionId);
   return runSecurityAnalysis(result.data);
 }
 
-function getIncidentById(id) {
-  const incidents = getIncidents();
+function getIncidentById(sessionId, id) {
+  const incidents = getIncidents(sessionId);
   const num = parseInt(id, 10);
   if (isNaN(num) || num < 1) return incidents[0];
   return incidents[Math.min(num - 1, incidents.length - 1)] || incidents[0];
@@ -756,8 +756,9 @@ router.post("/chat", async (req, res, next) => {
     return res.status(400).json({ success: false, error: "Message is required" });
   }
   
-  const allIncidents = getIncidents();
-  const inc = getIncidentById(log_id);
+  const sessionId = req.headers["x-session-id"] || "default";
+  const allIncidents = getIncidents(sessionId);
+  const inc = getIncidentById(sessionId, log_id);
 
   // ─── AI Service Integrations (OpenAI & Gemini) ─────────────────────
   const openaiKey = process.env.OPENAI_API_KEY;
@@ -1127,8 +1128,9 @@ LEFT JOIN policies        ON github_commits.package_name = policies.applies_to`;
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/logs — All security logs with pagination
 ───────────────────────────────────────────────────────────────────── */
-router.get("/logs", (req, res) => {
-  const incidents = getIncidents();
+router.post("/query-engine", (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents = getIncidents(sessionId);
   const page  = Math.max(1, parseInt(req.query.page  || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "20", 10)));
   const start = (page - 1) * limit;
@@ -1148,8 +1150,9 @@ router.get("/logs", (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/anomalies — Developer anomaly detection
 ───────────────────────────────────────────────────────────────────── */
-router.get("/anomalies", (req, res) => {
-  const incidents = getIncidents();
+router.get("/suggested-actions", (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents = getIncidents(sessionId);
   const devMap = {};
   
   incidents.forEach(inc => {
@@ -1178,7 +1181,8 @@ router.get("/anomalies", (req, res) => {
    GET /api/developer-risk — Developer risk profiles
 ───────────────────────────────────────────────────────────────────── */
 router.get("/developer-risk", (req, res) => {
-  const incidents = getIncidents();
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents = getIncidents(sessionId);
   const devMap = {};
   
   incidents.forEach(inc => {

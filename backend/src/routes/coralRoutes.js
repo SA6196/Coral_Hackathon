@@ -29,8 +29,8 @@ const {
 router.get("/coral-query", async (req, res) => {
 
   try {
-
-    const result = await runCoralQuery();
+    const sessionId = req.headers["x-session-id"] || "default";
+    const result = await runCoralQuery(sessionId);
 
     res.json(result);
 

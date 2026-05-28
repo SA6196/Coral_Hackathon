@@ -1,7 +1,7 @@
 const express = require("express");
 const router  = express.Router();
 
-const { joinSecurityData, invalidateCache, getCacheInfo } = require("../coral/joinData");
+const { joinSecurityData, invalidateCache, getCacheInfo, setSessionData, getRuntimeTokens, setRuntimeTokens } = require("../coral/joinData");
 const { runSecurityAnalysis }                             = require("../coral/queryEngine");
 
 const githubData = require("../../mock-data/github.json");
@@ -11,18 +11,10 @@ const notionData = require("../../mock-data/notion.json");
 
 const { syncAllData } = require("../coral/fetchRealData");
 
-// In-memory token store (never written to disk)
-const runtimeTokens = {
-  github: process.env.GITHUB_TOKEN || null,
-  github_repo: process.env.GITHUB_REPO || null,
-  slack:  process.env.SLACK_BOT_TOKEN || null,
-  slack_channel: process.env.SLACK_CHANNEL || null,
-  notion: process.env.NOTION_TOKEN || null,
-  notion_db: process.env.NOTION_DB || null,
-};
-
 /* ── GET /api/source-status ───────────────────────────────────────── */
 router.get("/source-status", (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const runtimeTokens = getRuntimeTokens(sessionId);
   const now = Date.now();
   const sources = [
     {
@@ -85,22 +77,28 @@ router.get("/source-status", (req, res) => {
     sources,
     configured_count: sources.filter(s => s.configured).length,
     total: sources.length,
-    cache: getCacheInfo(),
+    cache: getCacheInfo(sessionId),
     coral_sql: `SELECT g.*, o.severity, s.message, n.policy_rule\nFROM github_commits g\nLEFT JOIN vulnerabilities o ON g.package_name = o.package_name\nLEFT JOIN slack_messages  s ON g.author       = s.user\nLEFT JOIN policies        n ON g.package_name = n.applies_to`,
   });
 });
 
 /* ── POST /api/config-sources ─────────────────────────────────────── */
 router.post("/config-sources", (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
   const { github, slack, notion } = req.body;
-  if (github?.token)   runtimeTokens.github = github.token;
-  if (github?.repo)    runtimeTokens.github_repo = github.repo;
-  if (slack?.token)    runtimeTokens.slack  = slack.token;
-  if (slack?.channel)  runtimeTokens.slack_channel = slack.channel;
-  if (notion?.token)   runtimeTokens.notion = notion.token;
-  if (notion?.db)      runtimeTokens.notion_db = notion.db;
   
-  invalidateCache();
+  const tokensToUpdate = {};
+  if (github?.token)   tokensToUpdate.github = github.token;
+  if (github?.repo)    tokensToUpdate.github_repo = github.repo;
+  if (slack?.token)    tokensToUpdate.slack  = slack.token;
+  if (slack?.channel)  tokensToUpdate.slack_channel = slack.channel;
+  if (notion?.token)   tokensToUpdate.notion = notion.token;
+  if (notion?.db)      tokensToUpdate.notion_db = notion.db;
+  
+  setRuntimeTokens(sessionId, tokensToUpdate);
+  const runtimeTokens = getRuntimeTokens(sessionId);
+
+  invalidateCache(sessionId);
   res.json({
     success: true,
     message: "Tokens saved in memory. Cache invalidated.",
@@ -111,6 +109,9 @@ router.post("/config-sources", (req, res) => {
 
 /* ── POST /api/sync-real-data ─────────────────────────────────────── */
 router.post("/sync-real-data", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const runtimeTokens = getRuntimeTokens(sessionId);
+
   const results = await syncAllData({
     githubRepo: runtimeTokens.github_repo,
     githubToken: runtimeTokens.github,
@@ -120,34 +121,39 @@ router.post("/sync-real-data", async (req, res) => {
     notionToken: runtimeTokens.notion
   });
 
-  // Since mock-data files are overwritten, we need to completely restart Node to force require() to reload JSON.
-  // In a real app we'd use a database, but here we can just clear the require cache or tell the user to restart.
-  Object.keys(require.cache).forEach(key => {
-    if (key.includes("mock-data")) delete require.cache[key];
-  });
-  invalidateCache();
+  const sessionData = {
+    github: results.github?.data,
+    osv: results.osv?.data,
+    slack: results.slack?.data,
+    notion: results.notion?.data
+  };
+
+  setSessionData(sessionId, sessionData);
+  invalidateCache(sessionId);
 
   res.json({
     success: true,
-    message: "Live sync complete. Require cache cleared.",
+    message: "Live sync complete. Data isolated to your session.",
     results
   });
 });
 
 /* ── POST /api/refresh-cache ──────────────────────────────────────── */
 router.post("/refresh-cache", (req, res) => {
-  invalidateCache();
+  const sessionId = req.headers["x-session-id"] || "default";
+  invalidateCache(sessionId);
   res.json({
     success: true,
-    message: "Coral cache cleared. Next query re-fetches all sources.",
-    cache: getCacheInfo(),
+    message: "Coral cache cleared for session. Next query re-fetches all sources.",
+    cache: getCacheInfo(sessionId),
     timestamp: new Date().toISOString(),
   });
 });
 
 /* ── GET /api/policy-violations ───────────────────────────────────── */
 router.get("/policy-violations", (req, res) => {
-  const result    = joinSecurityData();
+  const sessionId = req.headers["x-session-id"] || "default";
+  const result    = joinSecurityData(sessionId);
   const incidents = runSecurityAnalysis(result.data);
   const violations = incidents.filter(i => i.policy_violation);
 
@@ -178,7 +184,8 @@ router.get("/policy-violations", (req, res) => {
 
 /* ── GET /api/export-report ───────────────────────────────────────── */
 router.get("/export-report", (req, res) => {
-  const result    = joinSecurityData();
+  const sessionId = req.headers["x-session-id"] || "default";
+  const result    = joinSecurityData(sessionId);
   const incidents = runSecurityAnalysis(result.data);
 
   const critical = incidents.filter(i => i.vulnerability?.severity === "critical").length;

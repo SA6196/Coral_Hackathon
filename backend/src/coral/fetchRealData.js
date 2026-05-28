@@ -5,20 +5,6 @@ const path = require("path");
 const MOCK_DIR = path.join(__dirname, "../../mock-data");
 
 /**
- * Ensures the target object has the basic mock fields in case the API fetch fails or is incomplete,
- * so we don't break the Coral SQL Engine.
- */
-function safeWrite(filename, data) {
-  try {
-    fs.writeFileSync(path.join(MOCK_DIR, filename), JSON.stringify(data, null, 2));
-    return true;
-  } catch (err) {
-    console.error(`[SYNC ERROR] Failed to write ${filename}:`, err.message);
-    return false;
-  }
-}
-
-/**
  * 1. Fetch live GitHub Pull Requests and package.json dependencies
  */
 async function fetchGithub(repoOwnerRepo, token) {
@@ -60,8 +46,7 @@ async function fetchGithub(repoOwnerRepo, token) {
       };
     });
 
-    safeWrite("github.json", formattedData);
-    return { success: true, count: formattedData.length, packages };
+    return { success: true, count: formattedData.length, packages, data: formattedData };
   } catch (err) {
     console.error("[SYNC ERROR] GitHub fetch failed:", err.message);
     return { success: false, error: err.message };
@@ -113,8 +98,7 @@ async function fetchOSV(packages) {
       }
     });
 
-    safeWrite("osv.json", formattedData);
-    return { success: true, count: formattedData.length };
+    return { success: true, count: formattedData.length, data: formattedData };
   } catch (err) {
     console.error("[SYNC ERROR] OSV fetch failed:", err.message);
     return { success: false, error: err.message };
@@ -143,8 +127,7 @@ async function fetchSlack(channelId, token) {
       timestamp: new Date(msg.ts * 1000).toISOString()
     }));
 
-    safeWrite("slack.json", formattedData);
-    return { success: true, count: formattedData.length };
+    return { success: true, count: formattedData.length, data: formattedData };
   } catch (err) {
     console.error("[SYNC ERROR] Slack fetch failed:", err.message);
     return { success: false, error: err.message };
@@ -183,8 +166,7 @@ async function fetchNotion(dbId, token) {
       };
     }).filter(p => p.applies_to !== "unknown");
 
-    safeWrite("notion.json", formattedData);
-    return { success: true, count: formattedData.length };
+    return { success: true, count: formattedData.length, data: formattedData };
   } catch (err) {
     console.error("[SYNC ERROR] Notion fetch failed:", err.message);
     return { success: false, error: err.message };

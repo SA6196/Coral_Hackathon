@@ -2,9 +2,8 @@ const {
   joinSecurityData
 } = require("../coral/joinData");
 
-const runCoralQuery = async () => {
-
-  const data = joinSecurityData();
+const runCoralQuery = async (sessionId) => {
+  const data = joinSecurityData(sessionId);
 
   return {
     success: true,

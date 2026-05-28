@@ -3,12 +3,20 @@ import axios from "axios";
 /* ── API base URL from env or fallback ──────────────────────────────── */
 const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
 
+/* ── Multi-Tenant Session Management ──────────────────────────────── */
+let sessionId = localStorage.getItem("coral_session_id");
+if (!sessionId) {
+  sessionId = "coral-" + Math.random().toString(36).substring(2, 15);
+  localStorage.setItem("coral_session_id", sessionId);
+}
+
 const API = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
   headers: { 
     "Content-Type": "application/json",
-    "Bypass-Tunnel-Reminder": "true"
+    "Bypass-Tunnel-Reminder": "true",
+    "X-Session-ID": sessionId
   },
 });
 
