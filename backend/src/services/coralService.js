@@ -3,7 +3,7 @@ const {
 } = require("../coral/joinData");
 
 const runCoralQuery = async (sessionId) => {
-  const data = joinSecurityData(sessionId);
+  const data = await joinSecurityData(sessionId);
 
   return {
     success: true,

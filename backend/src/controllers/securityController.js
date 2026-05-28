@@ -8,7 +8,7 @@ const { runSecurityAnalysis }            = require("../coral/queryEngine");
 */
 const getSecuritySummary = async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const result   = joinSecurityData(sessionId);          // { data, cache_hit, cached_at }
+  const result   = await joinSecurityData(sessionId);          // { data, cache_hit, cached_at }
   const incidents = runSecurityAnalysis(result.data);
 
   const summary = {
@@ -46,7 +46,7 @@ const getSecuritySummary = async (req, res) => {
 */
 const getHighRiskIncidents = async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const result    = joinSecurityData(sessionId);
+  const result    = await joinSecurityData(sessionId);
   const analyzed  = runSecurityAnalysis(result.data);
 
   res.status(200).json({

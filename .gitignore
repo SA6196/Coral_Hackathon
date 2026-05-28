@@ -39,3 +39,4 @@ Thumbs.db
 
 # Mock data (We keep the defaults, but ignore temporary sync artifacts if any)
 # Note: We intentionally do NOT ignore mock-data/*.json so the app can start without API keys
+coral_bin/

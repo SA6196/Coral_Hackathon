@@ -90,63 +90,49 @@ function buildIndexes(osvData, slackData, notionData) {
   return { osvByPackage, slackByAuthor, notionByPackage };
 }
 
+const { getCriticalIncidents } = require("../services/coralSqlService");
+
 /**
  * joinSecurityData(sessionId)
- * Performs the 4-way LEFT JOIN and returns enriched incident rows.
- * Results are cached per session.
+ * Performs the 4-way LEFT JOIN using REAL Coral Engine!
  */
-const joinSecurityData = (sessionId = "default") => {
+const joinSecurityData = async (sessionId = "default") => {
   // ── Serve from cache if fresh ──────────────────────────────────────
   const now = Date.now();
   if (_cache[sessionId] && (now - (_cacheTs[sessionId] || 0)) < CACHE_TTL_MS) {
     return { data: _cache[sessionId], cache_hit: true, cached_at: new Date(_cacheTs[sessionId]).toISOString() };
   }
 
-  const sData = sessionStore[sessionId] || {};
-  const githubData = sData.github || getMockData("github.json");
-  const osvData = sData.osv || getMockData("osv.json");
-  const slackData = sData.slack || getMockData("slack.json");
-  const notionData = sData.notion || getMockData("notion.json");
+  // Use real Coral!
+  const rows = await getCriticalIncidents();
 
-  const { osvByPackage, slackByAuthor, notionByPackage } = buildIndexes(osvData, slackData, notionData);
-
-  // ── The Coral JOIN ─────────────────────────────────────────────────
-  const joined = githubData.map((commit, idx) => {
-    // LEFT JOIN vulnerabilities ON g.package_name = o.package_name
-    const vuln = osvByPackage[commit.package_name] || {};
-
-    // LEFT JOIN slack_messages ON g.author = s.user
-    // Fallback to position-based if no user field (realistic mock data)
-    const slack = slackByAuthor[commit.author] || slackData[idx] || {};
-
-    // LEFT JOIN policies ON g.package_name = n.applies_to
-    const policy = notionByPackage[commit.package_name] || null;
-
+  const joined = rows.map((row, idx) => {
     return {
       github: {
-        title:        commit.title,
-        author:       commit.author,
-        package_name: commit.package_name,
-        merged_at:    commit.merged_at,
-        pr_id:        commit.pr_id || idx + 1,
+        title:        row.title,
+        author:       row.author,
+        package_name: row.package_name,
+        merged_at:    row.merged_at,
+        pr_id:        row.pr_id || idx + 1,
+        commit_diff:  row.commit_diff,
       },
       vulnerability: {
-        cve_id:   vuln.cve        || "NO_CVE_FOUND",
-        severity: vuln.severity   || "safe",
-        package:  vuln.package_name || commit.package_name,
+        cve_id:   row.cve        || "NO_CVE_FOUND",
+        severity: row.severity   || "safe",
+        package:  row.package_name,
       },
       slack: {
-        channel: slack.channel || "N/A",
-        message: slack.message || "No internal discussion found.",
-        user:    slack.user    || commit.author,
+        channel: row.channel || "N/A",
+        message: row.message || "No internal discussion found.",
+        user:    row.author,
       },
-      notion_policy: policy ? {
-        policy_id:   policy.policy_id,
-        policy_name: policy.policy_name,
-        policy_rule: policy.policy_rule,
-        severity:    policy.severity,
-        owner_team:  policy.owner_team,
-        description: policy.description,
+      notion_policy: row.policy_name ? {
+        policy_id:   idx, // We don't have id in SQL selection, fake it
+        policy_name: row.policy_name,
+        policy_rule: row.policy_rule,
+        severity:    row.severity,
+        owner_team:  row.owner_team,
+        description: row.description,
       } : null,
     };
   });

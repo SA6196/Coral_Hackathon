@@ -21,13 +21,13 @@ const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }            = require("../coral/queryEngine");
 
 /* ── Helpers ─────────────────────────────────────────────────────────── */
-function getIncidents(sessionId) {
-  const result = joinSecurityData(sessionId);
+async function getIncidents(sessionId) {
+  const result = await joinSecurityData(sessionId);
   return runSecurityAnalysis(result.data);
 }
 
-function getIncidentById(sessionId, id) {
-  const incidents = getIncidents(sessionId);
+async function getIncidentById(sessionId, id) {
+  const incidents = await getIncidents(sessionId);
   const num = parseInt(id, 10);
   if (isNaN(num) || num < 1) return incidents[0];
   return incidents[Math.min(num - 1, incidents.length - 1)] || incidents[0];
@@ -757,8 +757,8 @@ router.post("/chat", async (req, res, next) => {
   }
   
   const sessionId = req.headers["x-session-id"] || "default";
-  const allIncidents = getIncidents(sessionId);
-  const inc = getIncidentById(sessionId, log_id);
+  const allIncidents = await getIncidents(sessionId);
+  const inc = await getIncidentById(sessionId, log_id);
 
   // ─── AI Service Integrations (OpenAI & Gemini) ─────────────────────
   const openaiKey = process.env.OPENAI_API_KEY;

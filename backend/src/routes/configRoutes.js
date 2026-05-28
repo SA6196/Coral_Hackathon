@@ -151,9 +151,9 @@ router.post("/refresh-cache", (req, res) => {
 });
 
 /* ── GET /api/policy-violations ───────────────────────────────────── */
-router.get("/policy-violations", (req, res) => {
+router.get("/policy-violations", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const result    = joinSecurityData(sessionId);
+  const result    = await joinSecurityData(sessionId);
   const incidents = runSecurityAnalysis(result.data);
   const violations = incidents.filter(i => i.policy_violation);
 
@@ -183,9 +183,9 @@ router.get("/policy-violations", (req, res) => {
 });
 
 /* ── GET /api/export-report ───────────────────────────────────────── */
-router.get("/export-report", (req, res) => {
+router.get("/export-report", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const result    = joinSecurityData(sessionId);
+  const result    = await joinSecurityData(sessionId);
   const incidents = runSecurityAnalysis(result.data);
 
   const critical = incidents.filter(i => i.vulnerability?.severity === "critical").length;
