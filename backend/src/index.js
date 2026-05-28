@@ -30,14 +30,7 @@ if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
 if (process.env.PUBLIC_URL)   allowedOrigins.push(process.env.PUBLIC_URL);
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, GitHub webhooks)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Allow any railway.app or vercel.app subdomain for flexibility
-    if (/\.(railway\.app|vercel\.app|netlify\.app|onrender\.com)$/.test(origin)) return callback(null, true);
-    callback(new Error("CORS: origin not allowed — " + origin));
-  },
+  origin: "*",
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-GitHub-Event", "X-GitHub-Delivery", "X-Hub-Signature-256"],
   credentials: true,
