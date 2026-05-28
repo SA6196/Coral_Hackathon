@@ -68,7 +68,7 @@ function useTypewriter(text, speed = 18, play = false) {
 }
 
 export default function CoralQueryViewer({ coralMeta }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [playing,  setPlaying]  = useState(false);
   const [stepIdx,  setStepIdx]  = useState(-1);
   const [done,     setDone]     = useState(false);
