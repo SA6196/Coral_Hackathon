@@ -1,113 +1,108 @@
 <div align="center">
 
 # 🪸 Coral Security Command Center
-**The Enterprise Threat Intelligence Platform of the Future**
+**The Native Coral SQL Threat Intelligence Platform**
 
+[![Track](https://img.shields.io/badge/Track-Pirates_of_the_Coral--bean-ff69b4.svg?style=for-the-badge)]()
+[![Powered By](https://img.shields.io/badge/Powered_by-Coral_CLI-00f2fe.svg?style=for-the-badge)]()
 [![React](https://img.shields.io/badge/React-18-blue.svg?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg?style=for-the-badge&logo=node.js)](https://nodejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5-646CFF.svg?style=for-the-badge&logo=vite)](https://vitejs.dev/)
 [![Railway](https://img.shields.io/badge/Deployed_on-Railway-0B0D0E.svg?style=for-the-badge&logo=railway)](https://railway.app/)
 
-*Built to identify, analyze, and remediate internal threats before they hit production.*
+*Built for the WeMakeDevs "Pirates of the Coral-bean" Hackathon.*
+*Zero ETL. Zero Data Warehouse. Zero Glue Code. 100% Native Coral SQL.*
 
 </div>
 
 ---
 
-## 🚀 Overview
+## 🏴‍☠️ The Pitch: Why this wins the Hackathon
 
-**Coral** is an advanced Security Command Center that acts as the brain of your DevSecOps pipeline. By utilizing a proprietary in-memory SQL-like join engine, Coral ingests data streams from **GitHub (Commits & PRs)**, **Slack (Communications)**, **Notion (Company Policies)**, and the **OSV Database (Vulnerabilities)** to build a unified, multidimensional threat model of your engineering organization.
+Most security platforms require complex ETL pipelines, a heavy data warehouse (Snowflake, BigQuery), and thousands of lines of fragile Python glue code to correlate GitHub pull requests with vulnerability databases and internal Slack chats.
 
-When a threat is detected, Coral doesn't just alert you. It spins up an **AI-powered SOC Analyst Copilot** equipped with complete context—giving security managers immediate containment playbooks, developer risk profiles, and 1-click remediation scripts.
+**We threw all of that out.**
+
+By leveraging the **Official Coral CLI**, our Security Command Center performs blazingly fast, native, 4-way SQL `LEFT JOIN`s directly across local API JSON responses. 
+We query:
+1. **GitHub** (Pull Requests & Commits)
+2. **OSV Database** (Vulnerability Intel)
+3. **Slack** (Internal Team Chat)
+4. **Notion** (Company Security Policies)
+
+...all in a **single Coral SQL query executed locally.** No warehouses. Unprecedented speed. Absolute privacy.
 
 ---
 
-## ✨Features
+## ✨ Features (Judges, look here!)
 
-*   **Live Data Sync Engine**: Don't rely on mock data. Coral connects to live repositories via the GitHub API, cross-references dependencies with the Open Source Vulnerability (OSV) API, and pulls live Slack/Notion configurations dynamically. 
-*   **Behavioral Developer Risk Scoring**: An advanced heuristic engine that scores developers based on the severity of their commits, policy violations, and historical behavior (e.g., hardcoding AWS secrets).
-*   **In-Memory "Coral SQL" Engine**: Complex data joins across disparate systems (Git, Chat, Docs, Threat Intel) happen natively in-memory without needing an external data warehouse.
-*   **RAG-Powered AI Copilot**: Uses Retrieval-Augmented Generation to allow managers to chat with their organization's security posture. Ask questions like *"Who introduced the highest number of critical bugs this week?"* and get contextual answers.
-*   **Automated Containment**: One-click generation of Bash scripts to immediately lock down compromised developer accounts or roll back vulnerable deployments.
+*   **Native Coral Engine Integration**: We execute the official `coral.exe` / `coral` binary under the hood. Data is routed via a custom `coral-source.yaml` spec. 
+*   **Zero-ETL Architecture**: We fetch raw API data, drop it into local files, and let Coral query it instantly as a relational database. 
+*   **Behavioral AI Copilot**: When Coral identifies a threat, our RAG-powered Copilot steps in. It analyzes the developer's historical risk profile, explains the CVE, and generates 1-click Bash rollback scripts.
+*   **Dynamic Notion Policy Enforcement**: Security rules dynamically parse via Notion API. If a developer uses a package that violates a Notion policy, Coral's SQL engine flags it instantly.
+*   **Award-Winning UI/UX**: A jaw-dropping, premium interface featuring dynamic gradients, glassmorphism, animated tabs, and glowing micro-animations.
 
 ---
 
-## 🧠 Architecture
+## 🧠 The Coral SQL Magic
 
-Coral is built on a split architecture ensuring extreme performance and rapid integration. 
+Here is the actual query our Node.js backend passes to the Coral CLI to build our dashboard. Look at the simplicity of joining 4 entirely separate platforms natively:
 
-```mermaid
-graph TD
-    A[GitHub API] -->|Live PRs & Commits| E(Data Synchronization Engine)
-    B[OSV API] -->|Live Vulnerabilities| E
-    C[Slack API] -->|Channel Communications| E
-    D[Notion API] -->|Security Policies| E
-    
-    E -->|JSON Normalization| F[Coral SQL Memory Engine]
-    
-    F --> G{Security Heuristics}
-    G -->|Violations| H[React Dashboard UI]
-    G -->|Context| I[AI Copilot / LLM]
-    
-    H <-->|Queries| I
+```sql
+SELECT 
+  g.pr_id, g.author, g.title, g.package_name, g.merged_at, g.commit_diff,
+  o.cve, o.severity, o.cvss,
+  s.channel, s.message, s.timestamp,
+  n.policy_name, n.policy_rule, n.owner_team, n.description
+FROM coral_hackathon.github g
+LEFT JOIN coral_hackathon.osv o ON g.package_name = o.package
+LEFT JOIN coral_hackathon.slack s ON g.author = s.user
+LEFT JOIN coral_hackathon.notion n ON g.package_name = n.applies_to
+ORDER BY g.pr_id DESC
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Auto-Magic Setup & Testing
 
-*   **Frontend:** React 18, Vite, Framer Motion (for hyper-smooth micro-interactions), Recharts (data visualization), Vanilla CSS (glassmorphism UI).
-*   **Backend:** Node.js 20+, Express.js, Axios.
-*   **External APIs:** GitHub REST API, OSV.dev, Slack Web API, Notion API.
-*   **Deployment:** Fully configured for CI/CD via **Railway** (`package.json` engines enforced).
+We wanted to make this the easiest project for judges to evaluate. **You do not need to manually download or configure the Coral CLI.**
 
----
+Our repository features a smart OS-detection `postinstall` script. Whether you are running on a Windows desktop, a Mac M1, Linux, or deploying on Railway, our script automatically fetches the correct `coral` binary architecture directly from the AWS release bucket, sets executable permissions, and links it to the backend.
 
-## 💻 Running Locally
+### Running Locally in 3 Steps:
 
-You can spin up the entire Coral stack with a single command. 
-
-### Prerequisites
-*   Node.js >= 20.0.0
-*   npm
-
-### Installation
-
-1. Clone the repository:
+1. **Clone & Install:**
    ```bash
    git clone https://github.com/tanmayshukla518-max/Coral.git
    cd Coral
+   npm install 
+   # ^ This automatically triggers the Coral CLI download!
    ```
 
-2. Install dependencies for both Frontend and Backend:
+2. **Start the Development Servers:**
    ```bash
-   npm run postinstall
+   # Terminal 1: Start Backend (Port 5000)
+   cd backend
+   npm run dev
+
+   # Terminal 2: Start Frontend (Port 5173)
+   cd frontend
+   npm run dev
    ```
 
-3. Start the application:
-   ```bash
-   npm run build
-   npm start
-   ```
-
-4. Open your browser to `http://localhost:5000`.
-
-*(Note: In local development, you can also run `npm run dev` inside the `frontend` folder to get Hot Module Replacement on port 5173).*
+3. **Explore the Dashboard:**
+   Open `http://localhost:5173`. 
+   Navigate to the **Incidents Dashboard** to see Coral SQL output in action.
+   Open the **AI Copilot** and ask: *"Explain the critical CVE for stripe"* or *"Give me the rollback procedure for Alice's PR."*
 
 ---
 
 ## 🔑 Live Data Configuration
 
-By default, Coral ships with a mock dataset so you can immediately see the UI. To unlock its full power and use **Live Data**, click the badges on the dashboard to enter your API tokens, then click the **⚡ Sync Live Data** button.
+The app ships with a rich mock dataset out-of-the-box so judges can immediately test the UI and the Coral SQL execution without configuring tokens. 
 
-| Integration | Required Scope / Token | Where to get it |
-| :--- | :--- | :--- |
-| **GitHub** | Personal Access Token (`repo` scope) | [GitHub Settings](https://github.com/settings/tokens) |
-| **OSV** | *Public API (No token required!)* | N/A |
-| **Slack** | Bot OAuth Token (`channels:history`) | [Slack API](https://api.slack.com/apps) |
-| **Notion** | Internal Integration Secret | [Notion Integrations](https://www.notion.so/my-integrations) |
+To use live API data, go to the **Connections** tab in the UI, enter your tokens, and click **Sync**. The backend will fetch the APIs, update the local JSON files, and the Coral Engine will instantly query the new data!
 
 ---
 
-## 🛡️ License
-Built for the Hackathon. May your commits be secure and your deployments green.
+## 🛡️ Built For
+**WeMakeDevs Hackathon: Pirates of the Coral-bean (Track 1)**  
+*May your queries be fast and your data oceans clear.*
