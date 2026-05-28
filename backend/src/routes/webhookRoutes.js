@@ -36,8 +36,8 @@ function syncToMockDb(record, commitDiff) {
     data.unshift(newEntry);
     fs.writeFileSync(githubPath, JSON.stringify(data, null, 2));
     
-    invalidateCache("default");
-    console.log(`[SYNC] Appended live webhook ${record.id} to github.json and invalidated cache.`);
+    invalidateCache("all");
+    console.log(`[SYNC] Appended live webhook ${record.id} to github.json and invalidated cache for all sessions.`);
   } catch (err) {
     console.error("[SYNC_ERROR] Failed to sync to mock DB:", err.message);
   }
