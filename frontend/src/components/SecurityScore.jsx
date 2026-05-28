@@ -49,11 +49,12 @@ function getScoreConfig(score) {
 }
 
 function SecurityScore({ summary }) {
+  const total = (summary.critical ?? 0) + (summary.high ?? 0) + (summary.medium ?? 0) + (summary.safe ?? 0);
   const danger =
-    (summary.critical ?? 0) * 30 +
-    (summary.high ?? 0) * 15 +
-    (summary.medium ?? 0) * 5;
-  const score = Math.max(0, Math.min(100, 100 - danger));
+    (summary.critical ?? 0) * 8 +
+    (summary.high ?? 0) * 4 +
+    (summary.medium ?? 0) * 2;
+  const score = total === 0 ? 100 : Math.max(0, Math.min(100, 100 - danger));
 
   const [displayScore, setDisplayScore] = useState(0);
   const [dashOffset, setDashOffset] = useState(CIRCUMFERENCE);
