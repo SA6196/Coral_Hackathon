@@ -3,13 +3,15 @@
 # 🪸 Coral Security Command Center
 **The Native Coral SQL Threat Intelligence Platform**
 
-[![Track](https://img.shields.io/badge/Track-Pirates_of_the_Coral--bean-ff69b4.svg?style=for-the-badge)]()
-[![Powered By](https://img.shields.io/badge/Powered_by-Coral_CLI-00f2fe.svg?style=for-the-badge)]()
+![Track](https://img.shields.io/badge/Track-Pirates_of_the_Coral--bean-ff69b4.svg?style=for-the-badge)
+![Powered By](https://img.shields.io/badge/Powered_by-Coral_CLI-00f2fe.svg?style=for-the-badge)
 [![React](https://img.shields.io/badge/React-18-blue.svg?style=for-the-badge&logo=react)](https://reactjs.org/)
 [![Railway](https://img.shields.io/badge/Deployed_on-Railway-0B0D0E.svg?style=for-the-badge&logo=railway)](https://railway.app/)
 
 *Built for the WeMakeDevs "Pirates of the Coral-bean" Hackathon.*
 *Zero ETL. Zero Data Warehouse. Zero Glue Code. 100% Native Coral SQL.*
+
+<h3>🔴 <a href="https://coral-production-cd18.up.railway.app">Live Hackathon Demo</a> 🔴</h3>
 
 </div>
 
