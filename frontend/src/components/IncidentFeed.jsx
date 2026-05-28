@@ -66,14 +66,8 @@ function getActionLabel(action) {
   }
 }
 
-/* Map incident_id like "CORAL-1" or "SEC-101" to a numeric log id for Flask */
 function toLogId(incidentId) {
-  if (!incidentId) return 1;
-  // "SEC-101" → 101 → map to 1,2,3 by position; "CORAL-3" → 3
-  const num = parseInt(incidentId.replace(/\D/g, ""), 10);
-  if (isNaN(num)) return 1;
-  // Flask mock data has ids 1,2,3; CORAL-1→1, CORAL-2→2, CORAL-3→3
-  return Math.max(1, Math.min(num, 3));
+  return incidentId || "1";
 }
 
 function IncidentCard({ item, index }) {

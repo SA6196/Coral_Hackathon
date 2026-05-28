@@ -19,10 +19,7 @@ import { getRemediation } from "../services/api";
 
 /* ─── Utilities ───────────────────────────────────────────────────────────── */
 function toLogId(incidentId) {
-  if (!incidentId) return 1;
-  const num = parseInt(incidentId.replace(/\D/g, ""), 10);
-  if (isNaN(num)) return 1;
-  return Math.max(1, Math.min(num, 3));
+  return incidentId || "1";
 }
 
 /* ─── Static remediation data per severity ────────────────────────────────── */

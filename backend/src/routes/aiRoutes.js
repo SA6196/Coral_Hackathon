@@ -28,9 +28,12 @@ async function getIncidents(sessionId) {
 
 async function getIncidentById(sessionId, id) {
   const incidents = await getIncidents(sessionId);
+  const found = incidents.find(i => i.incident_id === id || String(i.pr_details?.pr_id) === String(id));
+  if (found) return found;
+
   const num = parseInt(id, 10);
-  if (isNaN(num) || num < 1) return incidents[0];
-  return incidents[Math.min(num - 1, incidents.length - 1)] || incidents[0];
+  if (!isNaN(num) && num >= 1) return incidents[Math.min(num - 1, incidents.length - 1)];
+  return incidents[0];
 }
 
 function sanitizeInput(str, maxLen = 1000) {
