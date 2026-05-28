@@ -33,7 +33,7 @@ function buildAiSummary(incident) {
   const { github, vulnerability, slack, notion_policy, secrets } = incident;
   const pkg      = github.package_name;
   const author   = github.author;
-  const severity = vulnerability.severity;
+  const severity = (vulnerability.severity || "safe").toLowerCase(); // normalise
   const cve      = vulnerability.cve_id;
   const hasLeak  = secrets?.length > 0;
   const hasPolicy = notion_policy !== null;
@@ -61,7 +61,7 @@ function buildAiSummary(incident) {
 
 function buildRecommendation(incident) {
   const { vulnerability, secrets, notion_policy } = incident;
-  const severity = vulnerability.severity;
+  const severity = (vulnerability.severity || "safe").toLowerCase(); // normalise
 
   if (severity === "critical") return "ROLLBACK_DEPLOYMENT";
   if (secrets?.length > 0)     return "ROTATE_SECRETS_IMMEDIATELY";
@@ -75,7 +75,7 @@ function buildRecommendation(incident) {
 // ── Main analysis function ───────────────────────────────────────────
 const runSecurityAnalysis = (joinedData) => {
   return joinedData.map((incident, index) => {
-    const severity    = incident.vulnerability?.severity || "safe";
+    const severity    = (incident.vulnerability?.severity || "safe").toLowerCase();
     const cfg         = SEVERITY_CONFIG[severity] || SEVERITY_CONFIG.safe;
 
     // ── Secret detection (Feature 5) ──────────────────────────────
@@ -116,7 +116,7 @@ const runSecurityAnalysis = (joinedData) => {
 
       vulnerability: {
         cve:      incident.vulnerability?.cve_id   || "NO_CVE_FOUND",
-        severity: incident.vulnerability?.severity || "safe",
+        severity: severity, // already normalised to lowercase above
       },
 
       // Notion policy (Feature 3)

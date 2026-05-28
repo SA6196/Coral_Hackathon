@@ -72,7 +72,7 @@ function toLogId(incidentId) {
 
 function IncidentCard({ item, index }) {
   const [expanded, setExpanded] = useState(false);
-  const severity = item.vulnerability?.severity || "safe";
+  const severity = (item.vulnerability?.severity || "safe").toLowerCase(); // normalise
   const cfg = SEVERITY_MAP[severity] || SEVERITY_MAP.safe;
   const SeverityIcon = cfg.icon;
 
@@ -279,7 +279,7 @@ function IncidentCard({ item, index }) {
 
 function IncidentFeed({ incidents }) {
   const criticalCount = incidents.filter(
-    (i) => i.vulnerability?.severity === "critical"
+    (i) => (i.vulnerability?.severity || "").toLowerCase() === "critical"
   ).length;
 
   return (

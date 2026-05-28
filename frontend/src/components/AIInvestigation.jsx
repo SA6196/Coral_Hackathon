@@ -175,12 +175,12 @@ export default function AIInvestigation({ logId = 1 }) {
                 <div className="ai-invest-content">
                   {aiReport.mode === "live" && (
                     <div className="ai-invest-live-badge">
-                      <FiZap size={10} /> Live GPT-4o-mini Response
+                      <FiZap size={10} /> Live AI Response (GPT-4o / Gemini)
                     </div>
                   )}
-                  {aiReport.mode === "mocked" && (
+                  {(aiReport.mode === "mocked" || aiReport.mode === "coral-ai-v2") && (
                     <div className="ai-invest-mock-badge">
-                      ⚡ Expert Template (no OpenAI key — add OPENAI_API_KEY to env)
+                      ⚡ AI-Enhanced Expert Template
                     </div>
                   )}
                   <MiniMarkdown text={aiReport.report} />
