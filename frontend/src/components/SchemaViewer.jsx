@@ -26,9 +26,9 @@ const SCHEMA = [
     source: "osv",
     table: "vulnerabilities",
     icon: () => <span style={{ fontSize: 14 }}>⚡</span>,
-    color: "#fbbf24",
-    bg: "rgba(251,191,36,0.08)",
-    border: "rgba(251,191,36,0.2)",
+    color: "#f59e0b",
+    bg: "rgba(245,158,11,0.08)",
+    border: "rgba(245,158,11,0.2)",
     learned_at: "2026-05-26T09:01:00Z",
     row_count: 6,
     columns: [
@@ -148,8 +148,8 @@ export default function SchemaViewer() {
     <section className="schema-section" aria-label="Coral Schema Viewer">
       <button className="schema-toggle-row" onClick={() => setOpen(o => !o)}>
         <div className="section-label" style={{ marginBottom: 0, flex: 1 }}>
-          <FiDatabase size={12} style={{ color: "#a855f7" }} />
-          <span className="section-label-text" style={{ color: "#a855f7" }}>
+          <FiDatabase size={12} style={{ color: "#8b5cf6" }} />
+          <span className="section-label-text" style={{ color: "#8b5cf6" }}>
             Coral Schema Learning
           </span>
           <div className="section-label-line" />

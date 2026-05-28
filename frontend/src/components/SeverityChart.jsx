@@ -9,10 +9,10 @@ import {
 } from "recharts";
 
 const SEVERITY_CONFIG = {
-  Critical: { color: "#ef4444", glow: "rgba(239,68,68,0.3)", bar: "#ef4444" },
-  High: { color: "#f97316", glow: "rgba(249,115,22,0.3)", bar: "#f97316" },
-  Medium: { color: "#fbbf24", glow: "rgba(251,191,36,0.3)", bar: "#fbbf24" },
-  Safe: { color: "#00ff9d", glow: "rgba(0,255,157,0.3)", bar: "#00ff9d" },
+  Critical: { color: "#e11d48", glow: "rgba(225,29,72,0.3)", bar: "#e11d48" },
+  High: { color: "#ea580c", glow: "rgba(234,88,12,0.3)", bar: "#ea580c" },
+  Medium: { color: "#f59e0b", glow: "rgba(245,158,11,0.3)", bar: "#f59e0b" },
+  Safe: { color: "#10b981", glow: "rgba(16,185,129,0.3)", bar: "#10b981" },
 };
 
 const CustomTooltip = ({ active, payload }) => {
@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload }) => {
     <div
       style={{
         background: "rgba(6,16,38,0.95)",
-        border: `1px solid ${cfg.color || "#00d4ff"}40`,
+        border: `1px solid ${cfg.color || "#0ea5e9"}40`,
         borderRadius: 10,
         padding: "10px 16px",
         fontFamily: "var(--font-mono)",
@@ -166,8 +166,8 @@ function SeverityChart({ summary }) {
             style={{
               marginTop: 16,
               padding: "10px 14px",
-              background: "rgba(0,212,255,0.05)",
-              border: "1px solid rgba(0,212,255,0.12)",
+              background: "rgba(14,165,233,0.05)",
+              border: "1px solid rgba(14,165,233,0.12)",
               borderRadius: 10,
               display: "flex",
               justifyContent: "space-between",
@@ -177,7 +177,7 @@ function SeverityChart({ summary }) {
             }}
           >
             <span style={{ color: "rgba(255,255,255,0.45)" }}>Total Incidents</span>
-            <span style={{ color: "#00d4ff", fontWeight: 700, fontSize: 18, fontFamily: "var(--font-display)" }}>
+            <span style={{ color: "#0ea5e9", fontWeight: 700, fontSize: 18, fontFamily: "var(--font-display)" }}>
               {summary.total_incidents ?? 0}
             </span>
           </div>

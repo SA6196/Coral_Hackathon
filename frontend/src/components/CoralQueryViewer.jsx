@@ -34,14 +34,14 @@ ORDER BY
 /* ── Execution steps shown during animation ──────────────────────── */
 const EXEC_STEPS = [
   { label: "Connecting to GitHub source…",      color: "#58a6ff", icon: "🐙" },
-  { label: "Connecting to OSV database…",       color: "#fbbf24", icon: "⚡" },
+  { label: "Connecting to OSV database…",       color: "#f59e0b", icon: "⚡" },
   { label: "Connecting to Slack…",              color: "#e01e5a", icon: "💬" },
   { label: "Connecting to Notion policies…",    color: "#fff",    icon: "📄" },
-  { label: "Building hash indexes for JOINs…", color: "#a855f7", icon: "🔗" },
-  { label: "Executing cross-source JOIN…",      color: "#a855f7", icon: "⚙️" },
-  { label: "Running secret detection scan…",   color: "#ef4444", icon: "🔑" },
-  { label: "Applying policy violation check…", color: "#f97316", icon: "📋" },
-  { label: "Coral handled auth, pagination, rate limits", color: "#00d4ff", icon: "🛡️" },
+  { label: "Building hash indexes for JOINs…", color: "#8b5cf6", icon: "🔗" },
+  { label: "Executing cross-source JOIN…",      color: "#8b5cf6", icon: "⚙️" },
+  { label: "Running secret detection scan…",   color: "#e11d48", icon: "🔑" },
+  { label: "Applying policy violation check…", color: "#ea580c", icon: "📋" },
+  { label: "Coral handled auth, pagination, rate limits", color: "#0ea5e9", icon: "🛡️" },
 ];
 
 /* ── Typewriter effect for SQL ───────────────────────────────────── */
@@ -191,15 +191,15 @@ export default function CoralQueryViewer({ coralMeta }) {
                     transition={{ delay: 0.2 }}
                   >
                     <div className="cqv-stat">
-                      <div className="cqv-stat-val" style={{ color: "#00d4ff" }}>4</div>
+                      <div className="cqv-stat-val" style={{ color: "#0ea5e9" }}>4</div>
                       <div className="cqv-stat-label">Sources Joined</div>
                     </div>
                     <div className="cqv-stat">
-                      <div className="cqv-stat-val" style={{ color: "#00ff9d" }}>6</div>
+                      <div className="cqv-stat-val" style={{ color: "#10b981" }}>6</div>
                       <div className="cqv-stat-label">Rows Returned</div>
                     </div>
                     <div className="cqv-stat">
-                      <div className="cqv-stat-val" style={{ color: "#a855f7" }}>
+                      <div className="cqv-stat-val" style={{ color: "#8b5cf6" }}>
                         {coralMeta?.cache_hit ? "⚡ hit" : "~42ms"}
                       </div>
                       <div className="cqv-stat-label">
@@ -207,7 +207,7 @@ export default function CoralQueryViewer({ coralMeta }) {
                       </div>
                     </div>
                     <div className="cqv-stat">
-                      <div className="cqv-stat-val" style={{ color: "#ff4d6d" }}>✓</div>
+                      <div className="cqv-stat-val" style={{ color: "#f43f5e" }}>✓</div>
                       <div className="cqv-stat-label">Auth Handled</div>
                     </div>
                   </motion.div>

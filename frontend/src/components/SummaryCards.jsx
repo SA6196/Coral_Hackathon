@@ -18,7 +18,7 @@ const cardConfigs = [
     icon: FiActivity,
     className: "card-total",
     trend: "Monitoring",
-    corner: "#00d4ff",
+    corner: "#0ea5e9",
   },
   {
     key: "critical",
@@ -27,7 +27,7 @@ const cardConfigs = [
     icon: FiAlertOctagon,
     className: "card-critical",
     trend: "Immediate action",
-    corner: "#ef4444",
+    corner: "#e11d48",
   },
   {
     key: "high",
@@ -36,7 +36,7 @@ const cardConfigs = [
     icon: FiAlertTriangle,
     className: "card-high",
     trend: "Review required",
-    corner: "#f97316",
+    corner: "#ea580c",
   },
   {
     key: "medium",
@@ -45,7 +45,7 @@ const cardConfigs = [
     icon: FiAlertCircle,
     className: "card-medium",
     trend: "Monitoring",
-    corner: "#fbbf24",
+    corner: "#f59e0b",
   },
   {
     key: "safe",
@@ -54,7 +54,7 @@ const cardConfigs = [
     icon: FiCheckCircle,
     className: "card-safe",
     trend: "Clear to deploy",
-    corner: "#00ff9d",
+    corner: "#10b981",
   },
   {
     key: "secrets",
@@ -63,7 +63,7 @@ const cardConfigs = [
     icon: FiKey,
     className: "card-critical",
     trend: "Rotate immediately",
-    corner: "#ef4444",
+    corner: "#e11d48",
   },
   {
     key: "policy",
@@ -72,7 +72,7 @@ const cardConfigs = [
     icon: FiShield,
     className: "card-high",
     trend: "Notion policy breach",
-    corner: "#f97316",
+    corner: "#ea580c",
   },
 ];
 

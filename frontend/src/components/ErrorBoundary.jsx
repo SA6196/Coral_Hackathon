@@ -24,15 +24,15 @@ export default class ErrorBoundary extends Component {
         <div
           style={{
             padding: "20px 24px",
-            background: "rgba(239,68,68,0.08)",
-            border: "1px solid rgba(239,68,68,0.25)",
+            background: "rgba(225,29,72,0.08)",
+            border: "1px solid rgba(225,29,72,0.25)",
             borderRadius: 12,
             margin: "8px 0",
             fontFamily: "monospace",
             fontSize: 12,
           }}
         >
-          <div style={{ color: "#ef4444", fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ color: "#e11d48", fontWeight: 700, marginBottom: 6 }}>
             ⚠ Component Error
           </div>
           <div style={{ color: "rgba(255,255,255,0.5)", marginBottom: 10 }}>
@@ -41,9 +41,9 @@ export default class ErrorBoundary extends Component {
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              background: "rgba(239,68,68,0.15)",
-              border: "1px solid rgba(239,68,68,0.3)",
-              color: "#ef4444",
+              background: "rgba(225,29,72,0.15)",
+              border: "1px solid rgba(225,29,72,0.3)",
+              color: "#e11d48",
               padding: "4px 12px",
               borderRadius: 6,
               cursor: "pointer",

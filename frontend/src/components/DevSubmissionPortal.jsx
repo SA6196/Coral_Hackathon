@@ -23,10 +23,10 @@ import { useToast } from "./Toast";
 
 /* ── Severity Configurations ───────────────────────────────────────── */
 const SEV = {
-  critical: { color: "#ef4444", bg: "rgba(239,68,68,0.05)", border: "rgba(239,68,68,0.2)", icon: FiAlertOctagon,  label: "CRITICAL" },
-  high:     { color: "#f97316", bg: "rgba(249,115,22,0.05)", border: "rgba(249,115,22,0.2)", icon: FiAlertTriangle, label: "HIGH" },
-  medium:   { color: "#fbbf24", bg: "rgba(251,191,36,0.05)", border: "rgba(251,191,36,0.2)", icon: FiAlertCircle,   label: "MEDIUM" },
-  safe:     { color: "#00ff9d", bg: "rgba(0,255,157,0.03)", border: "rgba(0,255,157,0.15)",   icon: FiCheckCircle,   label: "SAFE" },
+  critical: { color: "#e11d48", bg: "rgba(225,29,72,0.05)", border: "rgba(225,29,72,0.2)", icon: FiAlertOctagon,  label: "CRITICAL" },
+  high:     { color: "#ea580c", bg: "rgba(234,88,12,0.05)", border: "rgba(234,88,12,0.2)", icon: FiAlertTriangle, label: "HIGH" },
+  medium:   { color: "#f59e0b", bg: "rgba(245,158,11,0.05)", border: "rgba(245,158,11,0.2)", icon: FiAlertCircle,   label: "MEDIUM" },
+  safe:     { color: "#10b981", bg: "rgba(16,185,129,0.03)", border: "rgba(16,185,129,0.15)",   icon: FiCheckCircle,   label: "SAFE" },
 };
 
 const ACTION_LABELS = {
@@ -105,7 +105,7 @@ function EventCard({ event, index }) {
             {event.secrets_detected && (
               <span style={{
                 fontSize: 8, padding: "1px 6px", borderRadius: 4, fontWeight: 700,
-                background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.25)", color: "#c084fc",
+                background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", color: "#c084fc",
               }}>
                 🔑 SECRET LEAK
               </span>
@@ -113,7 +113,7 @@ function EventCard({ event, index }) {
             {event.policy_violation && (
               <span style={{
                 fontSize: 8, padding: "1px 6px", borderRadius: 4, fontWeight: 700,
-                background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.25)", color: "#fbbf24",
+                background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b",
               }}>
                 🛡️ POLICY ALERT
               </span>
@@ -127,7 +127,7 @@ function EventCard({ event, index }) {
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2, display: "flex", flexWrap: "wrap", gap: 8 }}>
             <span>By <strong style={{ color: "rgba(255,255,255,0.7)" }}>{event.developer}</strong></span>
             <span>·</span>
-            <code style={{ color: "#00d4ff" }}>{event.repo}:{event.branch}</code>
+            <code style={{ color: "#0ea5e9" }}>{event.repo}:{event.branch}</code>
             <span>·</span>
             <span>{getRelativeTime(event.received_at)}</span>
           </div>
@@ -177,7 +177,7 @@ function EventCard({ event, index }) {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
                 <DetailTile label="Vulnerability / CVE" value={event.vulnerability?.cve === "NO_CVE_FOUND" ? "No Vulnerabilities" : event.vulnerability?.cve} highlight={event.vulnerability?.cve !== "NO_CVE_FOUND" ? cfg.color : null} />
                 <DetailTile label="Vulnerability Severity" value={event.vulnerability?.severity?.toUpperCase()} highlight={event.vulnerability?.severity !== "safe" ? cfg.color : null} />
-                <DetailTile label="CVSS Score" value={event.vulnerability?.cvss > 0 ? `${event.vulnerability.cvss} / 10` : "N/A"} highlight={event.vulnerability?.cvss > 7.5 ? "#ef4444" : null} />
+                <DetailTile label="CVSS Score" value={event.vulnerability?.cvss > 0 ? `${event.vulnerability.cvss} / 10` : "N/A"} highlight={event.vulnerability?.cvss > 7.5 ? "#e11d48" : null} />
                 <DetailTile label="Dependency Package" value={event.package_name || "none"} mono />
                 <DetailTile label="Git Commit SHA" value={event.commit_sha} mono />
                 <DetailTile label="Delivery ID" value={event.delivery_id?.slice(0, 16)} mono />
@@ -187,8 +187,8 @@ function EventCard({ event, index }) {
               {event.secrets_detected && (
                 <div style={{
                   padding: 10,
-                  background: "rgba(168,85,247,0.06)",
-                  border: "1px solid rgba(168,85,247,0.18)",
+                  background: "rgba(139,92,246,0.06)",
+                  border: "1px solid rgba(139,92,246,0.18)",
                   borderRadius: 8,
                   fontSize: 11,
                 }}>
@@ -207,12 +207,12 @@ function EventCard({ event, index }) {
               {event.policy_violation && (
                 <div style={{
                   padding: 10,
-                  background: "rgba(251,191,36,0.05)",
-                  border: "1px solid rgba(251,191,36,0.18)",
+                  background: "rgba(245,158,11,0.05)",
+                  border: "1px solid rgba(245,158,11,0.18)",
                   borderRadius: 8,
                   fontSize: 11,
                 }}>
-                  <div style={{ color: "#fbbf24", fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ color: "#f59e0b", fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
                     <FiShield size={12} /> Policy Infraction: {event.policy_violation.rule}
                   </div>
                   <div style={{ color: "rgba(255,255,255,0.7)" }}>{event.policy_violation.reason}</div>
@@ -333,8 +333,8 @@ export default function DevSubmissionPortal() {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          background: "rgba(0, 212, 255, 0.05)",
-          border: "1px solid rgba(0, 212, 255, 0.2)",
+          background: "rgba(14, 165, 233, 0.05)",
+          border: "1px solid rgba(14, 165, 233, 0.2)",
           borderRadius: panelOpen ? "14px 14px 0 0" : 14,
           padding: "14px 20px",
           cursor: "pointer",
@@ -345,17 +345,17 @@ export default function DevSubmissionPortal() {
         aria-expanded={panelOpen}
         id="dev-portal-toggle"
       >
-        <FiGitMerge size={16} style={{ color: "#ff4d6d" }} />
+        <FiGitMerge size={16} style={{ color: "#f43f5e" }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
           Developer Webhook Ingestion & Gates
           <span style={{
             fontSize: 9, padding: "2px 8px", borderRadius: 10, fontWeight: 700,
-            background: "rgba(0,255,157,0.1)", border: "1px solid rgba(0,255,157,0.25)", color: "#00ff9d",
+            background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", color: "#10b981",
             display: "flex", alignItems: "center", gap: 5,
           }}>
             <span style={{
-              width: 5, height: 5, borderRadius: "50%", background: "#00ff9d",
-              display: "inline-block", boxShadow: "0 0 5px #00ff9d",
+              width: 5, height: 5, borderRadius: "50%", background: "#10b981",
+              display: "inline-block", boxShadow: "0 0 5px #10b981",
               animation: "pulse 2s infinite"
             }} />
             ACTIVE LISTENER
@@ -389,7 +389,7 @@ export default function DevSubmissionPortal() {
               overflow: "hidden",
               background: "rgba(10, 15, 30, 0.65)",
               backdropFilter: "blur(12px)",
-              border: "1px solid rgba(0, 212, 255, 0.15)",
+              border: "1px solid rgba(14, 165, 233, 0.15)",
               borderTop: "none",
               borderRadius: "0 0 14px 14px",
               boxShadow: "var(--shadow-card)"
@@ -429,7 +429,7 @@ export default function DevSubmissionPortal() {
                       disabled={loading}
                       style={{
                         background: "transparent", border: "none", cursor: "pointer",
-                        color: "rgba(0,212,255,0.6)", fontSize: 11, display: "flex", alignItems: "center", gap: 6,
+                        color: "rgba(14,165,233,0.6)", fontSize: 11, display: "flex", alignItems: "center", gap: 6,
                       }}
                     >
                       <FiRefreshCw size={11} className={loading ? "spin-animation" : ""} />
@@ -463,9 +463,9 @@ export default function DevSubmissionPortal() {
                       {stats.developers.map((d, idx) => {
                         const tier = d.risk_tier || "STANDARD";
                         const conf = {
-                          HIGH_RISK: { color: "#ef4444", bg: "rgba(239,68,68,0.05)", label: "HIGH RISK" },
-                          ELEVATED:  { color: "#f97316", bg: "rgba(249,115,22,0.05)", label: "ELEVATED RISK" },
-                          STANDARD:  { color: "#00ff9d", bg: "rgba(0,255,157,0.03)", label: "STANDARD" }
+                          HIGH_RISK: { color: "#e11d48", bg: "rgba(225,29,72,0.05)", label: "HIGH RISK" },
+                          ELEVATED:  { color: "#ea580c", bg: "rgba(234,88,12,0.05)", label: "ELEVATED RISK" },
+                          STANDARD:  { color: "#10b981", bg: "rgba(16,185,129,0.03)", label: "STANDARD" }
                         }[tier] || { color: "#fff", bg: "rgba(255,255,255,0.05)", label: "UNKNOWN" };
 
                         return (
@@ -507,8 +507,8 @@ export default function DevSubmissionPortal() {
                             <div style={{ gap: 6, display: "flex", flexDirection: "column", marginTop: 6 }}>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
                                 <span>Checked Commits: <strong style={{ color: "#fff" }}>{d.submissions || d.commits}</strong></span>
-                                {d.critical > 0 && <span style={{ color: "#ef4444" }}>{d.critical} Critical CVEs</span>}
-                                {d.secrets > 0 && <span style={{ color: "#a855f7" }}>{d.secrets} Secret Leaks</span>}
+                                {d.critical > 0 && <span style={{ color: "#e11d48" }}>{d.critical} Critical CVEs</span>}
+                                {d.secrets > 0 && <span style={{ color: "#8b5cf6" }}>{d.secrets} Secret Leaks</span>}
                               </div>
 
                               {/* Progress bar */}
@@ -554,13 +554,13 @@ export default function DevSubmissionPortal() {
                         display: "flex",
                         alignItems: "center",
                         background: "rgba(0,0,0,0.3)",
-                        border: "1px solid rgba(0,212,255,0.2)",
+                        border: "1px solid rgba(14,165,233,0.2)",
                         borderRadius: 8,
                         padding: "8px 12px",
                         gap: 10
                       }}>
                         <code style={{
-                          flex: 1, color: "#00d4ff", fontSize: 11, overflowX: "auto", whiteSpace: "nowrap",
+                          flex: 1, color: "#0ea5e9", fontSize: 11, overflowX: "auto", whiteSpace: "nowrap",
                           fontFamily: "var(--font-mono)"
                         }}>
                           {config?.webhook_url || "http://localhost:5000/api/webhook/github"}
@@ -569,7 +569,7 @@ export default function DevSubmissionPortal() {
                           onClick={handleCopyUrl}
                           style={{
                             background: "transparent", border: "none", cursor: "pointer",
-                            color: copied ? "#00ff9d" : "rgba(255,255,255,0.4)", padding: 4, display: "flex"
+                            color: copied ? "#10b981" : "rgba(255,255,255,0.4)", padding: 4, display: "flex"
                           }}
                           title="Copy payload URL"
                         >
@@ -586,7 +586,7 @@ export default function DevSubmissionPortal() {
                           background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
                           borderRadius: 6, fontSize: 10.5, color: "rgba(255,255,255,0.7)"
                         }}>
-                          <span style={{ color: "#ff4d6d", fontWeight: 700 }}>0{idx + 1}</span>
+                          <span style={{ color: "#f43f5e", fontWeight: 700 }}>0{idx + 1}</span>
                           <span>{inst}</span>
                         </div>
                       ))}
@@ -607,11 +607,11 @@ export default function DevSubmissionPortal() {
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <FlowBlock title="Developer Commit" subtitle="Git Push / PR Opened" detail="Triggers Webhook Event" color="#58a6ff" />
                       <FlowConnector />
-                      <FlowBlock title="Coral Webhook Gateway" subtitle="Express /api/webhook/github" detail="Ingests event JSON payload" color="#ff4d6d" />
+                      <FlowBlock title="Coral Webhook Gateway" subtitle="Express /api/webhook/github" detail="Ingests event JSON payload" color="#f43f5e" />
                       <FlowConnector />
-                      <FlowBlock title="Sec Scanners (Static & Policy)" subtitle="SecretScanner.js & Notion Sync" detail="Exposes CVEs, keys, banned rules" color="#fbbf24" />
+                      <FlowBlock title="Sec Scanners (Static & Policy)" subtitle="SecretScanner.js & Notion Sync" detail="Exposes CVEs, keys, banned rules" color="#f59e0b" />
                       <FlowConnector />
-                      <FlowBlock title="Real-Time Alerts" subtitle="Dashboard Feed & Slack Bot" detail="Blocks bad builds, notifies team" color="#00ff9d" />
+                      <FlowBlock title="Real-Time Alerts" subtitle="Dashboard Feed & Slack Bot" detail="Blocks bad builds, notifies team" color="#10b981" />
                     </div>
                   </div>
                 </div>
@@ -641,8 +641,8 @@ export default function DevSubmissionPortal() {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: #00ff9d;
-          box-shadow: 0 0 5px #00ff9d;
+          background: #10b981;
+          box-shadow: 0 0 5px #10b981;
           animation: pulse 1.5s infinite;
         }
       `}</style>
@@ -685,9 +685,9 @@ function TabButton({ active, onClick, children }) {
         alignItems: "center",
         gap: 6,
         padding: "12px 16px",
-        background: active ? "rgba(0,212,255,0.06)" : "transparent",
+        background: active ? "rgba(14,165,233,0.06)" : "transparent",
         border: "none",
-        borderBottom: `2px solid ${active ? "#ff4d6d" : "transparent"}`,
+        borderBottom: `2px solid ${active ? "#f43f5e" : "transparent"}`,
         color: active ? "#fff" : "rgba(255,255,255,0.45)",
         cursor: "pointer",
         fontSize: 11.5,

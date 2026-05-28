@@ -38,7 +38,7 @@ function buildRemediationPlan(item) {
   steps.push({
     id: "triage",
     icon: FiAlertTriangle,
-    color: "#f97316",
+    color: "#ea580c",
     title: "Triage & Assess",
     description: `Review incident ${incidentId} triggered by ${developer}. Confirm vulnerability scope and blast radius.`,
     commands: [
@@ -52,7 +52,7 @@ function buildRemediationPlan(item) {
     steps.push({
       id: "rollback",
       icon: FiRotateCcw,
-      color: "#ef4444",
+      color: "#e11d48",
       title: "Immediate Rollback",
       description: `Revert the vulnerable branch change introduced by ${developer} to restore a safe deployment state.`,
       commands: [
@@ -67,7 +67,7 @@ function buildRemediationPlan(item) {
     steps.push({
       id: "secrets",
       icon: FiKey,
-      color: "#a855f7",
+      color: "#8b5cf6",
       title: "Rotate Exposed Credentials",
       description: `Secret leak detected in commit. Immediately invalidate and rotate all exposed API keys or tokens.`,
       commands: [
@@ -82,7 +82,7 @@ function buildRemediationPlan(item) {
   steps.push({
     id: "patch",
     icon: FiShield,
-    color: "#00d4ff",
+    color: "#0ea5e9",
     title: `Patch Vulnerable Package`,
     description: `Update ${packageName} to its latest patched version to resolve ${cve}.`,
     commands: [
@@ -98,7 +98,7 @@ function buildRemediationPlan(item) {
     steps.push({
       id: "policy",
       icon: FiFileText,
-      color: "#fbbf24",
+      color: "#f59e0b",
       title: "Conduct Policy Review",
       description: `Violation of "${rule}" detected. Conduct a policy review in Notion to align branch guidelines and re-approve the PR workflow.`,
       commands: [
@@ -112,7 +112,7 @@ function buildRemediationPlan(item) {
   steps.push({
     id: "notify",
     icon: FiMessageSquare,
-    color: "#00ff9d",
+    color: "#10b981",
     title: "Notify & Document",
     description: `Alert the security team on Slack and document the incident in Notion with timeline, impact, and remediation steps.`,
     commands: [
@@ -149,7 +149,7 @@ function CopyBtn({ text, small }) {
       style={small ? { padding: "3px 7px", fontSize: 10 } : {}}
     >
       {copied ? (
-        <><FiCheckCircle size={11} style={{ color: "#00ff9d" }} /> Copied</>
+        <><FiCheckCircle size={11} style={{ color: "#10b981" }} /> Copied</>
       ) : (
         <><FiCopy size={11} /> Copy</>
       )}
@@ -205,7 +205,7 @@ function RemStep({ step, index, total }) {
           <button
             className="rc-mark-done"
             onClick={(e) => { e.stopPropagation(); setDone((d) => !d); }}
-            style={{ color: done ? "#00ff9d" : "rgba(255,255,255,0.3)" }}
+            style={{ color: done ? "#10b981" : "rgba(255,255,255,0.3)" }}
             aria-label={done ? "Mark as undone" : "Mark as done"}
           >
             <FiCheckCircle size={16} />
@@ -240,7 +240,7 @@ function RemStep({ step, index, total }) {
 /* ─── Progress bar ───────────────────────────────────────────────────────── */
 function ProgressBar({ completed, total }) {
   const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
-  const color = pct === 100 ? "#00ff9d" : pct >= 50 ? "#fbbf24" : "#ef4444";
+  const color = pct === 100 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#e11d48";
   return (
     <div className="rc-progress-wrap">
       <div className="rc-progress-label">
@@ -273,12 +273,12 @@ export default function RemediationCenter({ item }) {
   const plan = buildRemediationPlan(item);
   const severityColor =
     plan.severity === "critical"
-      ? "#ef4444"
+      ? "#e11d48"
       : plan.severity === "high"
-      ? "#f97316"
+      ? "#ea580c"
       : plan.severity === "medium"
-      ? "#fbbf24"
-      : "#00ff9d";
+      ? "#f59e0b"
+      : "#10b981";
 
   const completedCount = plan.steps.filter((s) => doneMap[s.id]).length;
 
@@ -434,14 +434,14 @@ function RemStepControlled({ step, index, total, done, onToggleDone }) {
           <div
             className="rc-step-num"
             style={{
-              background: done ? "#00ff9d22" : step.color + "22",
-              border: `1px solid ${done ? "#00ff9d55" : step.color + "55"}`,
-              color: done ? "#00ff9d" : step.color,
+              background: done ? "#10b98122" : step.color + "22",
+              border: `1px solid ${done ? "#10b98155" : step.color + "55"}`,
+              color: done ? "#10b981" : step.color,
             }}
           >
             {done ? <FiCheckCircle size={13} /> : index + 1}
           </div>
-          <div className="rc-step-icon" style={{ color: done ? "#00ff9d" : step.color }}>
+          <div className="rc-step-icon" style={{ color: done ? "#10b981" : step.color }}>
             <Icon size={14} />
           </div>
           <div className="rc-step-info">
@@ -455,7 +455,7 @@ function RemStepControlled({ step, index, total, done, onToggleDone }) {
           <button
             className="rc-mark-done"
             onClick={(e) => { e.stopPropagation(); onToggleDone(); }}
-            style={{ color: done ? "#00ff9d" : "rgba(255,255,255,0.3)" }}
+            style={{ color: done ? "#10b981" : "rgba(255,255,255,0.3)" }}
             title={done ? "Mark as undone" : "Mark as done"}
           >
             <FiCheckCircle size={16} />

@@ -7,43 +7,43 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 function getScoreConfig(score) {
   if (score >= 75) {
     return {
-      color: "#00ff9d",
-      glow: "rgba(0,255,157,0.4)",
+      color: "#10b981",
+      glow: "rgba(16,185,129,0.4)",
       grade: "A",
-      gradeColor: "#00ff9d",
+      gradeColor: "#10b981",
       label: "Excellent",
-      borderColor: "rgba(0,255,157,0.3)",
-      bg: "rgba(0,255,157,0.08)",
+      borderColor: "rgba(16,185,129,0.3)",
+      bg: "rgba(16,185,129,0.08)",
     };
   } else if (score >= 50) {
     return {
-      color: "#fbbf24",
-      glow: "rgba(251,191,36,0.4)",
+      color: "#f59e0b",
+      glow: "rgba(245,158,11,0.4)",
       grade: "B",
-      gradeColor: "#fbbf24",
+      gradeColor: "#f59e0b",
       label: "Moderate Risk",
-      borderColor: "rgba(251,191,36,0.3)",
-      bg: "rgba(251,191,36,0.08)",
+      borderColor: "rgba(245,158,11,0.3)",
+      bg: "rgba(245,158,11,0.08)",
     };
   } else if (score >= 25) {
     return {
-      color: "#f97316",
-      glow: "rgba(249,115,22,0.4)",
+      color: "#ea580c",
+      glow: "rgba(234,88,12,0.4)",
       grade: "C",
-      gradeColor: "#f97316",
+      gradeColor: "#ea580c",
       label: "High Risk",
-      borderColor: "rgba(249,115,22,0.3)",
-      bg: "rgba(249,115,22,0.08)",
+      borderColor: "rgba(234,88,12,0.3)",
+      bg: "rgba(234,88,12,0.08)",
     };
   } else {
     return {
-      color: "#ef4444",
-      glow: "rgba(239,68,68,0.4)",
+      color: "#e11d48",
+      glow: "rgba(225,29,72,0.4)",
       grade: "D",
-      gradeColor: "#ef4444",
+      gradeColor: "#e11d48",
       label: "Critical Risk",
-      borderColor: "rgba(239,68,68,0.3)",
-      bg: "rgba(239,68,68,0.08)",
+      borderColor: "rgba(225,29,72,0.3)",
+      bg: "rgba(225,29,72,0.08)",
     };
   }
 }
@@ -169,25 +169,25 @@ function SecurityScore({ summary }) {
       <div className="score-risk-breakdown">
         <div className="score-risk-item">
           <div className="score-risk-label">Critical</div>
-          <div className="score-risk-value" style={{ color: "#ef4444" }}>
+          <div className="score-risk-value" style={{ color: "#e11d48" }}>
             {summary.critical ?? 0}
           </div>
         </div>
         <div className="score-risk-item">
           <div className="score-risk-label">High</div>
-          <div className="score-risk-value" style={{ color: "#f97316" }}>
+          <div className="score-risk-value" style={{ color: "#ea580c" }}>
             {summary.high ?? 0}
           </div>
         </div>
         <div className="score-risk-item">
           <div className="score-risk-label">Medium</div>
-          <div className="score-risk-value" style={{ color: "#fbbf24" }}>
+          <div className="score-risk-value" style={{ color: "#f59e0b" }}>
             {summary.medium ?? 0}
           </div>
         </div>
         <div className="score-risk-item">
           <div className="score-risk-label">Safe</div>
-          <div className="score-risk-value" style={{ color: "#00ff9d" }}>
+          <div className="score-risk-value" style={{ color: "#10b981" }}>
             {summary.safe ?? 0}
           </div>
         </div>

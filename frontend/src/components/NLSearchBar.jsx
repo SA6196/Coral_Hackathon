@@ -20,10 +20,10 @@ const EXAMPLES = [
 
 /* ─── Result severity color ──────────────────────────────────────────────── */
 const sColor = {
-  Critical: "#ef4444",
-  High: "#f97316",
-  Medium: "#fbbf24",
-  Low: "#00ff9d",
+  Critical: "#e11d48",
+  High: "#ea580c",
+  Medium: "#f59e0b",
+  Low: "#10b981",
 };
 
 export default function NLSearchBar({ onResults }) {
@@ -199,9 +199,9 @@ export default function NLSearchBar({ onResults }) {
 
             {/* Row count */}
             <div className="nl-row-count">
-              <FiCheckCircle size={13} style={{ color: "#00ff9d" }} />
+              <FiCheckCircle size={13} style={{ color: "#10b981" }} />
               <span>
-                <strong style={{ color: "#00ff9d" }}>{result.count}</strong>{" "}
+                <strong style={{ color: "#10b981" }}>{result.count}</strong>{" "}
                 row{result.count !== 1 ? "s" : ""} returned
               </span>
             </div>

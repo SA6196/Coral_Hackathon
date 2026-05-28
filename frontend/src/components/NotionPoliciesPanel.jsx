@@ -18,44 +18,44 @@ import { getPolicyViolations } from "../services/api";
 const RULE_CONFIG = {
   BANNED_PACKAGE: {
     label: "Banned Package",
-    color: "#ef4444",
+    color: "#e11d48",
     icon: FiAlertOctagon,
     description: "Package is on the organization's banned dependency list. Must be removed before any deployment.",
   },
   SECRETS_RISK: {
     label: "Secrets Risk",
-    color: "#a855f7",
+    color: "#8b5cf6",
     icon: FiAlertTriangle,
     description: "Package handles sensitive credentials — poses secret exposure risk. Security audit mandatory.",
   },
   AUDIT_REQUIRED: {
     label: "Audit Required",
-    color: "#f97316",
+    color: "#ea580c",
     icon: FiAlertCircle,
     description: "A full security audit must be completed before this change can be merged to production.",
   },
   REVIEW_REQUIRED: {
     label: "Review Required",
-    color: "#fbbf24",
+    color: "#f59e0b",
     icon: FiAlertCircle,
     description: "A senior security engineer must sign off on this change before deployment.",
   },
 };
 
 const SEVERITY_COLOR = {
-  critical: "#ef4444",
-  high:     "#f97316",
-  medium:   "#fbbf24",
-  low:      "#00ff9d",
+  critical: "#e11d48",
+  high:     "#ea580c",
+  medium:   "#f59e0b",
+  low:      "#10b981",
 };
 
 function ViolationCard({ v, index }) {
   const [expanded, setExpanded] = useState(false);
   const ruleCfg = RULE_CONFIG[v.policy_rule] || {
-    label: v.policy_rule, color: "#fbbf24", icon: FiAlertTriangle, description: ""
+    label: v.policy_rule, color: "#f59e0b", icon: FiAlertTriangle, description: ""
   };
   const RuleIcon = ruleCfg.icon;
-  const sevColor = SEVERITY_COLOR[v.severity] || "#fbbf24";
+  const sevColor = SEVERITY_COLOR[v.severity] || "#f59e0b";
 
   return (
     <motion.div
@@ -112,7 +112,7 @@ function ViolationCard({ v, index }) {
             </span>
           </div>
           <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", marginTop: 3 }}>
-            <span style={{ color: "#a855f7" }}>{v.policy_name}</span>
+            <span style={{ color: "#8b5cf6" }}>{v.policy_name}</span>
             {v.owner_team && <span style={{ color: "rgba(255,255,255,0.25)" }}> · {v.owner_team}</span>}
           </div>
         </div>
@@ -215,8 +215,8 @@ export default function NotionPoliciesPanel() {
       <div
         style={{
           display: "flex", alignItems: "center", gap: 10,
-          background: "rgba(168,85,247,0.06)",
-          border: "1px solid rgba(168,85,247,0.2)",
+          background: "rgba(139,92,246,0.06)",
+          border: "1px solid rgba(139,92,246,0.2)",
           borderRadius: expanded ? "14px 14px 0 0" : 14,
           padding: "12px 18px",
           cursor: "pointer",
@@ -227,15 +227,15 @@ export default function NotionPoliciesPanel() {
         aria-expanded={expanded}
         id="notion-policies-toggle"
       >
-        <FiShield size={15} style={{ color: "#a855f7" }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#a855f7", flex: 1 }}>
+        <FiShield size={15} style={{ color: "#8b5cf6" }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#8b5cf6", flex: 1 }}>
           Notion Policy Violations
         </span>
 
         {/* Rule counts */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {Object.entries(byRule).map(([rule, count]) => {
-            const cfg = RULE_CONFIG[rule] || { color: "#fbbf24", label: rule };
+            const cfg = RULE_CONFIG[rule] || { color: "#f59e0b", label: rule };
             return (
               <span key={rule} style={{
                 fontSize: 9, padding: "2px 9px", borderRadius: 10, fontWeight: 700,
@@ -249,8 +249,8 @@ export default function NotionPoliciesPanel() {
           {violations.length > 0 && (
             <span style={{
               fontSize: 9, padding: "2px 9px", borderRadius: 10, fontWeight: 800,
-              background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
-              color: "#ef4444",
+              background: "rgba(225,29,72,0.15)", border: "1px solid rgba(225,29,72,0.3)",
+              color: "#e11d48",
             }}>
               {violations.length} Total
             </span>
@@ -263,7 +263,7 @@ export default function NotionPoliciesPanel() {
           disabled={loading}
           style={{
             background: "transparent", border: "none", cursor: "pointer",
-            color: "#a855f7", padding: 0, display: "flex", alignItems: "center",
+            color: "#8b5cf6", padding: 0, display: "flex", alignItems: "center",
           }}
           title="Refresh"
           aria-label="Refresh policy violations"
@@ -286,7 +286,7 @@ export default function NotionPoliciesPanel() {
             style={{
               overflow: "hidden",
               background: "rgba(0,0,0,0.2)",
-              border: "1px solid rgba(168,85,247,0.12)",
+              border: "1px solid rgba(139,92,246,0.12)",
               borderTop: "none",
               borderRadius: "0 0 14px 14px",
             }}
@@ -301,9 +301,9 @@ export default function NotionPoliciesPanel() {
 
               {error && !loading && (
                 <div style={{
-                  padding: "12px 16px", background: "rgba(239,68,68,0.08)",
-                  border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10,
-                  fontSize: 12, color: "#ef4444", marginBottom: 12,
+                  padding: "12px 16px", background: "rgba(225,29,72,0.08)",
+                  border: "1px solid rgba(225,29,72,0.2)", borderRadius: 10,
+                  fontSize: 12, color: "#e11d48", marginBottom: 12,
                 }}>
                   ⚠ {error} — is the backend running on port 5000?
                 </div>
@@ -312,7 +312,7 @@ export default function NotionPoliciesPanel() {
               {!loading && !error && violations.length === 0 && (
                 <div style={{
                   textAlign: "center", padding: "24px 0",
-                  fontSize: 13, color: "#00ff9d",
+                  fontSize: 13, color: "#10b981",
                   fontFamily: "monospace",
                 }}>
                   ✅ No policy violations detected — all packages compliant
@@ -325,16 +325,16 @@ export default function NotionPoliciesPanel() {
                   <div style={{
                     display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
                     padding: "10px 14px", marginBottom: 14,
-                    background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.12)",
+                    background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.12)",
                     borderRadius: 10, fontSize: 11, color: "rgba(255,255,255,0.5)",
                   }}>
-                    <span style={{ color: "#a855f7", fontWeight: 700 }}>◈ Coral SQL Result</span>
-                    <span>{violations.length} violation(s) from JOIN: github_commits ⋈ policies (on <code style={{ color: "#00d4ff" }}>package_name = applies_to</code>)</span>
+                    <span style={{ color: "#8b5cf6", fontWeight: 700 }}>◈ Coral SQL Result</span>
+                    <span>{violations.length} violation(s) from JOIN: github_commits ⋈ policies (on <code style={{ color: "#0ea5e9" }}>package_name = applies_to</code>)</span>
                     <button
                       onClick={() => setSqlVis(v => !v)}
                       style={{
                         marginLeft: "auto", background: "transparent", border: "none",
-                        cursor: "pointer", fontSize: 10, color: "rgba(0,212,255,0.6)",
+                        cursor: "pointer", fontSize: 10, color: "rgba(14,165,233,0.6)",
                         display: "flex", alignItems: "center", gap: 4, padding: 0,
                       }}
                     >
@@ -351,8 +351,8 @@ export default function NotionPoliciesPanel() {
                         exit={{ height: 0, opacity: 0 }}
                         style={{
                           fontSize: 11, background: "rgba(0,0,0,0.45)",
-                          border: "1px solid rgba(0,212,255,0.15)", borderRadius: 8,
-                          padding: "10px 14px", marginBottom: 14, color: "#00d4ff",
+                          border: "1px solid rgba(14,165,233,0.15)", borderRadius: 8,
+                          padding: "10px 14px", marginBottom: 14, color: "#0ea5e9",
                           overflowX: "auto", overflow: "hidden",
                         }}
                       >
@@ -371,10 +371,10 @@ export default function NotionPoliciesPanel() {
                   {/* What to do next */}
                   <div style={{
                     marginTop: 14, padding: "12px 16px",
-                    background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.12)",
+                    background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.12)",
                     borderRadius: 10,
                   }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#a855f7", marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#8b5cf6", marginBottom: 8 }}>
                       📋 What to do next
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -385,7 +385,7 @@ export default function NotionPoliciesPanel() {
                         "Update .npmrc to block banned packages at install time",
                       ].map((tip, i) => (
                         <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", display: "flex", gap: 8 }}>
-                          <span style={{ color: "#a855f7", flexShrink: 0 }}>→</span> {tip}
+                          <span style={{ color: "#8b5cf6", flexShrink: 0 }}>→</span> {tip}
                         </div>
                       ))}
                     </div>

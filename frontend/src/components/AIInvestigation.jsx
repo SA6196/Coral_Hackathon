@@ -53,7 +53,7 @@ function CopyBtn({ text }) {
   };
   return (
     <button className="remediate-copy-btn" onClick={copy} aria-label="Copy script">
-      {copied ? <FiCheckCircle size={12} style={{ color: "#00ff9d" }} /> : <FiCopy size={12} />}
+      {copied ? <FiCheckCircle size={12} style={{ color: "#10b981" }} /> : <FiCopy size={12} />}
     </button>
   );
 }

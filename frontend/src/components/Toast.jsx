@@ -57,10 +57,10 @@ export const toast = {
 };
 
 const TOAST_COLORS = {
-  success: { bg: "rgba(0,255,157,0.12)", border: "rgba(0,255,157,0.3)", color: "#00ff9d", icon: "✅" },
-  error:   { bg: "rgba(239,68,68,0.12)", border: "rgba(239,68,68,0.3)", color: "#ef4444", icon: "❌" },
-  warn:    { bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)", color: "#fbbf24", icon: "⚠️" },
-  info:    { bg: "rgba(0,212,255,0.10)", border: "rgba(0,212,255,0.3)", color: "#00d4ff", icon: "ℹ️" },
+  success: { bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.3)", color: "#10b981", icon: "✅" },
+  error:   { bg: "rgba(225,29,72,0.12)", border: "rgba(225,29,72,0.3)", color: "#e11d48", icon: "❌" },
+  warn:    { bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)", color: "#f59e0b", icon: "⚠️" },
+  info:    { bg: "rgba(14,165,233,0.10)", border: "rgba(14,165,233,0.3)", color: "#0ea5e9", icon: "ℹ️" },
 };
 
 function ToastContainer({ toasts, onRemove }) {

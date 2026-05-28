@@ -45,7 +45,7 @@ const SUGGESTION_GROUPS = [
   {
     label: "Triage",
     icon: FiAlertTriangle,
-    color: "#f97316",
+    color: "#ea580c",
     chips: [
       "Why is SEC-101 critical?",
       "What's the blast radius of this incident?",
@@ -55,7 +55,7 @@ const SUGGESTION_GROUPS = [
   {
     label: "Rollback",
     icon: FiRotateCcw,
-    color: "#ef4444",
+    color: "#e11d48",
     chips: [
       "What's the rollback procedure?",
       "How do I revert the vulnerable commit safely?",
@@ -65,7 +65,7 @@ const SUGGESTION_GROUPS = [
   {
     label: "Secrets",
     icon: FiKey,
-    color: "#a855f7",
+    color: "#8b5cf6",
     chips: [
       "Show me the secrets detection findings",
       "How do I rotate the exposed API keys?",
@@ -75,7 +75,7 @@ const SUGGESTION_GROUPS = [
   {
     label: "Fix",
     icon: FiShield,
-    color: "#00d4ff",
+    color: "#0ea5e9",
     chips: [
       "How do I fix the lodash issue?",
       "What npm command patches this CVE?",
@@ -85,7 +85,7 @@ const SUGGESTION_GROUPS = [
   {
     label: "Developer",
     icon: FiUser,
-    color: "#00ff9d",
+    color: "#10b981",
     chips: [
       "Explain the contractor_x anomaly",
       "What other PRs did this developer merge?",

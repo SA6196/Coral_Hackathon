@@ -17,10 +17,10 @@ function ParticleBackground() {
     window.addEventListener("resize", resize);
 
     const colors = [
-      "rgba(0,212,255,",
-      "rgba(168,85,247,",
-      "rgba(255,77,109,",
-      "rgba(0,255,157,",
+      "rgba(14,165,233,",
+      "rgba(139,92,246,",
+      "rgba(244,63,94,",
+      "rgba(16,185,129,",
     ];
 
     class Particle {
@@ -76,7 +76,7 @@ function ParticleBackground() {
           if (dist < 100) {
             const opacity = (1 - dist / 100) * 0.08;
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(0,212,255,${opacity})`;
+            ctx.strokeStyle = `rgba(14,165,233,${opacity})`;
             ctx.lineWidth = 0.5;
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);

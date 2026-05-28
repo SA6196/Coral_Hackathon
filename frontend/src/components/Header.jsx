@@ -58,7 +58,7 @@ const SOURCE_META = {
   },
   osv: {
     label: "OSV Database",
-    color: "#fbbf24",
+    color: "#f59e0b",
     icon: <span style={{ fontSize: 18 }}>⚡</span>,
     fields: [],
     note: "OSV is a public API — no credentials required. Coral queries it automatically at https://api.osv.dev/v1",
@@ -191,8 +191,8 @@ function TokenModal({ sourceId, onClose }) {
         {/* Public source note */}
         {meta.isPublic && (
           <div style={{
-            background: "rgba(0,255,157,0.06)", border: "1px solid rgba(0,255,157,0.2)",
-            borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#00ff9d",
+            background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)",
+            borderRadius: 10, padding: "14px 16px", fontSize: 13, color: "#10b981",
             lineHeight: 1.6, marginBottom: 20,
           }}>
             ✅ {meta.note}
@@ -202,12 +202,12 @@ function TokenModal({ sourceId, onClose }) {
         {/* YAML env preview */}
         {meta.envVar && (
           <div style={{
-            background: "rgba(0,0,0,0.4)", border: "1px solid rgba(0,212,255,0.15)",
+            background: "rgba(0,0,0,0.4)", border: "1px solid rgba(14,165,233,0.15)",
             borderRadius: 8, padding: "8px 14px", marginBottom: 18,
-            fontFamily: "monospace", fontSize: 11, color: "#a855f7",
+            fontFamily: "monospace", fontSize: 11, color: "#8b5cf6",
           }}>
             <span style={{ color: "rgba(255,255,255,0.3)" }}># coral-sources.yaml</span><br />
-            {"  auth:\n    type: bearer_token\n    env_var: "}<span style={{ color: "#fbbf24" }}>{meta.envVar}</span>
+            {"  auth:\n    type: bearer_token\n    env_var: "}<span style={{ color: "#f59e0b" }}>{meta.envVar}</span>
           </div>
         )}
 
@@ -322,8 +322,8 @@ function LiveRefreshIndicator({ onRefreshed }) {
     <div
       style={{
         display: "flex", alignItems: "center", gap: 8,
-        background: "rgba(0,212,255,0.06)",
-        border: "1px solid rgba(0,212,255,0.2)",
+        background: "rgba(14,165,233,0.06)",
+        border: "1px solid rgba(14,165,233,0.2)",
         borderRadius: 8, padding: "5px 10px",
       }}
       title={lastTime ? `Last refreshed: ${lastTime.toLocaleTimeString()}` : "Auto-refreshes Coral cache every 30s"}
@@ -332,8 +332,8 @@ function LiveRefreshIndicator({ onRefreshed }) {
       <div style={{ position: "relative", width: 8, height: 8, flexShrink: 0 }}>
         <div style={{
           width: 8, height: 8, borderRadius: "50%",
-          background: refreshing ? "#fbbf24" : "#00ff9d",
-          boxShadow: `0 0 6px ${refreshing ? "#fbbf24" : "#00ff9d"}80`,
+          background: refreshing ? "#f59e0b" : "#10b981",
+          boxShadow: `0 0 6px ${refreshing ? "#f59e0b" : "#10b981"}80`,
         }} />
         {!refreshing && (
           <motion.div
@@ -341,7 +341,7 @@ function LiveRefreshIndicator({ onRefreshed }) {
             transition={{ duration: 2, repeat: Infinity }}
             style={{
               position: "absolute", inset: -2, borderRadius: "50%",
-              background: "#00ff9d30", pointerEvents: "none",
+              background: "#10b98130", pointerEvents: "none",
             }}
           />
         )}
@@ -352,10 +352,10 @@ function LiveRefreshIndicator({ onRefreshed }) {
       </span>
 
       {/* Progress bar */}
-      <div style={{ width: 36, height: 2.5, background: "rgba(0,212,255,0.15)", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ width: 36, height: 2.5, background: "rgba(14,165,233,0.15)", borderRadius: 2, overflow: "hidden" }}>
         <div style={{
           height: "100%", width: `${pct}%`,
-          background: "linear-gradient(90deg,#00d4ff,#00ff9d)",
+          background: "linear-gradient(90deg,#0ea5e9,#10b981)",
           borderRadius: 2, transition: "width 1s linear",
         }} />
       </div>
@@ -366,7 +366,7 @@ function LiveRefreshIndicator({ onRefreshed }) {
         disabled={refreshing}
         style={{
           background: "transparent", border: "none", cursor: "pointer",
-          color: "#00d4ff", padding: 0, display: "flex", alignItems: "center",
+          color: "#0ea5e9", padding: 0, display: "flex", alignItems: "center",
         }}
         title="Refresh now"
         id="header-manual-refresh"
@@ -407,11 +407,11 @@ function SyncLiveDataButton() {
       style={{
         display: "flex", alignItems: "center", gap: 6,
         background: done 
-          ? "linear-gradient(135deg,rgba(0,255,157,0.15),rgba(0,255,157,0.08))"
-          : "linear-gradient(135deg,rgba(251,191,36,0.15),rgba(251,191,36,0.05))",
-        border: done ? "1px solid rgba(0,255,157,0.4)" : "1px solid rgba(251,191,36,0.4)",
+          ? "linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.08))"
+          : "linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05))",
+        border: done ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(245,158,11,0.4)",
         borderRadius: 8, padding: "6px 12px",
-        color: done ? "#00ff9d" : "#fbbf24",
+        color: done ? "#10b981" : "#f59e0b",
         fontSize: 11, fontWeight: 600, cursor: syncing ? "wait" : "pointer",
         whiteSpace: "nowrap",
       }}
@@ -470,11 +470,11 @@ function ExportReportButton() {
         style={{
           display: "flex", alignItems: "center", gap: 6,
           background: done
-            ? "linear-gradient(135deg,rgba(0,255,157,0.15),rgba(0,255,157,0.08))"
-            : "linear-gradient(135deg,rgba(0,212,255,0.1),rgba(168,85,247,0.1))",
-          border: done ? "1px solid rgba(0,255,157,0.4)" : "1px solid rgba(0,212,255,0.3)",
+            ? "linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.08))"
+            : "linear-gradient(135deg,rgba(14,165,233,0.1),rgba(139,92,246,0.1))",
+          border: done ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(14,165,233,0.3)",
           borderRadius: 8, padding: "6px 12px",
-          color: done ? "#00ff9d" : "#00d4ff",
+          color: done ? "#10b981" : "#0ea5e9",
           fontSize: 11, fontWeight: 600, cursor: downloading ? "wait" : "pointer",
           whiteSpace: "nowrap",
         }}
@@ -499,13 +499,13 @@ function ExportReportButton() {
               transition={{ duration: 0.15 }}
               style={{
                 position: "absolute", top: "calc(100% + 6px)", right: 0,
-                background: "rgba(8,12,28,0.98)", border: "1px solid rgba(0,212,255,0.2)",
+                background: "rgba(8,12,28,0.98)", border: "1px solid rgba(14,165,233,0.2)",
                 borderRadius: 10, padding: 6, zIndex: 99, minWidth: 180,
                 boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
               }}
             >
-              <ExportOption icon={FiFileText} label="JSON Report" sub="Full structured data" color="#00d4ff" onClick={downloadJson} />
-              <ExportOption icon={FiPrinter}  label="Print / PDF"  sub="Browser print dialog" color="#a855f7" onClick={printPdf} />
+              <ExportOption icon={FiFileText} label="JSON Report" sub="Full structured data" color="#0ea5e9" onClick={downloadJson} />
+              <ExportOption icon={FiPrinter}  label="Print / PDF"  sub="Browser print dialog" color="#8b5cf6" onClick={printPdf} />
             </motion.div>
           </>
         )}
@@ -565,8 +565,8 @@ function SourceBadge({ id, className, children, onConfigure }) {
         <span style={{
           position: "absolute", top: -6, right: -4,
           width: 8, height: 8, borderRadius: "50%",
-          background: "#fbbf24",
-          boxShadow: "0 0 6px #fbbf24",
+          background: "#f59e0b",
+          boxShadow: "0 0 6px #f59e0b",
           border: "1px solid rgba(0,0,0,0.5)",
         }} title="Token required" />
       )}
@@ -574,8 +574,8 @@ function SourceBadge({ id, className, children, onConfigure }) {
         <span style={{
           position: "absolute", top: -6, right: -4,
           width: 8, height: 8, borderRadius: "50%",
-          background: "#00ff9d",
-          boxShadow: "0 0 6px #00ff9d",
+          background: "#10b981",
+          boxShadow: "0 0 6px #10b981",
           border: "1px solid rgba(0,0,0,0.5)",
         }} title="Public — connected" />
       )}
