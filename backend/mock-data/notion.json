@@ -1,42 +1,42 @@
 [
   {
     "policy_id": "POL-001",
-    "policy_name": "No Critical CVE Payment Packages",
+    "policy_name": "BANNED_PACKAGE",
     "applies_to": "stripe",
     "policy_rule": "BANNED_PACKAGE",
     "severity": "critical",
     "owner_team": "security-engineering",
-    "description": "stripe has an active critical CVE (CVE-2026-9999). Deployment blocked until patched to >= 14.6.0.",
+    "description": "Active critical CVE — deployment blocked",
     "last_updated": "2026-05-20T00:00:00Z"
   },
   {
     "policy_id": "POL-002",
-    "policy_name": "JWT Library Audit Required",
+    "policy_name": "AUDIT_REQUIRED",
     "applies_to": "jsonwebtoken",
     "policy_rule": "AUDIT_REQUIRED",
     "severity": "high",
     "owner_team": "auth-team",
-    "description": "All JWT library changes require a security audit before merging to main. Token forgery risk.",
+    "description": "JWT library changes require security audit",
     "last_updated": "2026-05-18T00:00:00Z"
   },
   {
     "policy_id": "POL-003",
-    "policy_name": "AWS SDK Secrets Risk",
+    "policy_name": "SECRETS_RISK",
     "applies_to": "aws-sdk",
     "policy_rule": "SECRETS_RISK",
     "severity": "critical",
     "owner_team": "platform-team",
-    "description": "aws-sdk usage must be reviewed for hardcoded credentials. Use IAM roles or AWS Secrets Manager.",
+    "description": "Must use IAM roles — hardcoded keys not allowed",
     "last_updated": "2026-05-22T00:00:00Z"
   },
   {
     "policy_id": "POL-004",
-    "policy_name": "bcrypt Version Control",
+    "policy_name": "REVIEW_REQUIRED",
     "applies_to": "bcrypt",
     "policy_rule": "REVIEW_REQUIRED",
     "severity": "medium",
     "owner_team": "auth-team",
-    "description": "bcrypt updates require lead review due to auth system sensitivity. Timing attacks possible.",
+    "description": "Auth library changes require senior review",
     "last_updated": "2026-05-15T00:00:00Z"
   },
   {
@@ -51,12 +51,12 @@
   },
   {
     "policy_id": "POL-006",
-    "policy_name": "VM2 Banned — Sandbox Escape",
+    "policy_name": "BANNED_PACKAGE",
     "applies_to": "vm2",
     "policy_rule": "BANNED_PACKAGE",
     "severity": "critical",
     "owner_team": "security-engineering",
-    "description": "vm2 is permanently banned due to CVE-2023-29017 allowing complete sandbox escape and host code execution.",
+    "description": "CVE-2023-29017 — complete sandbox escape, permanently banned",
     "last_updated": "2023-04-10T00:00:00Z"
   },
   {
@@ -78,5 +78,41 @@
     "owner_team": "security-engineering",
     "description": "lodash versions below 4.17.21 are prohibited due to prototype pollution. Audit any usage patterns.",
     "last_updated": "2021-01-01T00:00:00Z"
+  },
+  {
+    "policy_id": "POL-2",
+    "applies_to": "node-serialize",
+    "policy_name": "BANNED_PACKAGE",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "high",
+    "description": "Known RCE vector — permanently banned",
+    "owner_team": "security-engineering"
+  },
+  {
+    "policy_id": "POL-427",
+    "applies_to": "pg",
+    "policy_name": "AUDIT_REQUIRED",
+    "policy_rule": "AUDIT_REQUIRED",
+    "severity": "high",
+    "description": "DB query changes require SQL injection audit",
+    "owner_team": "security-engineering"
+  },
+  {
+    "policy_id": "POL-764",
+    "applies_to": "shelljs",
+    "policy_name": "AUDIT_REQUIRED",
+    "policy_rule": "AUDIT_REQUIRED",
+    "severity": "high",
+    "description": "Shell execution requires explicit security sign-off",
+    "owner_team": "security-engineering"
+  },
+  {
+    "policy_id": "POL-9",
+    "applies_to": "ejs",
+    "policy_name": "BANNED_PACKAGE",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "high",
+    "description": "RCE via template injection — use handlebars instead",
+    "owner_team": "security-engineering"
   }
 ]
