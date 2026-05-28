@@ -41,8 +41,8 @@ const file = fs.createWriteStream(destPath);
 https.get(downloadUrl, (response) => {
   if (response.statusCode !== 200) {
     console.error(`Failed to download Coral CLI. HTTP Status: ${response.statusCode}`);
-    fs.unlinkSync(destPath);
-    process.exit(1);
+    try { fs.unlinkSync(destPath); } catch (e) {}
+    process.exit(0);
   }
 
   response.pipe(file);
@@ -57,5 +57,6 @@ https.get(downloadUrl, (response) => {
 }).on('error', (err) => {
   fs.unlinkSync(destPath);
   console.error(`Error downloading Coral CLI: ${err.message}`);
-  process.exit(1);
+  // Don't crash the build if the download fails
+  process.exit(0);
 });
