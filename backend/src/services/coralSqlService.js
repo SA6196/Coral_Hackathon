@@ -74,9 +74,9 @@ const getCriticalIncidents = async () => {
         s.channel, s.message, s.timestamp,
         n.policy_name, n.policy_rule, n.owner_team, n.description
       FROM coral_hackathon.github g
-      LEFT JOIN coral_hackathon.osv o ON g.package_name = o.package
+      LEFT JOIN coral_hackathon.osv o ON g.package_name = o.package AND (o.severity != 'safe' OR o.severity IS NULL)
       LEFT JOIN coral_hackathon.slack s ON g.author = s.user
-      LEFT JOIN coral_hackathon.notion n ON g.package_name = n.applies_to
+      LEFT JOIN coral_hackathon.notion n ON g.package_name = n.applies_to AND n.policy_name LIKE '%policy%'
       ORDER BY g.pr_id DESC
     `;
 

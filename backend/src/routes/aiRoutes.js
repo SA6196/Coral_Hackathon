@@ -17,6 +17,11 @@ const express = require("express");
 const router  = express.Router();
 const axios   = require("axios");
 
+const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
+const { AgentExecutor, createToolCallingAgent } = require("langchain/agents");
+const { ChatPromptTemplate } = require("@langchain/core/prompts");
+const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk } = require("../ai/tools");
+
 const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }            = require("../coral/queryEngine");
 
@@ -763,181 +768,65 @@ router.post("/chat", async (req, res, next) => {
   const allIncidents = await getIncidents(sessionId);
   const inc = await getIncidentById(sessionId, log_id);
 
-  // ─── AI Service Integrations (OpenAI & Gemini) ─────────────────────
-  const openaiKey = process.env.OPENAI_API_KEY;
   const geminiKey = process.env.GEMINI_API_KEY;
 
-
-  // 1. Build the database context for prompt injection
-  const incidentSummaryList = allIncidents.map(i => {
-    return `- ID: ${i.incident_id}, Severity: ${i.vulnerability?.severity}, Score: ${i.risk_score}, Package: ${i.package_details?.package_name || "none"}, Developer: ${i.pr_details?.developer || "unknown"}, Title: ${i.pr_details?.title || "none"}, Action: ${i.recommended_action || "none"}`;
-  }).join("\n");
-
-  const activeIncidentContext = JSON.stringify({
-    id: inc.incident_id,
-    severity: inc.vulnerability?.severity,
-    cve: inc.vulnerability?.cve,
-    cvss: inc.vulnerability?.cvss,
-    package: inc.package_details?.package_name,
-    developer: inc.pr_details?.developer,
-    pr_title: inc.pr_details?.title,
-    merged_at: inc.pr_details?.merged_at,
-    slack_discussion: inc.internal_discussion,
-    policy_violation: inc.policy_violation,
-    summary: inc.ai_summary
-  }, null, 2);
-
-  const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center.
-Your role is to analyze threat logs, dependency audits, Slack messages, Notion policy databases, and assist the user (security manager or developer) with security evaluations, rollbacks, and remediations.
-
-Here is the complete security state of the company:
-[Security Incidents Log]
-${incidentSummaryList}
-
-[Currently Selected Incident context for investigation]
-${activeIncidentContext}
-
-Guidelines for responding:
-1. Always base your replies on the provided context where applicable.
-2. Provide technical, step-by-step guidance.
-3. Be professional, direct, and concise. Do not write filler.
-4. Format your output using clean GitHub-style Markdown.
-5. **HACKATHON WINNING DIRECTIVE:** Whenever the user asks about a specific developer or their risk profile, you MUST calculate a "Developer Trust Score", assign them a Behavioral Risk Persona (e.g., 🚨 Insider Threat, 🟡 Careless Committer, 🟢 Secure Contributor), provide exact 1-Click Containment bash scripts (like revoking GitHub access via \`gh api\` or Slack webhooks), and output a \`\`\`mermaid pie chart summarizing their incident distribution (Critical vs High vs Safe vs Leaks).
-6. If the user asks about general security, explain how Coral Virtual SQL engine compiles tables or how branch status gates prevent vulnerable merges.`;
-
-  // 2. OpenAI API Path
-  if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
-    try {
-      const response = await axios.post("https://api.openai.com/v1/chat/completions", {
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: message }
-        ],
-        temperature: 0.2,
-        max_tokens: 1000
-      }, {
-        headers: {
-          "Authorization": `Bearer ${openaiKey.trim()}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 10000
-      });
-
-      const reply = response.data?.choices?.[0]?.message?.content || "No reply from AI service";
-      
-      return res.json({
-        success: true,
-        mode: "coral-ai-v2-openai",
-        intent: "REAL_LLM_CHAT",
-        incident_id: inc.incident_id,
-        reply,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("[CHAT_AI_ERROR]", err.message, err.response?.data || "");
-      // Fall through to try Gemini if configured, or fallback
-    }
+  if (!geminiKey || geminiKey === "your-gemini-key-here" || geminiKey.trim().length === 0) {
+    return res.json({
+      success: true,
+      mode: "coral-ai-v2-fallback",
+      intent: "MISSING_KEY",
+      incident_id: inc.incident_id,
+      reply: "Please set your GEMINI_API_KEY in the `.env` file to use the LangChain agent.",
+      timestamp: new Date().toISOString(),
+    });
   }
 
-  // 3. Gemini API Path (Generous free-tier integration)
-  if (geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
-    try {
-      const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
-        {
-          contents: [
-            {
-              parts: [
-                { text: message }
-              ]
-            }
-          ],
-          systemInstruction: {
-            parts: [
-              { text: systemPrompt }
-            ]
-          },
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 1000
-          }
-        },
-        {
-          headers: {
-            "Content-Type": "application/json"
-          },
-          timeout: 10000
-        }
-      );
+  try {
+    const activeIncidentContext = JSON.stringify({
+      id: inc.incident_id,
+      severity: inc.vulnerability?.severity,
+      cve: inc.vulnerability?.cve,
+      package: inc.package_details?.package_name,
+      developer: inc.pr_details?.developer,
+      diff: inc.pr_details?.commit_diff || "diff --git a/file b/file\n+ var AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';"
+    }, null, 2);
 
-      const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No reply from Gemini service";
+    const tools = [scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk];
+    const llm = new ChatGoogleGenerativeAI({
+      modelName: "gemini-2.5-flash",
+      temperature: 0,
+      apiKey: geminiKey
+    });
 
-      return res.json({
-        success: true,
-        mode: "coral-ai-v2-gemini",
-        intent: "REAL_LLM_CHAT",
-        incident_id: inc.incident_id,
-        reply,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.error("[CHAT_GEMINI_ERROR]", err.message, err.response?.data || "");
-      // Fall through to local fallback
-    }
+    const prompt = ChatPromptTemplate.fromMessages([
+      ["system", "You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center. You have access to tools to scan commits for secrets, query Notion policies, query OSV vulnerabilities, and check developer access risk. Use these tools when needed."],
+      ["placeholder", "{chat_history}"],
+      ["user", "{input}"],
+      ["placeholder", "{agent_scratchpad}"]
+    ]);
+
+    const agent = createToolCallingAgent({ llm, tools, prompt });
+    const agentExecutor = new AgentExecutor({ agent, tools, maxIterations: 5 });
+    
+    const input = `Query: "${message}". Current Incident Context: ${activeIncidentContext}`;
+    const result = await agentExecutor.invoke({ input });
+
+    return res.json({
+      success: true,
+      mode: "coral-ai-v2-langchain",
+      intent: "REAL_AGENT_CHAT",
+      incident_id: inc.incident_id,
+      reply: result.output,
+      timestamp: new Date().toISOString(),
+    });
+
+  } catch (err) {
+    console.error("[CHAT_LANGCHAIN_ERROR]", err.message, err.stack);
+    return res.json({
+      success: false,
+      error: "Langchain Agent failed: " + err.message
+    });
   }
-
-
-  // ── FALLBACK MODE (Classify intent and generate template-based response) ──
-  const intent = classifyIntent(message);
-  let reply = "";
-  
-  switch (intent) {
-    case "EXPLAIN_SEVERITY":
-      reply = generateExplainSeverity(inc, message);
-      break;
-    case "ROLLBACK":
-      reply = generateRollback(inc);
-      break;
-    case "SECRETS":
-      reply = generateSecretsResponse(inc);
-      break;
-    case "FIX_PACKAGE":
-      reply = generateFixPackage(inc, message);
-      break;
-    case "DEVELOPER_CONTEXT":
-      reply = generateDeveloperContext(inc, allIncidents, message);
-      break;
-    case "POLICY":
-      reply = generatePolicyResponse(inc);
-      break;
-    case "DEPLOY_SAFETY":
-      reply = generateDeploySafety(inc);
-      break;
-    case "REPORT":
-      reply = generateReport(allIncidents);
-      break;
-    case "THREAT_INTEL":
-      reply = generateThreatIntel(inc);
-      break;
-    case "TIMELINE":
-      reply = generateTimeline(allIncidents);
-      break;
-    case "REMEDIATION_STEPS":
-      reply = generateRemediationSteps(inc);
-      break;
-    default:
-      reply = generateGeneral(inc, allIncidents);
-  }
-  
-  res.json({
-    success: true,
-    mode: "coral-ai-v2-fallback",
-    intent,
-    incident_id: inc.incident_id,
-    reply,
-    timestamp: new Date().toISOString(),
-  });
 });
 
 /* ─────────────────────────────────────────────────────────────────────
