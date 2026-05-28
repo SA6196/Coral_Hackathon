@@ -6,7 +6,10 @@ const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://
 const API = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
-  headers: { "Content-Type": "application/json" },
+  headers: { 
+    "Content-Type": "application/json",
+    "Bypass-Tunnel-Reminder": "true"
+  },
 });
 
 /* ── Response interceptor — normalize errors ────────────────────────── */
