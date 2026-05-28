@@ -940,9 +940,10 @@ Guidelines for responding:
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/investigate?id=<1-N>
 ───────────────────────────────────────────────────────────────────── */
-router.get("/investigate", (req, res) => {
+router.get("/investigate", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
   const id = sanitizeInput(req.query.id || "1");
-  const inc = getIncidentById(id);
+  const inc = await getIncidentById(sessionId, id);
   
   const sev    = inc.vulnerability?.severity || "safe";
   const cve    = inc.vulnerability?.cve      || "N/A";
@@ -1004,9 +1005,10 @@ router.get("/investigate", (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/remediate?id=<1-N>
 ───────────────────────────────────────────────────────────────────── */
-router.get("/remediate", (req, res) => {
+router.get("/remediate", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
   const id  = sanitizeInput(req.query.id || "1");
-  const inc = getIncidentById(id);
+  const inc = await getIncidentById(sessionId, id);
   
   const sev       = inc.vulnerability?.severity || "safe";
   const pkg       = inc.package_details?.package_name || "unknown";
@@ -1052,13 +1054,14 @@ router.get("/remediate", (req, res) => {
    GET /api/query?q=<natural language>
    Enhanced NL → Coral SQL search
 ───────────────────────────────────────────────────────────────────── */
-router.get("/query", (req, res) => {
+router.get("/query", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
   const q = sanitizeInput(req.query.q || "").toLowerCase();
   if (!q) {
     return res.status(400).json({ success: false, error: "Query parameter 'q' is required" });
   }
   
-  const incidents = getIncidents();
+  const incidents = await getIncidents(sessionId);
   let filtered = incidents;
   let coral_query = `SELECT * FROM github_commits
 LEFT JOIN vulnerabilities ON github_commits.package_name = vulnerabilities.package_name
@@ -1128,9 +1131,9 @@ LEFT JOIN policies        ON github_commits.package_name = policies.applies_to`;
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/logs — All security logs with pagination
 ───────────────────────────────────────────────────────────────────── */
-router.post("/query-engine", (req, res) => {
+router.post("/query-engine", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const incidents = getIncidents(sessionId);
+  const incidents = await getIncidents(sessionId);
   const page  = Math.max(1, parseInt(req.query.page  || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "20", 10)));
   const start = (page - 1) * limit;
@@ -1150,9 +1153,9 @@ router.post("/query-engine", (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/anomalies — Developer anomaly detection
 ───────────────────────────────────────────────────────────────────── */
-router.get("/suggested-actions", (req, res) => {
+router.get("/suggested-actions", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const incidents = getIncidents(sessionId);
+  const incidents = await getIncidents(sessionId);
   const devMap = {};
   
   incidents.forEach(inc => {
@@ -1180,9 +1183,9 @@ router.get("/suggested-actions", (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/developer-risk — Developer risk profiles
 ───────────────────────────────────────────────────────────────────── */
-router.get("/developer-risk", (req, res) => {
+router.get("/developer-risk", async (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
-  const incidents = getIncidents(sessionId);
+  const incidents = await getIncidents(sessionId);
   const devMap = {};
   
   incidents.forEach(inc => {
@@ -1221,8 +1224,9 @@ router.get("/developer-risk", (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────
    GET /api/threat-summary — Threat intelligence summary
 ───────────────────────────────────────────────────────────────────── */
-router.get("/threat-summary", (req, res) => {
-  const incidents = getIncidents();
+router.get("/threat-summary", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents = await getIncidents(sessionId);
   
   const critical = incidents.filter(i => i.vulnerability?.severity === "critical");
   const high     = incidents.filter(i => i.vulnerability?.severity === "high");
