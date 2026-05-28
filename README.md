@@ -129,6 +129,8 @@ flowchart LR
 Built with ❤️ for the WeMakeDevs Hackathon. 
 
 **Team Members:**
-- **Tanmay Shukla** 
-- **SA6196** (Owner)
-- *(And the rest of the Pirate crew!)*
+- **tanmayshukla60-netizen** 
+- **SA6196**
+- **Sohan-2025**
+- **Ramsri12**
+  
