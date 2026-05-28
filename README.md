@@ -15,7 +15,7 @@
 
 ---
 
-## 🏴‍☠️ The Pitch: Why this wins the Hackathon
+## 🏴‍☠️ The Architecture: Zero-ETL
 
 Most security platforms require complex ETL pipelines, a heavy data warehouse (Snowflake, BigQuery), and thousands of lines of fragile Python glue code to correlate GitHub pull requests with vulnerability databases and internal Slack chats.
 
@@ -32,7 +32,7 @@ We query:
 
 ---
 
-## ✨ Features (Judges, look here!)
+## ✨ Features 
 
 *   **Native Coral Engine Integration**: We execute the official `coral.exe` / `coral` binary under the hood. Data is routed via a custom `coral-source.yaml` spec. 
 *   **Zero-ETL Architecture**: We fetch raw API data, drop it into local files, and let Coral query it instantly as a relational database. 
