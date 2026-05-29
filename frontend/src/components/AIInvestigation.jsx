@@ -87,6 +87,8 @@ function GeminiMarkdown({ text }) {
 
 function fmt(t) {
   return t
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
     .replace(/`([^`]+)`/g, '<code class="gemini-inline-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
