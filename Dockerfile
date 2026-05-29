@@ -12,6 +12,7 @@ WORKDIR /app
 
 # Copy backend files
 COPY backend/package*.json ./backend/
+COPY backend/scripts/ ./backend/scripts/
 WORKDIR /app/backend
 RUN npm install --omit=dev
 COPY backend/ ./
