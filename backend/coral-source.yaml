@@ -7,7 +7,7 @@ tables:
     description: GitHub pull requests
     format: json
     source:
-      location: file:///c:/Users/Tanmay%20Shukla/Downloads/Bruh/Coral_Hackathon/backend/mock-data/
+      location: file:./mock-data/
       glob: "github.json"
     columns:
       - name: pr_id
@@ -26,7 +26,7 @@ tables:
     description: Slack messages
     format: json
     source:
-      location: file:///c:/Users/Tanmay%20Shukla/Downloads/Bruh/Coral_Hackathon/backend/mock-data/
+      location: file:./mock-data/
       glob: "slack.json"
     columns:
       - name: id
@@ -43,7 +43,7 @@ tables:
     description: OSV vulnerabilities
     format: json
     source:
-      location: file:///c:/Users/Tanmay%20Shukla/Downloads/Bruh/Coral_Hackathon/backend/mock-data/
+      location: file:./mock-data/
       glob: "osv.json"
     columns:
       - name: id
@@ -60,7 +60,7 @@ tables:
     description: Notion policies
     format: json
     source:
-      location: file:///c:/Users/Tanmay%20Shukla/Downloads/Bruh/Coral_Hackathon/backend/mock-data/
+      location: file:./mock-data/
       glob: "notion.json"
     columns:
       - name: policy_id
