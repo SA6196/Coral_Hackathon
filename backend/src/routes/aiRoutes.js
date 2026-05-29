@@ -201,6 +201,7 @@ function generatePersonalizedInvestigationReport(inc, allIncidents) {
   const pkg = inc.package_details?.package_name || "unknown";
   const hasSecret = !!inc.secrets_detected;
   const hasPolicy = !!inc.policy_violation;
+  const hasMalCode = !!inc.malicious_code_detected;
 
   // Find all incidents by this developer
   const devIncidents = allIncidents.filter(i => i.pr_details?.developer === dev);
@@ -208,11 +209,13 @@ function generatePersonalizedInvestigationReport(inc, allIncidents) {
   const avgRisk = Math.round(totalRisk / (devIncidents.length || 1)) || 0;
   const criticalCount = devIncidents.filter(i => i.vulnerability?.severity === "critical").length;
   const secretLeaks = devIncidents.filter(i => i.secrets_detected).length;
+  const malCodes = devIncidents.filter(i => i.malicious_code_detected).length;
   
-  const anomalyScore = Math.min(100, Math.round((avgRisk * 0.4) + (criticalCount * 15) + (secretLeaks * 30)));
+  const anomalyScore = Math.min(100, Math.round((avgRisk * 0.4) + (criticalCount * 15) + (secretLeaks * 30) + (malCodes * 50)));
   
   let persona = "🟢 Secure Contributor";
-  if (secretLeaks > 0 && criticalCount > 0) persona = "🚨 Insider Threat / Compromised Account";
+  if (malCodes > 0) persona = "🚨 Active Threat / Rogue Actor";
+  else if (secretLeaks > 0 && criticalCount > 0) persona = "🚨 Insider Threat / Compromised Account";
   else if (criticalCount >= 2) persona = "🟠 High-Risk Operator";
   else if (avgRisk >= 40) persona = "🟡 Careless Committer";
 
@@ -222,7 +225,11 @@ function generatePersonalizedInvestigationReport(inc, allIncidents) {
   
   const devLower = dev.toLowerCase();
   
-  if (hasSecret) {
+  if (hasMalCode) {
+    const finding = inc.malicious_code_detected?.findings?.[0];
+    issueExplanation = `The developer **${dev}** introduced malicious code / backdoor behavior in \`${pkg}\`. Pattern: "${finding?.description || "Suspicious code"}". Code: \`${finding?.preview || ""}\`. This is a critical violation of all security policies.`;
+    exploitScenarios = `This backdoor allows immediate remote code execution, lateral movement, or complete system compromise. Immediate account suspension and deployment rollback are mandatory.`;
+  } else if (hasSecret) {
     const secretName = inc.secrets_detected?.findings?.[0]?.name || "API Access Key";
     issueExplanation = `The developer **${dev}** committed a hardcoded secret (**${secretName}**) directly inside the codebase. Hardcoding secrets in git trees is highly risky as it exposes long-lived authentication keys to any reader of the repository, enabling immediate privilege escalation.`;
     exploitScenarios = `An attacker gaining read access to this code or repository can immediately steal the exposed **${secretName}** to access our live production infrastructure, bypass multi-factor authentication, and download sensitive customer data.`;
@@ -286,6 +293,7 @@ function generatePersonalizedRemediationPlan(inc, allIncidents) {
   const cve = inc.vulnerability?.cve || "N/A";
   const hasSecret = !!inc.secrets_detected;
   const hasPolicy = !!inc.policy_violation;
+  const hasMalCode = !!inc.malicious_code_detected;
   const commitHash = inc.github?.commit_hash || "HEAD";
 
   // Build developer customized actions and scripts
@@ -297,7 +305,23 @@ function generatePersonalizedRemediationPlan(inc, allIncidents) {
 
   const devLower = dev.toLowerCase();
 
-  if (hasSecret) {
+  if (hasMalCode) {
+    const finding = inc.malicious_code_detected?.findings?.[0];
+    title = `🛡️ CRITICAL: Backdoor & Malicious Code Quarantine — ${dev}`;
+    subtitle = `Quarantine ${dev} and revert malicious injection in ${pkg}`;
+    estTime = "2 Hours";
+    actions = [
+      `Suspend developer ${dev}'s SSO and GitHub access pending an active insider threat investigation.`,
+      `Revert the malicious commit introducing "${finding?.description || "backdoor behavior"}" immediately.`,
+      `Audit all recent merges by ${dev} for lateral movement or hidden hooks.`,
+      `Engage the Incident Response (IR) team and notify legal.`
+    ];
+    scripts = [
+      `# 1. Revert malicious commit\ngit revert ${commitHash} --no-edit\ngit push origin HEAD --force-with-lease`,
+      `# 2. Lock developer access via GitHub CLI\ngh api -X PUT /orgs/:org/members/${dev}/suspend`,
+      `# 3. Trigger IR audit log dump\ncurl -X POST $SIEM_WEBHOOK/trigger-audit -d '{"user": "${dev}"}'`
+    ];
+  } else if (hasSecret) {
     const secretName = inc.secrets_detected?.findings?.[0]?.name || "Credential";
     title = `🛡️ ${secretName} Rotation & Clean Guide — ${dev}`;
     subtitle = `Rotate hardcoded credentials committed by ${dev} and purge history in ${pkg}`;
@@ -434,7 +458,7 @@ Format your response in beautiful GitHub-style Markdown.`;
           "Authorization": `Bearer ${openaiKey.trim()}`,
           "Content-Type": "application/json"
         },
-        timeout: 10000
+        timeout: 30000
       });
       report = response.data?.choices?.[0]?.message?.content || "";
       mode = "live";
@@ -464,7 +488,7 @@ Format your response in beautiful GitHub-style Markdown.`;
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: { temperature: 0.2, maxOutputTokens: 1000 }
         },
-        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+        { headers: { "Content-Type": "application/json" }, timeout: 30000 }
       );
       report = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
       mode = "live";
@@ -547,7 +571,7 @@ Return ONLY valid JSON, no markdown wrapping, no formatting.`;
           "Authorization": `Bearer ${openaiKey.trim()}`,
           "Content-Type": "application/json"
         },
-        timeout: 10000
+        timeout: 30000
       });
       remediationData = JSON.parse(response.data?.choices?.[0]?.message?.content);
       mode = "live";
@@ -586,7 +610,7 @@ Return ONLY valid JSON, no markdown wrapping, no formatting.`;
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
         },
-        { headers: { "Content-Type": "application/json" }, timeout: 10000 }
+        { headers: { "Content-Type": "application/json" }, timeout: 30000 }
       );
       remediationData = JSON.parse(response.data?.candidates?.[0]?.content?.parts?.[0]?.text);
       mode = "live";

@@ -87,6 +87,18 @@ function initializeTables() {
     )`, (err) => {
       if (err) console.error("Error creating slack table:", err.message);
     });
+
+    // Users table for sign-up / registration
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      role TEXT DEFAULT 'analyst',
+      team TEXT DEFAULT 'security',
+      created_at TEXT
+    )`, (err) => {
+      if (err) console.error("Error creating users table:", err.message);
+    });
   });
 }
 

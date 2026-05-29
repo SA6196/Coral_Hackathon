@@ -31,45 +31,86 @@ const POLICY_BOOST = {
 
 // ── Contextual AI summaries ──────────────────────────────────────────
 function buildAiSummary(incident) {
-  const { github, vulnerability, slack, notion_policy, secrets } = incident;
-  const pkg      = github.package_name;
-  const author   = github.author;
-  const severity = (vulnerability.severity || "safe").toLowerCase(); // normalise
-  const cve      = vulnerability.cve_id;
-  const hasLeak  = secrets?.length > 0;
-  const hasPolicy = notion_policy !== null;
+  const { github, vulnerability, slack, notion_policy, secrets, maliciousCode } = incident;
+  const pkg        = github.package_name;
+  const author     = github.author;
+  const severity   = (vulnerability.severity || "safe").toLowerCase();
+  const cve        = vulnerability.cve_id;
+  const hasLeak    = secrets?.length > 0;
+  const hasPolicy  = notion_policy !== null;
+  const hasMalCode = maliciousCode?.length > 0;
 
+  const slackCtx = (slack?.message && slack.message !== "No internal discussion found.")
+    ? ` Slack (${slack.channel || "#unknown"}): "${slack.message}"`
+    : "";
+
+  // 1. Malicious code / backdoor — highest priority regardless of OSV severity
+  if (hasMalCode) {
+    const finding = maliciousCode[0];
+    return `🚨 CRITICAL BACKDOOR DETECTED: ${author} introduced malicious code in \`${pkg}\` — pattern: "${finding.description}". Code preview: \`${finding.preview}\`.${slackCtx} Immediate rollback and account suspension required. Do NOT deploy.`;
+  }
+
+  // 2. Critical + secret leak
   if (severity === "critical" && hasLeak) {
-    return `🚨 CRITICAL: ${author} committed ${pkg} which contains ${cve} AND a secret leak (${secrets[0]?.name}). ${slack.message !== "No internal discussion found." ? `Slack alert in ${slack.channel}: "${slack.message}"` : "No internal discussion detected."} Immediate rollback required.`;
+    return `🚨 CRITICAL: ${author} committed \`${pkg}\` containing ${cve} AND a credential leak (${secrets[0]?.name}).${slackCtx} Both vulnerability and secret rotation required immediately.`;
   }
+
+  // 3. Critical with policy
+  if (severity === "critical" && hasPolicy) {
+    return `🔴 CRITICAL: ${cve} in \`${pkg}\` by ${author} violates policy "${notion_policy.policy_name}" (${notion_policy.owner_team}).${slackCtx} Deployment blocked — rollback required.`;
+  }
+
+  // 4. Critical
   if (severity === "critical") {
-    return `🔴 Critical vulnerability ${cve} detected in ${pkg} committed by ${author}. ${hasPolicy ? `Violates policy: "${notion_policy.policy_name}" (${notion_policy.owner_team}).` : ""} Immediate action required.`;
+    return `🔴 CRITICAL vulnerability ${cve} in \`${pkg}\` committed by ${author}. CVSS score indicates active exploitability.${slackCtx} Immediate rollback required.`;
   }
-  if (severity === "high" && hasPolicy) {
-    return `🟠 High-risk package ${pkg} violates internal policy "${notion_policy.policy_name}". ${cve !== "NO_CVE_FOUND" ? `CVE: ${cve}.` : ""} Security review mandatory before next deployment.`;
-  }
-  if (severity === "high") {
-    return `🟠 High-risk change by ${author}: ${github.title}. Package ${pkg} has known CVE ${cve}. Security team review required.`;
-  }
+
+  // 5. Secret leak only
   if (hasLeak) {
-    return `⚠️ Potential secret detected in commit by ${author}: "${secrets[0]?.name}". ${slack.message}`;
+    return `⚠️ SECRET LEAK: ${author} hardcoded credentials in \`${pkg}\` — exposed: "${secrets[0]?.name}".${slackCtx} Rotate keys immediately and purge git history.`;
   }
+
+  // 6. High + policy
+  if (severity === "high" && hasPolicy) {
+    return `🟠 HIGH RISK: \`${pkg}\` by ${author} has ${cve !== "NO_CVE_FOUND" ? `CVE ${cve}` : "known vulnerabilities"} AND violates policy "${notion_policy.policy_name}" (${notion_policy.owner_team}).${slackCtx} Security review mandatory before deployment.`;
+  }
+
+  // 7. High
+  if (severity === "high") {
+    return `🟠 HIGH RISK: ${author} merged \`${pkg}\` with ${cve !== "NO_CVE_FOUND" ? `known CVE ${cve}` : "high-severity vulnerability"}.${slackCtx} Security team review required before next deployment.`;
+  }
+
+  // 8. Medium with policy
+  if (severity === "medium" && hasPolicy) {
+    return `🟡 MEDIUM RISK: \`${pkg}\` by ${author} has ${cve !== "NO_CVE_FOUND" ? cve : "known vulnerabilities"} and violates "${notion_policy.policy_name}".${slackCtx} Monitor and patch before production.`;
+  }
+
+  // 9. Medium
   if (severity === "medium") {
-    return `🟡 Moderate risk: ${pkg} has ${cve}. ${hasPolicy ? `Policy "${notion_policy.policy_name}" applies.` : "Monitor and test before deploying to production."}`;
+    return `🟡 MODERATE RISK: \`${pkg}\` by ${author} has ${cve !== "NO_CVE_FOUND" ? cve : "known vulnerabilities"}.${slackCtx} Test thoroughly and patch before production deployment.`;
   }
-  return `✅ ${github.title} appears safe. No critical vulnerabilities or policy violations detected.`;
+
+  // 10. Safe with policy still needs attention
+  if (hasPolicy) {
+    return `ℹ️ POLICY NOTE: ${author}'s commit to \`${pkg}\` violates "${notion_policy.policy_name}" despite no known CVEs.${slackCtx} Policy exception or review required.`;
+  }
+
+  return `✅ LOW RISK: ${author}'s change to \`${pkg}\` has no known CVEs, secrets, or policy violations.${slackCtx} Safe to deploy after standard review.`;
 }
 
 function buildRecommendation(incident) {
-  const { vulnerability, secrets, notion_policy } = incident;
-  const severity = (vulnerability.severity || "safe").toLowerCase(); // normalise
+  const { vulnerability, secrets, notion_policy, maliciousCode } = incident;
+  const severity = (vulnerability.severity || "safe").toLowerCase();
 
-  if (severity === "critical") return "ROLLBACK_DEPLOYMENT";
-  if (secrets?.length > 0)     return "ROTATE_SECRETS_IMMEDIATELY";
-  if (notion_policy?.policy_rule === "BANNED_PACKAGE") return "ROLLBACK_DEPLOYMENT";
-  if (notion_policy?.policy_rule === "SECRETS_RISK")   return "SECURITY_AUDIT_REQUIRED";
-  if (severity === "high")     return "SECURITY_REVIEW_REQUIRED";
-  if (severity === "medium")   return "MONITOR_AND_TEST";
+  // Malicious code is always an immediate rollback — checked BEFORE CVE severity
+  if (maliciousCode?.length > 0)                          return "ROLLBACK_DEPLOYMENT";
+  if (severity === "critical")                             return "ROLLBACK_DEPLOYMENT";
+  if (secrets?.length > 0)                                return "ROTATE_SECRETS_IMMEDIATELY";
+  if (notion_policy?.policy_rule === "BANNED_PACKAGE")     return "ROLLBACK_DEPLOYMENT";
+  if (notion_policy?.policy_rule === "SECRETS_RISK")       return "SECURITY_AUDIT_REQUIRED";
+  if (severity === "high")                                 return "SECURITY_REVIEW_REQUIRED";
+  if (severity === "medium")                               return "MONITOR_AND_TEST";
+  if (notion_policy)                                       return "POLICY_REVIEW_REQUIRED";
   return "SAFE_TO_DEPLOY";
 }
 

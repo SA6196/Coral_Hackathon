@@ -31,7 +31,9 @@ API.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-export const loginUser = (username, password) => API.post("/auth/login", { username, password });
+export const loginUser    = (username, password) => API.post("/auth/login",    { username, password });
+export const registerUser = (username, password, confirmPassword) => API.post("/auth/register", { username, password, confirmPassword });
+
 
 /* ── Response interceptor — normalize errors ────────────────────────── */
 API.interceptors.response.use(
