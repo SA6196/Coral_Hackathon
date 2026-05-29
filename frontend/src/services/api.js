@@ -1,7 +1,7 @@
 import axios from "axios";
 
-/* ── API base URL from env or fallback ──────────────────────────────── */
-const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
+/* ── API base URL — always relative; Vite proxy handles dev forwarding ── */
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 /* ── Multi-Tenant Session Management ──────────────────────────────── */
 let sessionId = localStorage.getItem("coral_session_id");

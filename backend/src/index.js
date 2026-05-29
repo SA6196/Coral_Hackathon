@@ -27,6 +27,8 @@ const allowedOrigins = [
   "http://localhost:5174",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
+  "http://192.168.29.47:5174",   // local network (phone access via Vite)
+  "http://192.168.29.47:5173",
 ];
 if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
 if (process.env.PUBLIC_URL)   allowedOrigins.push(process.env.PUBLIC_URL);
