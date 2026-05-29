@@ -1,13 +1,15 @@
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
+const { scanTextForSecrets } = require("../ai/tools");
+const { diffAccessBaseline, saveBaseline, getBaseline } = require("../services/baselineService");
 
 const MOCK_DIR = path.join(__dirname, "../../mock-data");
 
 /**
- * 1. Fetch live GitHub Pull Requests and package.json dependencies
+ * 1. Fetch live GitHub Pull Requests, branch protection, collaborators, and commits
  */
-async function fetchGithub(repoOwnerRepo, token) {
+async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
   try {
     const headers = { Accept: "application/vnd.github.v3+json" };
     if (token) headers.Authorization = `token ${token}`;
@@ -15,7 +17,7 @@ async function fetchGithub(repoOwnerRepo, token) {
     console.log(`[SYNC] Fetching PRs from GitHub: ${repoOwnerRepo}`);
     const prsRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/pulls?state=all&per_page=15`, { headers });
     
-    // We also want to fetch the package.json to get a list of real dependencies for the OSV scanner
+    // Fetch package.json dependencies
     let packages = [];
     try {
       const pkgRes = await axios.get(`https://raw.githubusercontent.com/${repoOwnerRepo}/main/package.json`, { headers });
@@ -26,11 +28,9 @@ async function fetchGithub(repoOwnerRepo, token) {
     }
 
     const formattedData = prsRes.data.map((pr, idx) => {
-      // Try to guess a package name from the PR title to simulate changes
       const words = pr.title.split(" ");
       let pkgName = packages[idx % packages.length] || "unknown";
       
-      // If the PR title mentions a package like "bump axios" or "upgrade lodash", extract it
       const bumpIdx = words.findIndex(w => ["bump", "upgrade", "update", "install", "add"].includes(w.toLowerCase()));
       if (bumpIdx >= 0 && bumpIdx + 1 < words.length) {
         pkgName = words[bumpIdx + 1];
@@ -40,11 +40,104 @@ async function fetchGithub(repoOwnerRepo, token) {
         pr_id: pr.number,
         author: pr.user.login,
         title: pr.title,
-        package_name: pkgName.toLowerCase(),
+        package_name: pkgName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ""),
         merged_at: pr.merged_at || pr.created_at,
         commit_diff: pr.body || "No description provided."
       };
     });
+
+    // ── Live Branch Protection Audit ──
+    let branchProtected = true;
+    try {
+      console.log(`[SYNC] Checking branch protection for main...`);
+      const bpRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/branches/main/protection`, { headers });
+      if (bpRes.data && bpRes.data.required_pull_request_reviews) {
+        branchProtected = true;
+      }
+    } catch (e) {
+      if (e.response && e.response.status === 404) {
+        branchProtected = false;
+        console.warn(`[SYNC ALERT] main branch is unprotected!`);
+      } else {
+        console.warn(`[SYNC WARN] Could not check branch protection:`, e.message);
+      }
+    }
+
+    if (!branchProtected) {
+      formattedData.unshift({
+        pr_id: 999,
+        author: "system",
+        title: "SECURITY ALERT: main branch is unprotected (Direct pushes allowed)",
+        package_name: "github-repo",
+        merged_at: new Date().toISOString(),
+        commit_diff: "Branch protection is disabled on branch 'main'. Admin reviews are not required before merging."
+      });
+    }
+
+    // ── Live Collaborator Audit ──
+    let collaborators = [];
+    try {
+      console.log(`[SYNC] Fetching collaborators...`);
+      const colRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/collaborators`, { headers });
+      collaborators = colRes.data.map(u => ({
+        login: u.login,
+        role: { admin: u.permissions?.admin || false }
+      }));
+    } catch (e) {
+      console.warn(`[SYNC WARN] Could not fetch collaborators:`, e.message);
+    }
+
+    if (collaborators.length > 0) {
+      const currentBaseline = getBaseline();
+      if (!currentBaseline.collaborators || currentBaseline.collaborators.length === 0 || updateBaseline) {
+        saveBaseline({ collaborators });
+      } else {
+        const accessFindings = diffAccessBaseline(collaborators);
+        accessFindings.forEach((finding, idx) => {
+          formattedData.unshift({
+            pr_id: 1000 + idx,
+            author: finding.login,
+            title: `SECURITY ALERT: ${finding.type.replace(/_/g, " ").toUpperCase()} detected`,
+            package_name: "github-access",
+            merged_at: new Date().toISOString(),
+            commit_diff: `User ${finding.login} status changed. Event type: ${finding.type}. Severity: ${finding.severity}`
+          });
+        });
+      }
+    }
+
+    // ── Live Commit Diff Scanning (Secrets) ──
+    try {
+      console.log(`[SYNC] Scanning recent commits for secrets...`);
+      const commitsRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/commits?per_page=5`, { headers });
+      
+      for (const commitObj of commitsRes.data) {
+        const sha = commitObj.sha;
+        try {
+          const detailRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/commits/${sha}`, { headers });
+          const files = detailRes.data.files || [];
+          const diffText = files.map(f => `--- ${f.filename}\n${f.patch || ""}`).join("\n");
+          
+          const findings = scanTextForSecrets(diffText);
+          if (findings.length > 0) {
+            findings.forEach((finding, idx) => {
+              formattedData.unshift({
+                pr_id: 2000 + idx,
+                author: commitObj.commit?.author?.name || "unknown",
+                title: `CRITICAL: Leaked secret detected in commit ${sha.substring(0, 8)}`,
+                package_name: "credentials",
+                merged_at: commitObj.commit?.author?.date || new Date().toISOString(),
+                commit_diff: `Exposed ${finding.description} in file changes. Preview: ${finding.preview} (Line: ${finding.line || "unknown"})`
+              });
+            });
+          }
+        } catch (innerErr) {
+          console.warn(`[SYNC WARN] Could not check commit details for ${sha}:`, innerErr.message);
+        }
+      }
+    } catch (e) {
+      console.warn(`[SYNC WARN] Could not scan commits:`, e.message);
+    }
 
     return { success: true, count: formattedData.length, packages, data: formattedData };
   } catch (err) {
@@ -59,12 +152,10 @@ async function fetchGithub(repoOwnerRepo, token) {
 async function fetchOSV(packages) {
   try {
     console.log(`[SYNC] Fetching OSV Vulnerabilities for ${packages.length} packages...`);
-    // If no packages found from github, fallback to some defaults
     const pkgList = packages.length > 0 ? packages : ["lodash", "axios", "express", "react"];
     
-    // Create batch query
     const queries = pkgList.map(pkg => ({
-      package: { name: pkg, ecosystem: "npm" } // Assume npm for JS hackathon
+      package: { name: pkg, ecosystem: "npm" }
     }));
 
     const res = await axios.post("https://api.osv.dev/v1/querybatch", { queries });
@@ -86,7 +177,6 @@ async function fetchOSV(packages) {
       });
     }
 
-    // Add a default "safe" entry for packages with no vulns so the join works nicely
     pkgList.forEach(pkg => {
       if (!formattedData.find(v => v.package_name === pkg)) {
         formattedData.push({
@@ -118,10 +208,8 @@ async function fetchSlack(channelId, token) {
 
     if (!res.data.ok) throw new Error(res.data.error);
 
-    // We also need to fetch user info to map Slack user IDs to names/github handles
-    // For the hackathon, we will just use the ID as the name, or try to map it.
     const formattedData = res.data.messages.map(msg => ({
-      user: msg.user, // Ideally this matches the GitHub handle, or we'd need a mapping table
+      user: msg.user,
       channel: channelId,
       message: msg.text,
       timestamp: new Date(msg.ts * 1000).toISOString()
@@ -149,7 +237,6 @@ async function fetchNotion(dbId, token) {
       }
     });
 
-    // Assume standard column names: "Package", "Policy", "Rule", "Severity", "Team"
     const formattedData = res.data.results.map(page => {
       const props = page.properties;
       const getText = (prop) => prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || "";
@@ -177,7 +264,7 @@ async function fetchNotion(dbId, token) {
  * Main Orchestrator
  */
 async function syncAllData(config) {
-  const { githubRepo, githubToken, slackChannel, slackToken, notionDb, notionToken } = config;
+  const { githubRepo, githubToken, slackChannel, slackToken, notionDb, notionToken, updateBaseline } = config;
   
   const results = {
     github: { success: false, count: 0 },
@@ -188,14 +275,27 @@ async function syncAllData(config) {
 
   // 1. GitHub
   if (githubRepo) {
-    const ghRes = await fetchGithub(githubRepo, githubToken);
+    const ghRes = await fetchGithub(githubRepo, githubToken, updateBaseline);
     results.github = ghRes;
+    
+    // Save to github.json immediately so Coral SQL CLI queries are updated
+    if (ghRes.success && ghRes.data) {
+      fs.writeFileSync(path.join(MOCK_DIR, "github.json"), JSON.stringify(ghRes.data, null, 2));
+    }
     
     // 2. OSV (Depends on GitHub packages)
     if (ghRes.success && ghRes.packages) {
-      results.osv = await fetchOSV(ghRes.packages);
+      const osvRes = await fetchOSV(ghRes.packages);
+      results.osv = osvRes;
+      if (osvRes.success && osvRes.data) {
+        fs.writeFileSync(path.join(MOCK_DIR, "osv.json"), JSON.stringify(osvRes.data, null, 2));
+      }
     } else {
-      results.osv = await fetchOSV(["lodash", "axios", "react", "express", "jsonwebtoken"]);
+      const osvRes = await fetchOSV(["lodash", "axios", "react", "express", "jsonwebtoken"]);
+      results.osv = osvRes;
+      if (osvRes.success && osvRes.data) {
+        fs.writeFileSync(path.join(MOCK_DIR, "osv.json"), JSON.stringify(osvRes.data, null, 2));
+      }
     }
   } else {
     results.github.error = "No repo specified";
@@ -204,14 +304,22 @@ async function syncAllData(config) {
 
   // 3. Slack
   if (slackChannel && slackToken) {
-    results.slack = await fetchSlack(slackChannel, slackToken);
+    const slackRes = await fetchSlack(slackChannel, slackToken);
+    results.slack = slackRes;
+    if (slackRes.success && slackRes.data) {
+      fs.writeFileSync(path.join(MOCK_DIR, "slack.json"), JSON.stringify(slackRes.data, null, 2));
+    }
   } else {
     results.slack.error = "No Slack token or channel specified";
   }
 
   // 4. Notion
   if (notionDb && notionToken) {
-    results.notion = await fetchNotion(notionDb, notionToken);
+    const notionRes = await fetchNotion(notionDb, notionToken);
+    results.notion = notionRes;
+    if (notionRes.success && notionRes.data) {
+      fs.writeFileSync(path.join(MOCK_DIR, "notion.json"), JSON.stringify(notionRes.data, null, 2));
+    }
   } else {
     results.notion.error = "No Notion token or DB specified";
   }

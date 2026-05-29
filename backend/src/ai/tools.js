@@ -3,26 +3,105 @@ const { z } = require("zod");
 const fs = require("fs");
 const path = require("path");
 
+const PATTERNS = [
+  {
+    id: "aws_access_key",
+    description: "AWS access key ID",
+    regex: /(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])/g,
+  },
+  {
+    id: "aws_secret_key",
+    description: "AWS secret access key",
+    regex: /aws(.{0,20})?(secret|session|key).{0,20}?['"][A-Za-z0-9/+=]{40}['"]/gi,
+  },
+  {
+    id: "github_pat",
+    description: "GitHub personal access token",
+    regex: /ghp_[A-Za-z0-9_]{20,}/g,
+  },
+  {
+    id: "github_oauth",
+    description: "GitHub OAuth token",
+    regex: /gho_[A-Za-z0-9_]{20,}/g,
+  },
+  {
+    id: "slack_token",
+    description: "Slack token",
+    regex: /xox[baprs]-[A-Za-z0-9-]{10,}/g,
+  },
+  {
+    id: "notion_token",
+    description: "Notion integration token",
+    regex: /secret_[A-Za-z0-9]{24,}/g,
+  },
+  {
+    id: "private_key",
+    description: "Private key block",
+    regex: /-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----/g,
+  },
+  {
+    id: "generic_api_key",
+    description: "Generic API key assignment",
+    regex: /(api[_-]?key|apikey|secret[_-]?key)\s*[=:]\s*['"][A-Za-z0-9_\-]{16,}['"]/gi,
+  },
+  {
+    id: "jwt",
+    description: "JSON Web Token",
+    regex: /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g,
+  }
+];
+
+function redact(match, maxLen = 12) {
+  if (match.length <= maxLen) {
+    return match.substring(0, 4) + "...";
+  }
+  return match.substring(0, 6) + "..." + match.substring(match.length - 4);
+}
+
+function scanTextForSecrets(text) {
+  const findings = [];
+  if (!text) return findings;
+  
+  const lines = text.split(/\r?\n/);
+  for (const patternObj of PATTERNS) {
+    lines.forEach((line, index) => {
+      // Reset regex index for safety
+      patternObj.regex.lastIndex = 0;
+      let match;
+      while ((match = patternObj.regex.exec(line)) !== null) {
+        findings.push({
+          rule_id: patternObj.id,
+          description: patternObj.description,
+          preview: redact(match[0]),
+          line: index + 1
+        });
+      }
+    });
+    
+    // Check multiline for private keys specifically if line-by-line missed it
+    if (patternObj.id === "private_key" && patternObj.regex.test(text)) {
+      if (!findings.some(f => f.rule_id === "private_key")) {
+        findings.push({
+          rule_id: patternObj.id,
+          description: patternObj.description,
+          preview: "-----BEGIN ... PRIVATE KEY-----",
+          line: null
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 // Tool 1: scan_commits_for_secrets
 const scanCommitsForSecrets = tool(
   async ({ diff }) => {
     console.log(`[Tool] Scanning diff for secrets...`);
-    const secretsFound = [];
-    const awsRegex = /(?<![A-Z0-9])[A-Z0-9]{20}(?![A-Z0-9])/g;
-    const patRegex = /ghp_[a-zA-Z0-9]{36}/g;
-
-    const awsMatch = diff.match(awsRegex);
-    if (awsMatch) {
-      secretsFound.push(`AWS Key format detected: ${awsMatch[0].substring(0, 5)}...`);
-    }
-
-    const patMatch = diff.match(patRegex);
-    if (patMatch) {
-      secretsFound.push(`GitHub PAT format detected: ${patMatch[0].substring(0, 10)}...`);
-    }
-
-    if (secretsFound.length > 0) {
-      return `CRITICAL: Secrets found in diff. ${secretsFound.join("; ")}`;
+    const findings = scanTextForSecrets(diff);
+    
+    if (findings.length > 0) {
+      const descriptions = findings.map(f => `${f.description} (line ${f.line || "unknown"}): ${f.preview}`);
+      return `CRITICAL: Secrets found in diff. ${descriptions.join("; ")}`;
     }
     return "No obvious secrets found in the provided diff.";
   },
@@ -111,5 +190,6 @@ module.exports = {
   scanCommitsForSecrets,
   searchNotionPolicies,
   queryOsv,
-  checkGithubAccessRisk
+  checkGithubAccessRisk,
+  scanTextForSecrets
 };
