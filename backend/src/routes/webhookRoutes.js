@@ -148,7 +148,7 @@ function analyzeEvent(data) {
   const BASE = { critical: 90, high: 70, medium: 40, safe: 5 };
   let risk = BASE[vuln.severity] || 5;
   if (secrets.length > 0) risk = Math.min(100, risk + 12);
-  if (maliciousCode.length > 0) risk = 100;
+  if (maliciousCode.length > 0) risk = Math.max(risk, 85);
   if (policy?.rule === "BANNED_PACKAGE")  risk = Math.min(100, risk + 15);
   if (policy?.rule === "SECRETS_RISK")    risk = Math.min(100, risk + 18);
   if (policy?.rule === "AUDIT_REQUIRED")  risk = Math.min(100, risk + 8);

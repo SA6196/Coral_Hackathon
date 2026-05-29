@@ -132,7 +132,7 @@ const runSecurityAnalysis = (joinedData) => {
     // ── Risk score calculation ─────────────────────────────────────
     let riskScore = cfg.base_score;
     if (secrets.length > 0) riskScore = Math.min(100, riskScore + 10);
-    if (maliciousCode.length > 0) riskScore = 100; // Escalate immediately to maximum risk
+    if (maliciousCode.length > 0) riskScore = Math.max(riskScore, 85); // Escalate immediately to high risk
     if (incident.notion_policy) {
       riskScore = Math.min(100, riskScore + (POLICY_BOOST[incident.notion_policy.policy_rule] || 0));
     }
