@@ -204,7 +204,14 @@ export default function NotionPoliciesPanel() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    fetchData(); 
+    // Auto-poll to keep policies panel magically synced with the webhook stream
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const byRule = data?.by_rule || {};
   const violations = data?.violations || [];
