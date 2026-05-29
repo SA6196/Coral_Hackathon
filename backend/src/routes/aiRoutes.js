@@ -19,6 +19,7 @@ const axios   = require("axios");
 
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { AgentExecutor, createToolCallingAgent } = require("langchain/agents");
+const { ChatPromptTemplate } = require("@langchain/core/prompts");
 const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns } = require("../ai/tools");
 
 const { joinSecurityData, getCacheInfo } = require("../coral/joinData");

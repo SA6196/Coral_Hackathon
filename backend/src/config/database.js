@@ -58,6 +58,35 @@ function initializeTables() {
       if (err) console.error("Error creating webhook_events table:", err.message);
       else seedDefaultWebhooks();
     });
+
+    // Auxiliary tables used by the webhook sync and seed services
+    db.run(`CREATE TABLE IF NOT EXISTS github (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      author TEXT,
+      title TEXT,
+      package_name TEXT,
+      merged_at TEXT,
+      commit_diff TEXT
+    )`, (err) => {
+      if (err) console.error("Error creating github table:", err.message);
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS osv (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      package_name TEXT,
+      cve TEXT,
+      severity TEXT
+    )`, (err) => {
+      if (err) console.error("Error creating osv table:", err.message);
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS slack (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      channel TEXT,
+      message TEXT
+    )`, (err) => {
+      if (err) console.error("Error creating slack table:", err.message);
+    });
   });
 }
 
