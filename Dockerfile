@@ -2,7 +2,7 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
@@ -13,7 +13,7 @@ WORKDIR /app
 # Copy backend files
 COPY backend/package*.json ./backend/
 WORKDIR /app/backend
-RUN npm ci --only=production
+RUN npm install --omit=dev
 COPY backend/ ./
 
 # Copy frontend built assets to the expected relative location
