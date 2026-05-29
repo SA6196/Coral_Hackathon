@@ -252,35 +252,34 @@ function generatePersonalizedInvestigationReport(inc, allIncidents) {
     : `> No active Slack team discussions found for this incident. Alerts need to be sent immediately.`;
 
   const report = [
-    `## 🔍 AI Security Investigation — ${inc.incident_id}`,
+    `## 🚨 Executive Summary`,
+    `A **${sev.toUpperCase()}** risk incident (Score: **${inc.risk_score}/100**) was detected in the package \`${pkg}\` (CVE: \`${cve}\`). This vulnerability was introduced in PR #${inc.pr_details?.pr_id || "101"} by **${dev}**. Immediate attention is required as this poses a significant risk to the production environment.`,
     ``,
-    `### 🚨 Threat Overview & Impact`,
-    `- **Severity:** ${sev.toUpperCase()} Risk (Risk Score: **${inc.risk_score}/100**)`,
-    `- **Vulnerability Package:** \`${pkg}\` | **CVE:** \`${cve}\``,
-    `- **Responsible Developer:** **${dev}**`,
-    `- **Introduced In:** PR #${inc.pr_details?.pr_id || "101"} ("${inc.pr_details?.title || "Security fix"}")`,
-    `- **Risk Score:** ${inc.risk_score} (calculated dynamically based on severity and policies)`,
+    `## 👤 Developer Risk & Behavioral Profiling`,
+    `- **Developer Name:** **${dev}**`,
+    `- **Assigned Persona:** **${persona}**`,
+    `- **Historical Context:** This developer has introduced **${devIncidents.length}** security incident(s) recently, with an average historical risk score of **${avgRisk}/100**.`,
+    `- **Behavioral Anomaly Factor:** **${anomalyScore}%**`,
     ``,
-    `### 👤 Developer Risk Profile Context`,
-    `- **Behavioral Persona:** **${persona}**`,
-    `- **Trust Score:** **${100 - anomalyScore}/100** | **Behavioral Anomaly Factor:** **${anomalyScore}%**`,
-    `- **Developer Track Record:** Introduced **${devIncidents.length}** security incident(s) recently. Average historical incident risk score is **${avgRisk}/100**.`,
-    ``,
-    `### 📖 Deep-Dive Analysis of the Issue`,
-    issueExplanation,
-    ``,
-    `### 💀 Exploit Possibilities & Attack Scenarios`,
-    exploitScenarios,
-    ``,
-    `### 💬 Correlated Social & Chat Evidence`,
+    `### Correlated Social Evidence`,
     `A scan of corporate chat logs shows active discussion regarding this commit:`,
     slackDiscussion,
     ``,
-    hasPolicy ? `### 📋 Notion Security Policy Violations\nThis commit violates our corporate security policies documented in Notion:\n- **Policy Rule:** \`${inc.policy_violation.policy_rule}\`\n- **Policy Description:** ${inc.policy_violation.description}\n- **Owner Team:** ${inc.policy_violation.owner_team}` : `### 📋 Notion Policy Status\n- **Policy Status:** Compliant. No internal Notion policies are violated by this dependency upgrade.`,
+    `## 🔎 Forensic Deep Dive & Root Cause`,
+    issueExplanation,
     ``,
-    `### 🛠️ Immediate Containment Playbook`,
-    `- **Rollback Action:** ${inc.recommended_action === "ROLLBACK_DEPLOYMENT" ? "🚨 Revert commit immediately and scale down the deployment." : "Monitor tests and check for stable versions."}`,
-    `- **Audit Priority:** **${sev === "critical" ? "P0 (Immediate action required)" : sev === "high" ? "P1 (Remediate within 24 hours)" : "P2 (Resolve in next release cycle)"}**`,
+    `## 💀 Exploit Possibilities & Blast Radius`,
+    exploitScenarios,
+    ``,
+    `## 📋 Corporate Policy Alignment`,
+    hasPolicy 
+      ? `This commit severely violates corporate security policies documented in Notion:\n- **Violated Rule:** \`${inc.policy_violation.policy_rule}\`\n- **Policy Description:** ${inc.policy_violation.description}\n- **Owner Team:** ${inc.policy_violation.owner_team}` 
+      : `No internal Notion policies are explicitly violated by this commit, though standard security baselines apply.`,
+    ``,
+    `## 🛠️ Immediate Containment Playbook`,
+    `- **Rollback Strategy:** ${inc.recommended_action === "ROLLBACK_DEPLOYMENT" ? "🚨 Revert commit immediately via Git and scale down the vulnerable deployment." : "Monitor tests and check for stable versions."}`,
+    `- **SLA Priority:** **${sev === "critical" ? "P0 (Immediate action required)" : sev === "high" ? "P1 (Remediate within 24 hours)" : "P2 (Resolve in next release cycle)"}**`,
+    `- **Action Item:** Engage the Incident Response (IR) team in #${inc.internal_discussion?.slack_channel || "security-alerts"}.`
   ].join("\n");
 
   return report;
@@ -435,21 +434,37 @@ router.get("/investigate", async (req, res) => {
 
   if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
     try {
-      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
-Analyze the following security incident and generate a deeply personalized, professional, and unique security investigation report in markdown.
-Explain:
-1. SUMMARY: What was found, what package, CVE, and what the business risk is.
-2. DEVELOPER PERSONALIZATION: Who the developer is (${dev}), what their behavioral risk persona is, their risk profile history, and how this relates to their specific commit or Slack message: "${inc.internal_discussion?.message || ""}".
-3. ROOT CAUSE & SEVERITY: Why this vulnerability matters and what exploit possibilities exist.
-4. DETAILED RECOMMENDATIONS: Specific steps to contain, remediate, and verify.
+      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer and Forensics Expert.
+Your task is to analyze the provided security incident data and generate a comprehensive, highly detailed, and deeply personalized security investigation report in beautiful GitHub-style Markdown.
+The report MUST read like a top-tier cybersecurity forensic analysis.
 
-Format your response in beautiful GitHub-style Markdown.`;
+STRUCTURE YOUR REPORT AS FOLLOWS:
+
+## 🚨 Executive Summary
+Provide a high-impact summary of the incident. What was found? In what package? What is the immediate business and technical risk? Is this a standard CVE, a secret leak, or a critical malicious backdoor?
+
+## 👤 Developer Risk & Behavioral Profiling
+Analyze the developer responsible. What is their behavioral risk persona? Discuss their specific commit details, their intent, and cross-reference any provided Slack messages or internal discussions. Do they seem careless, compromised, or malicious?
+
+## 🔎 Forensic Deep Dive & Root Cause
+Explain exactly how this vulnerability works at a technical level. If malicious code or a backdoor was found, analyze the pattern. If a secret was leaked, explain what the secret grants access to. If it's a CVE, explain the exploit mechanics (e.g., prototype pollution, RCE).
+
+## 💀 Exploit Possibilities & Blast Radius
+Detail the worst-case scenario. If an attacker exploits this, what can they do? Lateral movement? Data exfiltration? Full system compromise?
+
+## 📋 Corporate Policy Alignment
+State whether this violates any specific internal Notion security policies provided in the data.
+
+## 🛠️ Immediate Containment Playbook
+Provide 3-5 bullet points of immediate, concrete actions the team must take right now to stop the bleeding.
+
+Use markdown features extensively: bolding, italics, blockquotes for Slack messages, lists, and code blocks for technical details. Make it visually stunning and highly analytical.`;
 
       const response = await axios.post("https://api.openai.com/v1/chat/completions", {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Investigate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100, Slack: ${inc.internal_discussion?.message}` }
+          { role: "user", content: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }
         ],
         temperature: 0.2,
         max_tokens: 1000
@@ -469,21 +484,37 @@ Format your response in beautiful GitHub-style Markdown.`;
 
   if (!report && geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
     try {
-      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
-Analyze the following security incident and generate a deeply personalized, professional, and unique security investigation report in markdown.
-Explain:
-1. SUMMARY: What was found, what package, CVE, and what the business risk is.
-2. DEVELOPER PERSONALIZATION: Who the developer is (${dev}), what their behavioral risk persona is, their risk profile history, and how this relates to their specific commit or Slack message: "${inc.internal_discussion?.message || ""}".
-3. ROOT CAUSE & SEVERITY: Why this vulnerability matters and what exploit possibilities exist.
-4. DETAILED RECOMMENDATIONS: Specific steps to contain, remediate, and verify.
+      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer and Forensics Expert.
+Your task is to analyze the provided security incident data and generate a comprehensive, highly detailed, and deeply personalized security investigation report in beautiful GitHub-style Markdown.
+The report MUST read like a top-tier cybersecurity forensic analysis.
 
-Format your response in beautiful GitHub-style Markdown.`;
+STRUCTURE YOUR REPORT AS FOLLOWS:
+
+## 🚨 Executive Summary
+Provide a high-impact summary of the incident. What was found? In what package? What is the immediate business and technical risk? Is this a standard CVE, a secret leak, or a critical malicious backdoor?
+
+## 👤 Developer Risk & Behavioral Profiling
+Analyze the developer responsible. What is their behavioral risk persona? Discuss their specific commit details, their intent, and cross-reference any provided Slack messages or internal discussions. Do they seem careless, compromised, or malicious?
+
+## 🔎 Forensic Deep Dive & Root Cause
+Explain exactly how this vulnerability works at a technical level. If malicious code or a backdoor was found, analyze the pattern. If a secret was leaked, explain what the secret grants access to. If it's a CVE, explain the exploit mechanics (e.g., prototype pollution, RCE).
+
+## 💀 Exploit Possibilities & Blast Radius
+Detail the worst-case scenario. If an attacker exploits this, what can they do? Lateral movement? Data exfiltration? Full system compromise?
+
+## 📋 Corporate Policy Alignment
+State whether this violates any specific internal Notion security policies provided in the data.
+
+## 🛠️ Immediate Containment Playbook
+Provide 3-5 bullet points of immediate, concrete actions the team must take right now to stop the bleeding.
+
+Use markdown features extensively: bolding, italics, blockquotes for Slack messages, lists, and code blocks for technical details. Make it visually stunning and highly analytical.`;
 
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
-            { parts: [{ text: `Investigate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100, Slack: ${inc.internal_discussion?.message}` }] }
+            { parts: [{ text: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
           ],
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: { temperature: 0.2, maxOutputTokens: 1000 }
@@ -539,30 +570,31 @@ router.get("/remediate", async (req, res) => {
 
   if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
     try {
-      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
-Analyze the following security incident and return a JSON object with a highly personalized remediation plan tailored to the developer (${dev}) and the package (${pkg}).
+      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer.
+Your task is to analyze the provided security incident JSON data and generate a JSON object representing a highly detailed, personalized remediation playbook.
+
 The JSON MUST follow this format exactly:
 {
-  "title": "A customized title indicating the developer name and vulnerability",
-  "subtitle": "A customized subtitle summarizing the fix priority",
+  "title": "A highly specific, urgent title indicating the exact remediation (e.g. 🛡️ CRITICAL: Revoke Exposed AWS Keys & Quarantine user_x)",
+  "subtitle": "A customized subtitle summarizing the forensic context and priority",
   "severity": "${sev}",
-  "estimated_time": "Estimated time (e.g. 30 Minutes, 2 Hours)",
+  "estimated_time": "Estimated time (e.g. 15 Minutes, 2 Hours, 4 Hours)",
   "actions": [
-    "Specific personalized action item 1",
-    "Specific personalized action item 2"
+    "A highly detailed, personalized action item specifically mentioning the developer, package, and exact containment strategy. (Min 2 sentences)",
+    "Another highly detailed action item..."
   ],
   "scripts": [
-    "# Custom bash script step 1\\ncommands...",
-    "# Custom bash script step 2\\ncommands..."
+    "# Step 1: Immediate Git Revert\\ngit revert <commit_hash> --no-edit\\ngit push origin HEAD --force-with-lease",
+    "# Step 2: Next technical action...\\ncommands..."
   ]
 }
-Return ONLY valid JSON, no markdown wrapping, no formatting.`;
+Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions" and "scripts" arrays MUST have the exact same length (1 script block per action). Provide exactly 3 or 4 comprehensive actions.`;
 
       const response = await axios.post("https://api.openai.com/v1/chat/completions", {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Remediate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100` }
+          { role: "user", content: `Generate a remediation playbook for incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }
         ],
         temperature: 0.1,
         response_format: { type: "json_object" }
@@ -582,30 +614,31 @@ Return ONLY valid JSON, no markdown wrapping, no formatting.`;
 
   if (!remediationData && geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
     try {
-      const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Security Engineer.
-Analyze the following security incident and return a JSON object with a highly personalized remediation plan tailored to the developer (${dev}) and the package (${pkg}).
+      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer.
+Your task is to analyze the provided security incident JSON data and generate a JSON object representing a highly detailed, personalized remediation playbook.
+
 The JSON MUST follow this format exactly:
 {
-  "title": "A customized title indicating the developer name and vulnerability",
-  "subtitle": "A customized subtitle summarizing the fix priority",
+  "title": "A highly specific, urgent title indicating the exact remediation (e.g. 🛡️ CRITICAL: Revoke Exposed AWS Keys & Quarantine user_x)",
+  "subtitle": "A customized subtitle summarizing the forensic context and priority",
   "severity": "${sev}",
-  "estimated_time": "Estimated time (e.g. 30 Minutes, 2 Hours)",
+  "estimated_time": "Estimated time (e.g. 15 Minutes, 2 Hours, 4 Hours)",
   "actions": [
-    "Specific personalized action item 1",
-    "Specific personalized action item 2"
+    "A highly detailed, personalized action item specifically mentioning the developer, package, and exact containment strategy. (Min 2 sentences)",
+    "Another highly detailed action item..."
   ],
   "scripts": [
-    "# Custom bash script step 1\\ncommands...",
-    "# Custom bash script step 2\\ncommands..."
+    "# Step 1: Immediate Git Revert\\ngit revert <commit_hash> --no-edit\\ngit push origin HEAD --force-with-lease",
+    "# Step 2: Next technical action...\\ncommands..."
   ]
 }
-Return ONLY valid JSON, no markdown wrapping, no formatting.`;
+Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions" and "scripts" arrays MUST have the exact same length (1 script block per action). Provide exactly 3 or 4 comprehensive actions.`;
 
       const response = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
-            { parts: [{ text: `Remediate incident ${inc.incident_id}: Package ${pkg}, CVE ${cve}, Developer ${dev}, Risk Score ${inc.risk_score}/100` }] }
+            { parts: [{ text: `Generate a remediation playbook for incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
           ],
           systemInstruction: { parts: [{ text: systemPrompt }] },
           generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
