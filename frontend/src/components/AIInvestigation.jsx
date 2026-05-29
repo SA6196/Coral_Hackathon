@@ -167,7 +167,7 @@ export default function AIInvestigation({ logId = 1 }) {
               {loading ? (
                 <div className="gemini-loading-state">
                   <FiLoader className="nl-icon-spin" size={24} style={{ color: "#a855f7" }} />
-                  <p>Coral AI is synthesizing incident forensics...</p>
+                  <p>Security Engine is synthesizing incident forensics...</p>
                 </div>
               ) : error ? (
                 <div className="gemini-error-state">
@@ -181,7 +181,7 @@ export default function AIInvestigation({ logId = 1 }) {
                       Security Intelligence Report
                     </div>
                     <div className={`gemini-badge ${aiReport.mode === 'live' ? 'live' : 'mocked'}`}>
-                      {aiReport.mode === 'live' ? '✨ Live Generation (Gemini 2.5 Flash)' : '🔄 Cached Fallback'}
+                      {aiReport.mode === 'live' ? '✨ Live Generation (Advanced AI)' : '🔄 Cached Fallback'}
                     </div>
                   </div>
                   <div className="gemini-report-body">

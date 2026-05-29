@@ -305,11 +305,6 @@ export default function Login({ onLoginSuccess }) {
         {/* Footer */}
         <div className="login-footer">
           <p>AUTHORIZED SECURITY PERSONNEL ONLY</p>
-          {isLogin && (
-            <p className="login-hint">
-              Demo Access: <span>admin</span> / <span>admin123</span>
-            </p>
-          )}
           {!isLogin && (
             <p className="login-hint">
               Already have an account?{" "}

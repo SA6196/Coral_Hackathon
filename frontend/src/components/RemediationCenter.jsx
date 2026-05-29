@@ -129,7 +129,7 @@ export default function RemediationCenter({ item }) {
               {loading ? (
                 <div className="gemini-loading-state">
                   <FiLoader className="nl-icon-spin" size={24} style={{ color: "#10b981" }} />
-                  <p>Coral AI is generating a tailored remediation playbook...</p>
+                  <p>Security Engine is generating a tailored remediation playbook...</p>
                 </div>
               ) : error ? (
                 <div className="gemini-error-state">
