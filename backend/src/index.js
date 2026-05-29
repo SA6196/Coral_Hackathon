@@ -32,7 +32,18 @@ if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
 if (process.env.PUBLIC_URL)   allowedOrigins.push(process.env.PUBLIC_URL);
 
 app.use(cors({
-  origin: "*",
+  origin: (origin, callback) => {
+    // If request has no origin (like curl, postman, or same-origin), allow it
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches allowed whitelist
+    const isAllowed = allowedOrigins.some(o => origin.startsWith(o));
+    if (isAllowed || process.env.NODE_ENV !== "production") {
+      callback(null, true);
+    } else {
+      callback(new Error("Blocked by CORS"));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-GitHub-Event", "X-GitHub-Delivery", "X-Hub-Signature-256"],
   credentials: true,

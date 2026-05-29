@@ -1,46 +1,45 @@
-/**
- * webhookRoutes.js — GitHub Webhook Receiver
- * ─────────────────────────────────────────────────────────────────────
- * Real production webhook. Add this URL to your GitHub org:
- *   Settings → Webhooks → Add webhook
- *   Payload URL: https://your-domain.com/api/webhook/github
- *   Content type: application/json
- *   Events: Push events, Pull requests
- *
- * Every developer's push/PR is automatically analyzed.
- * No developer ever touches this portal.
- * ─────────────────────────────────────────────────────────────────────
- */
-
 const express    = require("express");
 const router     = express.Router();
 const crypto     = require("crypto");
 const axios      = require("axios");
 const fs         = require("fs");
 const path       = require("path");
+const db         = require("../config/database");
 const { scanForSecrets } = require("../utils/secretScanner");
 const { invalidateCache } = require("../coral/joinData");
 
+let writeQueue = Promise.resolve();
+
 function syncToMockDb(record, commitDiff) {
-  try {
-    const githubPath = path.join(__dirname, "../../mock-data/github.json");
-    const data = JSON.parse(fs.readFileSync(githubPath, "utf-8"));
-    const newEntry = {
-      pr_id: Math.floor(Math.random() * 900000) + 100000,
-      author: record.developer,
-      title: record.pr_title,
-      package_name: record.package_name,
-      merged_at: record.received_at,
-      commit_diff: commitDiff || "Commit from live webhook"
-    };
-    data.unshift(newEntry);
-    fs.writeFileSync(githubPath, JSON.stringify(data, null, 2));
-    
-    invalidateCache("all");
-    console.log(`[SYNC] Appended live webhook ${record.id} to github.json and invalidated cache for all sessions.`);
-  } catch (err) {
-    console.error("[SYNC_ERROR] Failed to sync to mock DB:", err.message);
-  }
+  writeQueue = writeQueue.then(async () => {
+    try {
+      const githubPath = path.join(__dirname, "../../mock-data/github.json");
+      const content = await fs.promises.readFile(githubPath, "utf-8");
+      const data = JSON.parse(content);
+      const newEntry = {
+        pr_id: Math.floor(Math.random() * 900000) + 100000,
+        author: record.developer,
+        title: record.pr_title,
+        package_name: record.package_name,
+        merged_at: record.received_at,
+        commit_diff: commitDiff || "Commit from live webhook"
+      };
+      data.unshift(newEntry);
+      await fs.promises.writeFile(githubPath, JSON.stringify(data, null, 2), "utf-8");
+      
+      // Sync into SQLite local github table as well
+      db.run(
+        "INSERT INTO github (author, title, package_name, merged_at) VALUES (?, ?, ?, ?)",
+        [newEntry.author, newEntry.title, newEntry.package_name, newEntry.merged_at],
+        (err) => { if (err) console.error("[Sync SQLite] error:", err.message); }
+      );
+
+      invalidateCache("all");
+      console.log(`[SYNC] Appended live webhook ${record.id} to github.json and invalidated cache for all sessions.`);
+    } catch (err) {
+      console.error("[SYNC_ERROR] Failed to sync to mock DB:", err.message);
+    }
+  });
 }
 
 // Helper to post status to GitHub API
@@ -73,210 +72,6 @@ async function postCommitStatusToGitHub(repo, sha, record) {
     console.error(`[GITHUB_STATUS_ERROR] Failed to post status to ${repo}: ${err.message}`, err.response?.data || "");
   }
 }
-
-// In-memory event log (in production: use PostgreSQL)
-const webhookEvents = [
-  {
-    id: "WH-10",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834100",
-    developer: "sarah_dev",
-    pr_title: "Add sandboxed runtime using vm2",
-    package_name: "vm2",
-    repo: "enterprise-app/auth-service",
-    branch: "main",
-    commit_sha: "a7d9f2c",
-    received_at: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2023-29017", severity: "critical", cvss: 10.0, summary: "Sandbox escape leading to RCE" },
-    secrets_detected: null,
-    policy_violation: { rule: "BANNED_PACKAGE", team: "security-engineering", reason: "CVE-2023-29017 — complete sandbox escape, permanently banned" },
-    risk_score: 100,
-    ai_summary: "🔴 CRITICAL: sarah_dev committed vm2 (CVE-2023-29017) on branch main. This package has a complete sandbox escape and violates policy BANNED_PACKAGE. Deployment blocked.",
-    recommended_action: "BLOCK_DEPLOYMENT",
-  },
-  {
-    id: "WH-9",
-    source: "github_pr",
-    event_type: "pull_request.opened",
-    delivery_id: "manual-1716834200",
-    developer: "alex_ops",
-    pr_number: 142,
-    pr_url: "https://github.com/enterprise-app/infra/pull/142",
-    pr_title: "Configure AWS credentials in config block",
-    package_name: "none",
-    repo: "enterprise-app/infra",
-    branch: "setup-deployment",
-    commit_sha: "f2c3d4e",
-    received_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "NO_CVE_FOUND", severity: "safe", cvss: 0, summary: "No known vulnerabilities" },
-    secrets_detected: {
-      count: 1,
-      findings: [
-        { name: "AWS Access Key ID", severity: "critical", recommendation: "Rotate credentials immediately and move to IAM Roles." }
-      ]
-    },
-    policy_violation: null,
-    risk_score: 87,
-    ai_summary: "⚠️ Potential secret detected in commit by alex_ops: 'AWS Access Key ID'. Rotate key and scrub git history.",
-    recommended_action: "ROTATE_SECRETS",
-  },
-  {
-    id: "WH-8",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834300",
-    developer: "john_backend",
-    pr_title: "Implement auth token signing with jsonwebtoken",
-    package_name: "jsonwebtoken",
-    repo: "enterprise-app/gateway",
-    branch: "hotfix-auth-keys",
-    commit_sha: "c4d5e6f",
-    received_at: new Date(Date.now() - 32 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2022-23529", severity: "high", cvss: 7.6, summary: "JWT algorithm confusion attack" },
-    secrets_detected: null,
-    policy_violation: { rule: "AUDIT_REQUIRED", team: "auth-team", reason: "JWT library changes require security audit" },
-    risk_score: 83,
-    ai_summary: "🟠 High-severity CVE-2022-23529 in jsonwebtoken by john_backend. JWT algorithm confusion attack. Requires auth-team sign-off before merge.",
-    recommended_action: "SECURITY_REVIEW",
-  },
-  {
-    id: "WH-7",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834400",
-    developer: "karen_web",
-    pr_title: "Add server-side template rendering with ejs",
-    package_name: "ejs",
-    repo: "enterprise-app/dashboard",
-    branch: "feature-templates",
-    commit_sha: "b2a3c4d",
-    received_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2022-29078", severity: "critical", cvss: 9.8, summary: "Template injection leading to RCE" },
-    secrets_detected: null,
-    policy_violation: { rule: "BANNED_PACKAGE", team: "security-engineering", reason: "RCE via template injection — use handlebars instead" },
-    risk_score: 100,
-    ai_summary: "🔴 CRITICAL: karen_web introduced ejs (CVE-2022-29078) which is a banned package in this repo. Recommending rollback and replacement with handlebars.",
-    recommended_action: "BLOCK_DEPLOYMENT",
-  },
-  {
-    id: "WH-6",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834500",
-    developer: "mike_ui",
-    pr_title: "Refactor settings grid layout",
-    package_name: "none",
-    repo: "enterprise-app/dashboard",
-    branch: "main",
-    commit_sha: "e8f9a0b",
-    received_at: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "NO_CVE_FOUND", severity: "safe", cvss: 0, summary: "No known vulnerabilities" },
-    secrets_detected: null,
-    policy_violation: null,
-    risk_score: 5,
-    ai_summary: "✅ Commit by mike_ui on main — clean run. No issues detected.",
-    recommended_action: "SAFE_TO_DEPLOY",
-  },
-  {
-    id: "WH-5",
-    source: "github_pr",
-    event_type: "pull_request.opened",
-    delivery_id: "manual-1716834600",
-    developer: "david_k",
-    pr_number: 89,
-    pr_url: "https://github.com/enterprise-app/core/pull/89",
-    pr_title: "Add Stripe webhooks and client package",
-    package_name: "stripe",
-    repo: "enterprise-app/core",
-    branch: "feature-stripe-billing",
-    commit_sha: "f1e2d3c",
-    received_at: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2026-9999", severity: "critical", cvss: 9.1, summary: "Payment data exposure" },
-    secrets_detected: null,
-    policy_violation: { rule: "BANNED_PACKAGE", team: "security-engineering", reason: "Active critical CVE — deployment blocked" },
-    risk_score: 100,
-    ai_summary: "🔴 Critical vulnerability CVE-2026-9999 in stripe by david_k. Active payment vulnerability. Violates rule BANNED_PACKAGE. Block deployment immediately.",
-    recommended_action: "BLOCK_DEPLOYMENT",
-  },
-  {
-    id: "WH-4",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834700",
-    developer: "alex_ops",
-    pr_title: "Integrate aws-sdk for S3 storage upload",
-    package_name: "aws-sdk",
-    repo: "enterprise-app/core",
-    branch: "main",
-    commit_sha: "a9b8c7d",
-    received_at: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2026-8888", severity: "critical", cvss: 9.5, summary: "Credential exposure risk" },
-    secrets_detected: null,
-    policy_violation: { rule: "SECRETS_RISK", team: "platform-team", reason: "Must use IAM roles — hardcoded keys not allowed" },
-    risk_score: 100,
-    ai_summary: "🔴 Critical CVE CVE-2026-8888 in aws-sdk by alex_ops. Policy rule SECRETS_RISK violated. Deployment blocked.",
-    recommended_action: "BLOCK_DEPLOYMENT",
-  },
-  {
-    id: "WH-3",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834800",
-    developer: "john_backend",
-    pr_title: "Fix SQL injections in search query using pg client",
-    package_name: "pg",
-    repo: "enterprise-app/gateway",
-    branch: "main",
-    commit_sha: "d5e6f7a",
-    received_at: new Date(Date.now() - 240 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2024-1234", severity: "high", cvss: 7.5, summary: "SQL injection via unsanitized raw queries" },
-    secrets_detected: null,
-    policy_violation: { rule: "AUDIT_REQUIRED", team: "security-engineering", reason: "DB query changes require SQL injection audit" },
-    risk_score: 83,
-    ai_summary: "🟠 High CVE-2024-1234 in pg package introduced by john_backend. Manual DB security audit is required before deployment.",
-    recommended_action: "SECURITY_REVIEW",
-  },
-  {
-    id: "WH-2",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716834900",
-    developer: "mike_ui",
-    pr_title: "Update minimist to patch security advisory",
-    package_name: "minimist",
-    repo: "enterprise-app/dashboard",
-    branch: "main",
-    commit_sha: "c3d4e5f",
-    received_at: new Date(Date.now() - 360 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "CVE-2021-44906", severity: "critical", cvss: 9.8, summary: "Prototype pollution" },
-    secrets_detected: null,
-    policy_violation: null,
-    risk_score: 95,
-    ai_summary: "🔴 Critical CVE CVE-2021-44906 in minimist by mike_ui on main. Recommended action: Rollback deployment.",
-    recommended_action: "BLOCK_DEPLOYMENT",
-  },
-  {
-    id: "WH-1",
-    source: "github_push",
-    event_type: "push",
-    delivery_id: "manual-1716835000",
-    developer: "sarah_dev",
-    pr_title: "Update package lock dependencies",
-    package_name: "none",
-    repo: "enterprise-app/auth-service",
-    branch: "patch-1",
-    commit_sha: "f9e8d7c",
-    received_at: new Date(Date.now() - 480 * 60 * 1000).toISOString(),
-    vulnerability: { cve: "NO_CVE_FOUND", severity: "safe", cvss: 0, summary: "No known vulnerabilities" },
-    secrets_detected: null,
-    policy_violation: null,
-    risk_score: 5,
-    ai_summary: "✅ Commit by sarah_dev looks clean. Ready to deploy.",
-    recommended_action: "SAFE_TO_DEPLOY",
-  }
-];
-let eventCounter = 10;
 
 // Known vulnerability database
 const KNOWN_VULNS = {
@@ -397,6 +192,7 @@ router.post("/webhook/github", (req, res) => {
   const delivery = req.headers["x-github-delivery"] || `manual-${Date.now()}`;
 
   const results = [];
+  const promises = [];
 
   if (event === "push") {
     const commits  = payload.commits || [];
@@ -405,7 +201,7 @@ router.post("/webhook/github", (req, res) => {
     const pusher   = payload.pusher?.name || payload.sender?.login || "unknown";
 
     commits.slice(0, 10).forEach(commit => {
-      const id  = `WH-${++eventCounter}`;
+      const id = `WH-${Math.floor(Math.random() * 900000) + 100000}`;
       // Check if package_name is directly supplied (sandbox mode)
       let pkg = commit.package_name;
       if (!pkg) {
@@ -450,8 +246,27 @@ router.post("/webhook/github", (req, res) => {
         recommended_action: analysis.action,
       };
 
-      webhookEvents.unshift(record);
       results.push(record);
+
+      const dbPromise = new Promise((resolveDb) => {
+        db.run(`INSERT INTO webhook_events (
+          id, source, event_type, delivery_id, developer, pr_title, package_name, repo, branch, commit_sha, received_at,
+          vulnerability_json, secrets_detected_json, policy_violation_json, risk_score, ai_summary, recommended_action
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+          record.id, record.source, record.event_type, record.delivery_id, record.developer, record.pr_title, record.package_name, record.repo, record.branch, record.commit_sha, record.received_at,
+          JSON.stringify(record.vulnerability),
+          JSON.stringify(record.secrets_detected),
+          JSON.stringify(record.policy_violation),
+          record.risk_score,
+          record.ai_summary,
+          record.recommended_action
+        ], (err) => {
+          if (err) console.error("Error inserting webhook event:", err.message);
+          resolveDb();
+        });
+      });
+      promises.push(dbPromise);
+
       console.log(`[WEBHOOK] ${id} | push | ${pusher} → ${repo}:${branch} | ${analysis.vuln.severity?.toUpperCase()} | score:${analysis.risk}`);
       
       // Sync into historical feed
@@ -466,7 +281,7 @@ router.post("/webhook/github", (req, res) => {
     const action  = payload.action;
 
     if (["opened", "synchronize", "reopened"].includes(action)) {
-      const id  = `WH-${++eventCounter}`;
+      const id = `WH-${Math.floor(Math.random() * 900000) + 100000}`;
       const repo    = payload.repository?.full_name || "unknown/repo";
       const branch  = pr.head?.ref || "feature-branch";
       const developer = pr.user?.login || "unknown";
@@ -512,8 +327,27 @@ router.post("/webhook/github", (req, res) => {
         recommended_action: analysis.action,
       };
 
-      webhookEvents.unshift(record);
       results.push(record);
+
+      const dbPromise = new Promise((resolveDb) => {
+        db.run(`INSERT INTO webhook_events (
+          id, source, event_type, delivery_id, pr_number, pr_url, developer, pr_title, package_name, repo, branch, commit_sha, received_at,
+          vulnerability_json, secrets_detected_json, policy_violation_json, risk_score, ai_summary, recommended_action
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+          record.id, record.source, record.event_type, record.delivery_id, record.pr_number, record.pr_url, record.developer, record.pr_title, record.package_name, record.repo, record.branch, record.commit_sha, record.received_at,
+          JSON.stringify(record.vulnerability),
+          JSON.stringify(record.secrets_detected),
+          JSON.stringify(record.policy_violation),
+          record.risk_score,
+          record.ai_summary,
+          record.recommended_action
+        ], (err) => {
+          if (err) console.error("Error inserting webhook event:", err.message);
+          resolveDb();
+        });
+      });
+      promises.push(dbPromise);
+
       console.log(`[WEBHOOK] ${id} | PR#${pr.number} | ${developer} → ${repo} | ${analysis.vuln.severity?.toUpperCase()} | score:${analysis.risk}`);
       
       // Sync into historical feed
@@ -524,9 +358,9 @@ router.post("/webhook/github", (req, res) => {
     }
   }
 
-  if (webhookEvents.length > 500) webhookEvents.splice(500);
-
-  res.status(200).json({ success: true, processed: results.length, events: results });
+  Promise.all(promises).then(() => {
+    res.status(200).json({ success: true, processed: results.length, events: results });
+  });
 });
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -535,21 +369,58 @@ router.post("/webhook/github", (req, res) => {
 router.get("/webhook/events", (req, res) => {
   const { severity, developer, page = 1, limit = 30 } = req.query;
 
-  let filtered = [...webhookEvents];
-  if (severity)  filtered = filtered.filter(e => e.vulnerability?.severity === severity);
-  if (developer) filtered = filtered.filter(e => e.developer?.toLowerCase().includes(developer.toLowerCase()));
+  let queryStr = "SELECT * FROM webhook_events WHERE 1=1";
+  const params = [];
 
-  const p     = Math.max(1, parseInt(page, 10));
-  const l     = Math.min(100, parseInt(limit, 10));
-  const start = (p - 1) * l;
+  if (developer) {
+    queryStr += " AND developer LIKE ?";
+    params.push(`%${developer}%`);
+  }
 
-  res.json({
-    success:     true,
-    events:      filtered.slice(start, start + l),
-    total:       filtered.length,
-    page:        p,
-    limit:       l,
-    total_pages: Math.ceil(filtered.length / l),
+  db.all(queryStr, params, (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+
+    let mapped = (rows || []).map(row => ({
+      id: row.id,
+      source: row.source,
+      event_type: row.event_type,
+      delivery_id: row.delivery_id,
+      pr_number: row.pr_number,
+      pr_url: row.pr_url,
+      developer: row.developer,
+      pr_title: row.pr_title,
+      package_name: row.package_name,
+      repo: row.repo,
+      branch: row.branch,
+      commit_sha: row.commit_sha,
+      received_at: row.received_at,
+      risk_score: row.risk_score,
+      ai_summary: row.ai_summary,
+      recommended_action: row.recommended_action,
+      vulnerability: JSON.parse(row.vulnerability_json),
+      secrets_detected: JSON.parse(row.secrets_detected_json),
+      policy_violation: JSON.parse(row.policy_violation_json),
+    }));
+
+    if (severity) {
+      mapped = mapped.filter(e => e.vulnerability?.severity === severity);
+    }
+
+    // Sort by newest received_at first
+    mapped.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
+
+    const p     = Math.max(1, parseInt(page, 10));
+    const l     = Math.min(100, parseInt(limit, 10));
+    const start = (p - 1) * l;
+
+    res.json({
+      success:     true,
+      events:      mapped.slice(start, start + l),
+      total:       mapped.length,
+      page:        p,
+      limit:       l,
+      total_pages: Math.ceil(mapped.length / l),
+    });
   });
 });
 
@@ -557,41 +428,53 @@ router.get("/webhook/events", (req, res) => {
    GET /api/webhook/stats — Aggregate stats across all webhook events
 ───────────────────────────────────────────────────────────────────── */
 router.get("/webhook/stats", (req, res) => {
-  if (webhookEvents.length === 0) {
-    return res.json({ success: true, stats: null });
-  }
+  db.all("SELECT * FROM webhook_events", [], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (!rows || rows.length === 0) {
+      return res.json({ success: true, stats: null });
+    }
 
-  const critical = webhookEvents.filter(e => e.vulnerability?.severity === "critical").length;
-  const high     = webhookEvents.filter(e => e.vulnerability?.severity === "high").length;
-  const medium   = webhookEvents.filter(e => e.vulnerability?.severity === "medium").length;
-  const safe     = webhookEvents.filter(e => e.vulnerability?.severity === "safe").length;
-  const secrets  = webhookEvents.filter(e => e.secrets_detected).length;
-  const policies = webhookEvents.filter(e => e.policy_violation).length;
-  const blocked  = webhookEvents.filter(e => e.recommended_action === "BLOCK_DEPLOYMENT").length;
+    const mapped = rows.map(row => ({
+      developer: row.developer,
+      risk_score: row.risk_score,
+      recommended_action: row.recommended_action,
+      vulnerability: JSON.parse(row.vulnerability_json),
+      secrets_detected: JSON.parse(row.secrets_detected_json),
+      policy_violation: JSON.parse(row.policy_violation_json),
+    }));
 
-  const devMap = {};
-  webhookEvents.forEach(e => {
-    if (!devMap[e.developer]) devMap[e.developer] = { developer: e.developer, commits: 0, risk_total: 0, critical: 0, blocked: 0 };
-    devMap[e.developer].commits++;
-    devMap[e.developer].risk_total += e.risk_score || 0;
-    if (e.vulnerability?.severity === "critical") devMap[e.developer].critical++;
-    if (e.recommended_action === "BLOCK_DEPLOYMENT") devMap[e.developer].blocked++;
-  });
+    const critical = mapped.filter(e => e.vulnerability?.severity === "critical").length;
+    const high     = mapped.filter(e => e.vulnerability?.severity === "high").length;
+    const medium   = mapped.filter(e => e.vulnerability?.severity === "medium").length;
+    const safe     = mapped.filter(e => e.vulnerability?.severity === "safe").length;
+    const secrets  = mapped.filter(e => e.secrets_detected).length;
+    const policies = mapped.filter(e => e.policy_violation).length;
+    const blocked  = mapped.filter(e => e.recommended_action === "BLOCK_DEPLOYMENT").length;
 
-  const developers = Object.values(devMap)
-    .map(d => ({ ...d, avg_risk: Math.round(d.risk_total / d.commits) }))
-    .sort((a, b) => b.risk_total - a.risk_total);
+    const devMap = {};
+    mapped.forEach(e => {
+      if (!devMap[e.developer]) devMap[e.developer] = { developer: e.developer, commits: 0, risk_total: 0, critical: 0, blocked: 0 };
+      devMap[e.developer].commits++;
+      devMap[e.developer].risk_total += e.risk_score || 0;
+      if (e.vulnerability?.severity === "critical") devMap[e.developer].critical++;
+      if (e.recommended_action === "BLOCK_DEPLOYMENT") devMap[e.developer].blocked++;
+    });
 
-  res.json({
-    success: true,
-    stats: {
-      total_events: webhookEvents.length,
-      by_severity:  { critical, high, medium, safe },
-      secret_leaks: secrets,
-      policy_violations: policies,
-      blocked_deployments: blocked,
-      developers,
-    },
+    const developers = Object.values(devMap)
+      .map(d => ({ ...d, avg_risk: Math.round(d.risk_total / d.commits) }))
+      .sort((a, b) => b.risk_total - a.risk_total);
+
+    res.json({
+      success: true,
+      stats: {
+        total_events: mapped.length,
+        by_severity:  { critical, high, medium, safe },
+        secret_leaks: secrets,
+        policy_violations: policies,
+        blocked_deployments: blocked,
+        developers,
+      },
+    });
   });
 });
 
@@ -620,4 +503,4 @@ router.get("/webhook/config", (req, res) => {
   });
 });
 
-module.exports = { router, webhookEvents };
+module.exports = { router };

@@ -14,13 +14,9 @@
 
 const express = require("express");
 const router  = express.Router();
+const db      = require("../config/database");
 
 const { scanForSecrets } = require("../utils/secretScanner");
-
-// In-memory store for submitted commits (persists until server restart)
-// In production this would be a real DB table
-const submissions = [];
-let submissionCounter = 1000;
 
 // Known vulnerability database (supplements OSV mock data)
 const KNOWN_VULNS = {
@@ -131,47 +127,67 @@ router.post("/submit-commit", (req, res) => {
   if (!pr_title?.trim())     return res.status(400).json({ success: false, error: "pr_title is required" });
   if (!package_name?.trim()) return res.status(400).json({ success: false, error: "package_name is required" });
 
-  const id = `SUB-${++submissionCounter}`;
-  const submission = {
-    id,
-    developer:     developer.trim().slice(0, 50),
-    pr_title:      pr_title.trim().slice(0, 200),
-    package_name:  package_name.trim().toLowerCase().slice(0, 100),
-    commit_diff:   (commit_diff || "").slice(0, 2000),
-    slack_message: (slack_message || "").slice(0, 500),
-    repo:          (repo || "unknown/repo").slice(0, 100),
-    submitted_at:  new Date().toISOString(),
-  };
+  db.get("SELECT COUNT(*) as count FROM submissions", [], (err, row) => {
+    if (err) return res.status(500).json({ success: false, error: "Database error" });
+    const count = row ? row.count : 0;
+    const id = `SUB-${1000 + count + 1}`;
 
-  // Run Coral analysis
-  const analysis = analyzeCommit(submission);
+    const submission = {
+      id,
+      developer:     developer.trim().slice(0, 50),
+      pr_title:      pr_title.trim().slice(0, 200),
+      package_name:  package_name.trim().toLowerCase().slice(0, 100),
+      commit_diff:   (commit_diff || "").slice(0, 2000),
+      slack_message: (slack_message || "").slice(0, 500),
+      repo:          (repo || "unknown/repo").slice(0, 100),
+      submitted_at:  new Date().toISOString(),
+    };
 
-  const result = {
-    ...submission,
-    ...analysis,
-    incident_id: id,
-    pr_details: {
-      pr_id:      submissionCounter,
-      title:      submission.pr_title,
-      developer:  submission.developer,
-      merged_at:  submission.submitted_at,
-    },
-    package_details: { package_name: submission.package_name },
-    internal_discussion: {
-      slack_channel: "#dev-submissions",
-      message: submission.slack_message || "No Slack message provided.",
-    },
-  };
+    // Run Coral analysis
+    const analysis = analyzeCommit(submission);
 
-  submissions.unshift(result); // newest first
-  if (submissions.length > 200) submissions.pop(); // cap at 200
+    db.run(`INSERT INTO submissions (
+      id, developer, pr_title, package_name, commit_diff, slack_message, repo, submitted_at,
+      vulnerability_json, secrets_detected_json, policy_violation_json, risk_score, ai_summary, recommended_action
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+      id, submission.developer, submission.pr_title, submission.package_name, submission.commit_diff, submission.slack_message, submission.repo, submission.submitted_at,
+      JSON.stringify(analysis.vulnerability),
+      JSON.stringify(analysis.secrets_detected),
+      JSON.stringify(analysis.policy_violation),
+      analysis.risk_score,
+      analysis.ai_summary,
+      analysis.recommended_action
+    ], (insertErr) => {
+      if (insertErr) {
+        console.error("[DB INSERT ERROR]", insertErr.message);
+        return res.status(500).json({ success: false, error: "Failed to save submission" });
+      }
 
-  console.log(`[SUBMIT] ${id} — ${developer} → ${package_name} | ${analysis.vulnerability.severity?.toUpperCase()} | score: ${analysis.risk_score}`);
+      const result = {
+        ...submission,
+        ...analysis,
+        incident_id: id,
+        pr_details: {
+          pr_id:      1000 + count + 1,
+          title:      submission.pr_title,
+          developer:  submission.developer,
+          merged_at:  submission.submitted_at,
+        },
+        package_details: { package_name: submission.package_name },
+        internal_discussion: {
+          slack_channel: "#dev-submissions",
+          message: submission.slack_message || "No Slack message provided.",
+        },
+      };
 
-  res.status(201).json({
-    success: true,
-    message: `Commit analyzed by Coral Security Engine`,
-    submission: result,
+      console.log(`[SUBMIT] ${id} — ${developer} → ${package_name} | ${analysis.vulnerability.severity?.toUpperCase()} | score: ${analysis.risk_score}`);
+
+      res.status(201).json({
+        success: true,
+        message: `Commit analyzed by Coral Security Engine`,
+        submission: result,
+      });
+    });
   });
 });
 
@@ -182,21 +198,65 @@ router.post("/submit-commit", (req, res) => {
 router.get("/submissions", (req, res) => {
   const { developer, severity, page = 1, limit = 20 } = req.query;
 
-  let filtered = [...submissions];
-  if (developer) filtered = filtered.filter(s => s.developer?.toLowerCase().includes(developer.toLowerCase()));
-  if (severity)  filtered = filtered.filter(s => s.vulnerability?.severity === severity);
+  let queryStr = "SELECT * FROM submissions WHERE 1=1";
+  const params = [];
 
-  const p     = Math.max(1, parseInt(page, 10));
-  const l     = Math.min(50, Math.max(1, parseInt(limit, 10)));
-  const start = (p - 1) * l;
+  if (developer) {
+    queryStr += " AND developer LIKE ?";
+    params.push(`%${developer}%`);
+  }
 
-  res.json({
-    success: true,
-    submissions: filtered.slice(start, start + l),
-    total:       filtered.length,
-    page:        p,
-    limit:       l,
-    total_pages: Math.ceil(filtered.length / l),
+  db.all(queryStr, params, (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+
+    let mapped = (rows || []).map(row => ({
+      id: row.id,
+      developer: row.developer,
+      pr_title: row.pr_title,
+      package_name: row.package_name,
+      commit_diff: row.commit_diff,
+      slack_message: row.slack_message,
+      repo: row.repo,
+      submitted_at: row.submitted_at,
+      incident_id: row.id,
+      risk_score: row.risk_score,
+      ai_summary: row.ai_summary,
+      recommended_action: row.recommended_action,
+      vulnerability: JSON.parse(row.vulnerability_json),
+      secrets_detected: JSON.parse(row.secrets_detected_json),
+      policy_violation: JSON.parse(row.policy_violation_json),
+      pr_details: {
+        pr_id:      parseInt(row.id.split("-")[1], 10) || 1000,
+        title:      row.pr_title,
+        developer:  row.developer,
+        merged_at:  row.submitted_at,
+      },
+      package_details: { package_name: row.package_name },
+      internal_discussion: {
+        slack_channel: "#dev-submissions",
+        message: row.slack_message || "No Slack message provided.",
+      },
+    }));
+
+    if (severity) {
+      mapped = mapped.filter(s => s.vulnerability?.severity === severity);
+    }
+
+    // Sort by newest submitted_at first
+    mapped.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
+
+    const p     = Math.max(1, parseInt(page, 10));
+    const l     = Math.min(50, Math.max(1, parseInt(limit, 10)));
+    const start = (p - 1) * l;
+
+    res.json({
+      success: true,
+      submissions: mapped.slice(start, start + l),
+      total:       mapped.length,
+      page:        p,
+      limit:       l,
+      total_pages: Math.ceil(mapped.length / l),
+    });
   });
 });
 
@@ -205,47 +265,58 @@ router.get("/submissions", (req, res) => {
    Aggregate stats across all developer submissions
 ───────────────────────────────────────────────────────────────────── */
 router.get("/submissions/stats", (req, res) => {
-  if (submissions.length === 0) {
-    return res.json({ success: true, stats: null, message: "No submissions yet" });
-  }
+  db.all("SELECT * FROM submissions", [], (err, rows) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (!rows || rows.length === 0) {
+      return res.json({ success: true, stats: null, message: "No submissions yet" });
+    }
 
-  const critical = submissions.filter(s => s.vulnerability?.severity === "critical").length;
-  const high     = submissions.filter(s => s.vulnerability?.severity === "high").length;
-  const medium   = submissions.filter(s => s.vulnerability?.severity === "medium").length;
-  const safe     = submissions.filter(s => s.vulnerability?.severity === "safe").length;
-  const secrets  = submissions.filter(s => s.secrets_detected).length;
-  const policies = submissions.filter(s => s.policy_violation).length;
-  const avgScore = Math.round(submissions.reduce((s, i) => s + (i.risk_score || 0), 0) / submissions.length);
+    const mapped = rows.map(row => ({
+      risk_score: row.risk_score,
+      developer: row.developer,
+      vulnerability: JSON.parse(row.vulnerability_json),
+      secrets_detected: JSON.parse(row.secrets_detected_json),
+      policy_violation: JSON.parse(row.policy_violation_json),
+    }));
 
-  // Per-developer breakdown
-  const devMap = {};
-  submissions.forEach(s => {
-    const d = s.developer;
-    if (!devMap[d]) devMap[d] = { developer: d, submissions: 0, critical: 0, high: 0, risk_total: 0, secrets: 0 };
-    devMap[d].submissions++;
-    devMap[d].risk_total += s.risk_score || 0;
-    if (s.vulnerability?.severity === "critical") devMap[d].critical++;
-    if (s.vulnerability?.severity === "high")     devMap[d].high++;
-    if (s.secrets_detected) devMap[d].secrets++;
-  });
+    const critical = mapped.filter(s => s.vulnerability?.severity === "critical").length;
+    const high     = mapped.filter(s => s.vulnerability?.severity === "high").length;
+    const medium   = mapped.filter(s => s.vulnerability?.severity === "medium").length;
+    const safe     = mapped.filter(s => s.vulnerability?.severity === "safe").length;
+    const secrets  = mapped.filter(s => s.secrets_detected).length;
+    const policies = mapped.filter(s => s.policy_violation).length;
+    const avgScore = Math.round(mapped.reduce((s, i) => s + (i.risk_score || 0), 0) / mapped.length);
 
-  const developers = Object.values(devMap).map(d => ({
-    ...d,
-    avg_risk: Math.round(d.risk_total / d.submissions),
-    risk_tier: d.critical > 0 || d.secrets > 0 ? "HIGH_RISK" : d.high > 0 ? "ELEVATED" : "STANDARD",
-  })).sort((a, b) => b.risk_total - a.risk_total);
+    // Per-developer breakdown
+    const devMap = {};
+    mapped.forEach(s => {
+      const d = s.developer;
+      if (!devMap[d]) devMap[d] = { developer: d, submissions: 0, critical: 0, high: 0, risk_total: 0, secrets: 0 };
+      devMap[d].submissions++;
+      devMap[d].risk_total += s.risk_score || 0;
+      if (s.vulnerability?.severity === "critical") devMap[d].critical++;
+      if (s.vulnerability?.severity === "high")     devMap[d].high++;
+      if (s.secrets_detected) devMap[d].secrets++;
+    });
 
-  res.json({
-    success: true,
-    stats: {
-      total_submissions: submissions.length,
-      by_severity: { critical, high, medium, safe },
-      secret_leaks: secrets,
-      policy_violations: policies,
-      avg_risk_score: avgScore,
-      overall_grade: avgScore >= 75 ? "D" : avgScore >= 50 ? "C" : avgScore >= 25 ? "B" : "A",
-      developers,
-    },
+    const developers = Object.values(devMap).map(d => ({
+      ...d,
+      avg_risk: Math.round(d.risk_total / d.submissions),
+      risk_tier: d.critical > 0 || d.secrets > 0 ? "HIGH_RISK" : d.high > 0 ? "ELEVATED" : "STANDARD",
+    })).sort((a, b) => b.risk_total - a.risk_total);
+
+    res.json({
+      success: true,
+      stats: {
+        total_submissions: mapped.length,
+        by_severity: { critical, high, medium, safe },
+        secret_leaks: secrets,
+        policy_violations: policies,
+        avg_risk_score: avgScore,
+        overall_grade: avgScore >= 75 ? "D" : avgScore >= 50 ? "C" : avgScore >= 25 ? "B" : "A",
+        developers,
+      },
+    });
   });
 });
 
@@ -253,19 +324,52 @@ router.get("/submissions/stats", (req, res) => {
    GET /api/submissions/:id
 ───────────────────────────────────────────────────────────────────── */
 router.get("/submissions/:id", (req, res) => {
-  const sub = submissions.find(s => s.id === req.params.id);
-  if (!sub) return res.status(404).json({ success: false, error: "Submission not found" });
-  res.json({ success: true, submission: sub });
+  db.get("SELECT * FROM submissions WHERE id = ?", [req.params.id], (err, row) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (!row) return res.status(404).json({ success: false, error: "Submission not found" });
+
+    const sub = {
+      id: row.id,
+      developer: row.developer,
+      pr_title: row.pr_title,
+      package_name: row.package_name,
+      commit_diff: row.commit_diff,
+      slack_message: row.slack_message,
+      repo: row.repo,
+      submitted_at: row.submitted_at,
+      incident_id: row.id,
+      risk_score: row.risk_score,
+      ai_summary: row.ai_summary,
+      recommended_action: row.recommended_action,
+      vulnerability: JSON.parse(row.vulnerability_json),
+      secrets_detected: JSON.parse(row.secrets_detected_json),
+      policy_violation: JSON.parse(row.policy_violation_json),
+      pr_details: {
+        pr_id:      parseInt(row.id.split("-")[1], 10) || 1000,
+        title:      row.pr_title,
+        developer:  row.developer,
+        merged_at:  row.submitted_at,
+      },
+      package_details: { package_name: row.package_name },
+      internal_discussion: {
+        slack_channel: "#dev-submissions",
+        message: row.slack_message || "No Slack message provided.",
+      },
+    };
+
+    res.json({ success: true, submission: sub });
+  });
 });
 
 /* ─────────────────────────────────────────────────────────────────────
    DELETE /api/submissions/:id
 ───────────────────────────────────────────────────────────────────── */
 router.delete("/submissions/:id", (req, res) => {
-  const idx = submissions.findIndex(s => s.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, error: "Submission not found" });
-  submissions.splice(idx, 1);
-  res.json({ success: true, message: "Submission removed" });
+  db.run("DELETE FROM submissions WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    if (this.changes === 0) return res.status(404).json({ success: false, error: "Submission not found" });
+    res.json({ success: true, message: "Submission removed" });
+  });
 });
 
 module.exports = router;

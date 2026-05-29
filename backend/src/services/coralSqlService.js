@@ -1,4 +1,4 @@
-const { exec } = require("child_process");
+const { spawn } = require("child_process");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
@@ -80,11 +80,26 @@ const getCriticalIncidents = async () => {
       ORDER BY g.pr_id DESC
     `;
 
-    const cmd = `"${CORAL_BIN}" sql --format json "${query.replace(/\n/g, ' ')}"`;
+    // Ensure we run the process cleanly, specifying the cwd so it finds coral-source.yaml
+    const child = spawn(CORAL_BIN, ["sql", "--format", "json", query], {
+      cwd: path.dirname(CORAL_SOURCE_FILE),
+      env: process.env
+    });
 
-    exec(cmd, { maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
-      if (error) {
-        console.warn("[CORAL] Binary execution failed — using Node.js fallback JOIN:", stderr || error.message);
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on("close", (code) => {
+      if (code !== 0) {
+        console.warn("[CORAL] Binary execution failed — using Node.js fallback JOIN:", stderr.trim() || `exit code ${code}`);
         return resolve(getFallbackData());
       }
       try {
@@ -98,6 +113,11 @@ const getCriticalIncidents = async () => {
         console.error("[CORAL] Parse error — using Node.js fallback JOIN:", e.message);
         resolve(getFallbackData());
       }
+    });
+
+    child.on("error", (err) => {
+      console.error("[CORAL] Spawn error — using Node.js fallback JOIN:", err.message);
+      resolve(getFallbackData());
     });
   });
 };
