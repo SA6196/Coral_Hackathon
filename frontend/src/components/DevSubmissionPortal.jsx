@@ -43,7 +43,10 @@ const ACTION_LABELS = {
 /* ── Webhook Event Detail Card ─────────────────────────────────────── */
 function EventCard({ event, index }) {
   const [expanded, setExpanded] = useState(false);
-  const sev = event.vulnerability?.severity || "safe";
+  let sev = "safe";
+  if (event.risk_score >= 90) sev = "critical";
+  else if (event.risk_score >= 70) sev = "high";
+  else if (event.risk_score >= 40) sev = "medium";
   const cfg = SEV[sev] || SEV.safe;
   const SevIcon = cfg.icon;
 
