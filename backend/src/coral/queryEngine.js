@@ -200,4 +200,4 @@ const runSecurityAnalysis = (joinedData) => {
   });
 };
 
-module.exports = { runSecurityAnalysis };
+module.exports = { runSecurityAnalysis, scanTextForMaliciousCode };

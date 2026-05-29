@@ -7,6 +7,7 @@ const path       = require("path");
 const db         = require("../config/database");
 const { scanForSecrets } = require("../utils/secretScanner");
 const { invalidateCache } = require("../coral/joinData");
+const { scanTextForMaliciousCode } = require("../coral/queryEngine");
 
 let writeQueue = Promise.resolve();
 
@@ -137,16 +138,17 @@ function extractPackages(files = []) {
  */
 function analyzeEvent(data) {
   const { developer, pr_title, package_name, commit_message, repo, branch, commit_sha } = data;
-
   const pkg   = (package_name || "none").toLowerCase();
   const vuln  = KNOWN_VULNS[pkg] || { cve: "NO_CVE_FOUND", severity: "safe", cvss: 0, summary: "No known vulnerabilities detected" };
   const secrets = scanForSecrets(`${pr_title} ${commit_message}`, "");
+  const maliciousCode = scanTextForMaliciousCode(`${pr_title} ${commit_message}`);
   const policy  = POLICY_RULES[pkg] || null;
 
   // Risk scoring
   const BASE = { critical: 90, high: 70, medium: 40, safe: 5 };
   let risk = BASE[vuln.severity] || 5;
   if (secrets.length > 0) risk = Math.min(100, risk + 12);
+  if (maliciousCode.length > 0) risk = 100;
   if (policy?.rule === "BANNED_PACKAGE")  risk = Math.min(100, risk + 15);
   if (policy?.rule === "SECRETS_RISK")    risk = Math.min(100, risk + 18);
   if (policy?.rule === "AUDIT_REQUIRED")  risk = Math.min(100, risk + 8);
@@ -154,7 +156,9 @@ function analyzeEvent(data) {
   // AI summary
   const e = { critical: "🔴", high: "🟠", medium: "🟡", safe: "✅" }[vuln.severity] || "⚪";
   let summary = "";
-  if (vuln.severity === "critical" && secrets.length > 0) {
+  if (maliciousCode.length > 0) {
+    summary = `🚨 MALICIOUS CODE: ${developer} introduced a potential backdoor (${maliciousCode[0].description}). Immediate rollback required.`;
+  } else if (vuln.severity === "critical" && secrets.length > 0) {
     summary = `${e} CRITICAL: ${developer} introduced ${pkg} (${vuln.cve}) AND ${secrets.length} secret(s) detected — ${secrets[0]?.name}. Immediate rollback and credential rotation required.`;
   } else if (vuln.severity === "critical") {
     summary = `${e} Critical CVE ${vuln.cve} in ${pkg} committed by ${developer} on ${branch}. ${vuln.summary}. ${policy ? "Policy violation: " + policy.rule + "." : ""} Block deployment immediately.`;
@@ -169,13 +173,13 @@ function analyzeEvent(data) {
   }
 
   let action = "SAFE_TO_DEPLOY";
-  if (vuln.severity === "critical" || policy?.rule === "BANNED_PACKAGE") action = "BLOCK_DEPLOYMENT";
+  if (maliciousCode.length > 0 || vuln.severity === "critical" || policy?.rule === "BANNED_PACKAGE") action = "BLOCK_DEPLOYMENT";
   else if (secrets.length > 0)   action = "ROTATE_SECRETS";
   else if (policy?.rule === "SECRETS_RISK")   action = "SECURITY_AUDIT";
   else if (vuln.severity === "high")          action = "SECURITY_REVIEW";
   else if (vuln.severity === "medium")        action = "MONITOR";
 
-  return { vuln, secrets, policy, risk, summary, action };
+  return { vuln, secrets, maliciousCode, policy, risk, summary, action };
 }
 
 /* ─────────────────────────────────────────────────────────────────────
