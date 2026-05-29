@@ -290,7 +290,7 @@ export default function RemediationCenter({ item }) {
       const res = await getRemediation(toLogId(item.incident_id));
       setAiScripts(res.data.remediation);
     } catch {
-      setAiError("AI backend offline (port 5001). Showing static plan only.");
+      setAiError("AI backend offline (port 5000). Showing static plan only.");
     } finally {
       setAiLoading(false);
     }
