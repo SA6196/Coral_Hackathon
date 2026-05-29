@@ -2,10 +2,12 @@ const crypto = require("crypto");
 
 const SECRET = process.env.JWT_SECRET || "coral-super-secret-key-123456789";
 
-function signToken(payload) {
+function signToken(payload, expiresInHours = 8) {
   try {
+    const now = Math.floor(Date.now() / 1000);
+    const enriched = { ...payload, iat: now, exp: now + expiresInHours * 3600 };
     const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-    const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
+    const data = Buffer.from(JSON.stringify(enriched)).toString("base64url");
     const signature = crypto.createHmac("sha256", SECRET).update(`${header}.${data}`).digest("base64url");
     return `${header}.${data}.${signature}`;
   } catch (e) {
@@ -21,7 +23,10 @@ function verifyToken(token) {
     const [header, data, signature] = parts;
     const expectedSig = crypto.createHmac("sha256", SECRET).update(`${header}.${data}`).digest("base64url");
     if (signature !== expectedSig) return null;
-    return JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
+    const payload = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
+    // Reject expired tokens
+    if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+    return payload;
   } catch (e) {
     return null;
   }

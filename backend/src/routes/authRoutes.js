@@ -10,7 +10,10 @@ router.post("/login", (req, res) => {
     return res.status(400).json({ success: false, error: "Username and password are required." });
   }
 
-  if (username === "admin" && password === "admin123") {
+  const ADMIN_USER = process.env.ADMIN_USER || "admin";
+  const ADMIN_PASS = process.env.ADMIN_PASS || "admin123";
+
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
     const token = signToken({ username, role: "admin", team: "security" });
     return res.json({
       success: true,

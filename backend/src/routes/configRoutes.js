@@ -1,13 +1,16 @@
 const express = require("express");
 const router  = express.Router();
+const fs      = require("fs");
+const path    = require("path");
+
+const MOCK_DIR = path.join(__dirname, "../../mock-data");
+function readMock(name) {
+  try { return JSON.parse(fs.readFileSync(path.join(MOCK_DIR, name), "utf-8")); }
+  catch { return []; }
+}
 
 const { joinSecurityData, invalidateCache, getCacheInfo, setSessionData, getRuntimeTokens, setRuntimeTokens } = require("../coral/joinData");
 const { runSecurityAnalysis }                             = require("../coral/queryEngine");
-
-const githubData = require("../../mock-data/github.json");
-const osvData    = require("../../mock-data/osv.json");
-const slackData  = require("../../mock-data/slack.json");
-const notionData = require("../../mock-data/notion.json");
 
 const { syncAllData } = require("../coral/fetchRealData");
 
@@ -16,6 +19,13 @@ router.get("/source-status", (req, res) => {
   const sessionId = req.headers["x-session-id"] || "default";
   const runtimeTokens = getRuntimeTokens(sessionId);
   const now = Date.now();
+
+  // Read live counts from disk so post-sync values are always fresh
+  const githubData = readMock("github.json");
+  const osvData    = readMock("osv.json");
+  const slackData  = readMock("slack.json");
+  const notionData = readMock("notion.json");
+
   const sources = [
     {
       id: "github", name: "GitHub",

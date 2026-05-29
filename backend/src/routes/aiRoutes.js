@@ -25,6 +25,16 @@ const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccess
 const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }            = require("../coral/queryEngine");
 
+/* ── Per-route chat rate limiter (30 msg/min) ────────────────────────── */
+const rateLimit = require("express-rate-limit");
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { success: false, error: "Chat rate limit exceeded — please wait." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* ── Helpers ─────────────────────────────────────────────────────────── */
 async function getIncidents(sessionId) {
   const result = await joinSecurityData(sessionId);
@@ -106,7 +116,7 @@ const {
    POST /api/chat
    GOATED AI Copilot with full NLP intent classification
 ───────────────────────────────────────────────────────────────────── */
-router.post("/chat", async (req, res, next) => {
+router.post("/chat", chatLimiter, async (req, res, next) => {
   const rawMsg = req.body?.message || "";
   const log_id = req.body?.log_id || 1;
   
@@ -725,6 +735,58 @@ router.get("/suggested-actions", async (req, res) => {
     .sort((a, b) => b.anomaly_score - a.anomaly_score);
   
   res.json({ success: true, anomalies, total: anomalies.length });
+});
+
+/* ─────────────────────────────────────────────────────────────────────
+   GET /api/anomalies — alias for suggested-actions (frontend api.js calls this)
+───────────────────────────────────────────────────────────────────── */
+router.get("/anomalies", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents = await getIncidents(sessionId);
+  const devMap = {};
+
+  incidents.forEach(inc => {
+    const dev = inc.pr_details?.developer || "Unknown";
+    if (!devMap[dev]) devMap[dev] = { developer: dev, incidents: [], risk_total: 0, critical: 0, high: 0, secrets: 0 };
+    devMap[dev].incidents.push(inc.incident_id);
+    devMap[dev].risk_total += inc.risk_score || 0;
+    if (inc.vulnerability?.severity === "critical") devMap[dev].critical++;
+    if (inc.vulnerability?.severity === "high")     devMap[dev].high++;
+    if (inc.secrets_detected) devMap[dev].secrets++;
+  });
+
+  const anomalies = Object.values(devMap)
+    .map(d => ({
+      ...d,
+      avg_risk: Math.round(d.risk_total / d.incidents.length),
+      anomaly_score: Math.round(d.risk_total / d.incidents.length + d.critical * 20 + d.secrets * 15),
+    }))
+    .filter(d => d.risk_total > 50 || d.incidents.length > 1 || d.critical > 0)
+    .sort((a, b) => b.anomaly_score - a.anomaly_score);
+
+  res.json({ success: true, anomalies, total: anomalies.length });
+});
+
+/* ─────────────────────────────────────────────────────────────────────
+   GET /api/logs — paginated security logs (frontend getAllLogs calls this)
+───────────────────────────────────────────────────────────────────── */
+router.get("/logs", async (req, res) => {
+  const sessionId = req.headers["x-session-id"] || "default";
+  const incidents  = await getIncidents(sessionId);
+  const page  = Math.max(1, parseInt(req.query.page  || "1", 10));
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "20", 10)));
+  const start = (page - 1) * limit;
+
+  const paginated = incidents.slice(start, start + limit);
+
+  res.json({
+    success: true,
+    logs:  paginated,
+    total: incidents.length,
+    page,
+    limit,
+    total_pages: Math.ceil(incidents.length / limit),
+  });
 });
 
 /* ─────────────────────────────────────────────────────────────────────

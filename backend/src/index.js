@@ -38,7 +38,7 @@ app.use(cors({
     
     // Check if origin matches allowed whitelist
     const isAllowed = allowedOrigins.some(o => origin.startsWith(o));
-    if (isAllowed || process.env.NODE_ENV !== "production") {
+    if (isAllowed || process.env.NODE_ENV === "development") {
       callback(null, true);
     } else {
       callback(new Error("Blocked by CORS"));
@@ -94,8 +94,7 @@ app.get("/api", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api", protect, securityRoutes);
 app.use("/api", protect, coralRoutes);
-app.use("/api/chat", protect, chatLimiter);
-app.use("/api", protect, aiRoutes);
+app.use("/api", protect, aiRoutes);        // chat limiter applied inside aiRoutes
 app.use("/api", protect, configRoutes);
 app.use("/api", submitRoutes);
 app.use("/api", webhookRoutes);
