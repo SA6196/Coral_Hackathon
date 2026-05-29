@@ -12,39 +12,88 @@ import {
 } from "react-icons/fi";
 import { investigateIncident, getRemediation } from "../services/api";
 
-/* ─── tiny markdown renderer (same as copilot) ─────────────────────────────── */
-function MiniMarkdown({ text }) {
+/* ─── Premium Gemini-style Markdown Renderer ─────────────────────────────── */
+function GeminiMarkdown({ text }) {
   if (!text) return null;
   const lines = text.split("\n");
-  return (
-    <div className="copilot-md" style={{ fontSize: 13 }}>
-      {lines.map((line, i) => {
-        if (line.startsWith("### "))
-          return <h3 key={i} className="copilot-md-h3">{line.slice(4)}</h3>;
-        if (line.startsWith("## ") || line.startsWith("# "))
-          return <h2 key={i} className="copilot-md-h2">{line.replace(/^#{1,2} /, "")}</h2>;
-        if (line.startsWith("* ") || line.startsWith("- "))
-          return (
-            <div key={i} className="copilot-md-bullet">
-              <span className="copilot-md-bullet-dot">▸</span>
-              <span dangerouslySetInnerHTML={{ __html: fmt(line.slice(2)) }} />
+  
+  let inCodeBlock = false;
+  let codeLines = [];
+  let rendered = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    if (line.startsWith("```")) {
+      if (inCodeBlock) {
+        // flush code block
+        rendered.push(
+          <div key={`code-${i}`} className="gemini-code-block">
+            <div className="gemini-code-header">
+              <span>{codeLines.lang || "code"}</span>
+              <CopyBtn text={codeLines.join("\n")} small />
             </div>
-          );
-        if (line.trim() === "") return <div key={i} style={{ height: 6 }} />;
-        return <p key={i} className="copilot-md-p" dangerouslySetInnerHTML={{ __html: fmt(line) }} />;
-      })}
+            <pre className="gemini-code-pre">{codeLines.join("\n")}</pre>
+          </div>
+        );
+        inCodeBlock = false;
+        codeLines = [];
+      } else {
+        inCodeBlock = true;
+        codeLines.lang = line.replace("```", "").trim();
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      rendered.push(<h3 key={i} className="gemini-h3">{line.slice(4)}</h3>);
+      continue;
+    }
+    if (line.startsWith("## ") || line.startsWith("# ")) {
+      rendered.push(<h2 key={i} className="gemini-h2">{line.replace(/^#{1,2} /, "")}</h2>);
+      continue;
+    }
+    if (line.startsWith("> ")) {
+      rendered.push(<blockquote key={i} className="gemini-blockquote" dangerouslySetInnerHTML={{ __html: fmt(line.slice(2)) }} />);
+      continue;
+    }
+    if (line.startsWith("* ") || line.startsWith("- ")) {
+      rendered.push(
+        <div key={i} className="gemini-list-item">
+          <span className="gemini-bullet">•</span>
+          <span dangerouslySetInnerHTML={{ __html: fmt(line.slice(2)) }} />
+        </div>
+      );
+      continue;
+    }
+    if (line.trim() === "") {
+      rendered.push(<div key={i} className="gemini-spacer" />);
+      continue;
+    }
+    rendered.push(<p key={i} className="gemini-p" dangerouslySetInnerHTML={{ __html: fmt(line) }} />);
+  }
+
+  return (
+    <div className="gemini-markdown-container">
+      {rendered}
     </div>
   );
 }
+
 function fmt(t) {
   return t
-    .replace(/`([^`]+)`/g, '<code class="copilot-inline-code">$1</code>')
+    .replace(/`([^`]+)`/g, '<code class="gemini-inline-code">$1</code>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
 }
 
 /* ─── Copy button ────────────────────────────────────────────────────────── */
-function CopyBtn({ text }) {
+function CopyBtn({ text, small }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(text).catch(() => {});
@@ -52,169 +101,92 @@ function CopyBtn({ text }) {
     setTimeout(() => setCopied(false), 1800);
   };
   return (
-    <button className="remediate-copy-btn" onClick={copy} aria-label="Copy script">
-      {copied ? <FiCheckCircle size={12} style={{ color: "#10b981" }} /> : <FiCopy size={12} />}
+    <button className="gemini-copy-btn" onClick={copy} aria-label="Copy code">
+      {copied ? <FiCheckCircle size={small ? 12 : 14} style={{ color: "#10b981" }} /> : <FiCopy size={small ? 12 : 14} />}
+      {!small && <span>{copied ? "Copied" : "Copy"}</span>}
     </button>
-  );
-}
-
-/* ─── Script block ───────────────────────────────────────────────────────── */
-function ScriptBlock({ code }) {
-  return (
-    <div className="remediate-script-block">
-      <div className="remediate-script-toolbar">
-        <span className="remediate-script-lang">bash</span>
-        <CopyBtn text={code} />
-      </div>
-      <pre className="remediate-script-pre">{code}</pre>
-    </div>
   );
 }
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 export default function AIInvestigation({ logId = 1 }) {
-  const [tab, setTab]           = useState(null); // "investigate" | "remediate" | null
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading]   = useState(false);
   const [aiReport, setAiReport] = useState(null);
-  const [remediation, setRemed] = useState(null);
   const [error, setError]       = useState(null);
 
-  const openTab = async (t) => {
-    // toggle off
-    if (tab === t) { setTab(null); return; }
-    setTab(t);
-    setError(null);
-
-    // already loaded
-    if (t === "investigate" && aiReport) return;
-    if (t === "remediate"   && remediation) return;
+  const toggle = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+    
+    setExpanded(true);
+    if (aiReport) return;
 
     setLoading(true);
+    setError(null);
     try {
-      if (t === "investigate") {
-        const res = await investigateIncident(logId);
-        setAiReport({
-          report: res.data.ai_analysis_markdown,
-          mode:   res.data.mode,
-          logs:   res.data.extracted_logs,
-        });
-      } else {
-        const res = await getRemediation(logId);
-        setRemed(res.data.remediation);
-      }
+      const res = await investigateIncident(logId);
+      setAiReport({
+        report: res.data.ai_analysis_markdown,
+        mode:   res.data.mode,
+      });
     } catch {
-      setError("Backend unreachable (port 5000). Make sure `cd backend && npm start` is running.");
+      setError("AI Engine unreachable. Check backend connection.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="ai-invest-wrap">
-      {/* ── Tab buttons ── */}
-      <div className="ai-invest-tabs" role="tablist">
-        <button
-          role="tab"
-          id={`investigate-tab-${logId}`}
-          aria-selected={tab === "investigate"}
-          className={`ai-invest-tab ${tab === "investigate" ? "ai-invest-tab-active" : ""}`}
-          onClick={() => openTab("investigate")}
-        >
-          <FiCpu size={12} />
-          AI Investigation
-          {tab === "investigate"
-            ? <FiChevronUp size={11} />
-            : <FiChevronDown size={11} />}
-        </button>
-        <button
-          role="tab"
-          id={`remediate-tab-${logId}`}
-          aria-selected={tab === "remediate"}
-          className={`ai-invest-tab ${tab === "remediate" ? "ai-invest-tab-active ai-invest-tab-green" : ""}`}
-          onClick={() => openTab("remediate")}
-        >
-          <FiTool size={12} />
-          Remediation Scripts
-          {tab === "remediate"
-            ? <FiChevronUp size={11} />
-            : <FiChevronDown size={11} />}
-        </button>
-      </div>
+    <div className="ai-invest-premium-wrap">
+      <button 
+        onClick={toggle} 
+        className={`gemini-trigger-btn ${expanded ? "active" : ""}`}
+      >
+        <span className="gemini-sparkle-icon">
+          <FiZap size={14} />
+        </span>
+        <span className="gemini-btn-text">Deep AI Investigation</span>
+        {expanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+      </button>
 
-      {/* ── Panel body ── */}
       <AnimatePresence>
-        {tab && (
+        {expanded && (
           <motion.div
-            className="ai-invest-panel"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            style={{ overflow: "hidden" }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="gemini-panel-wrapper"
           >
-            <div style={{ padding: "16px 0 4px" }}>
-              {/* Loading */}
-              {loading && (
-                <div className="ai-invest-loading">
-                  <FiLoader className="nl-icon-spin" size={16} />
-                  <span>
-                    {tab === "investigate"
-                      ? "Running Coral AI investigation…"
-                      : "Generating remediation scripts…"}
-                  </span>
+            <div className="gemini-panel-inner">
+              {loading ? (
+                <div className="gemini-loading-state">
+                  <FiLoader className="nl-icon-spin" size={24} style={{ color: "#a855f7" }} />
+                  <p>Coral AI is synthesizing incident forensics...</p>
                 </div>
-              )}
-
-              {/* Error */}
-              {!loading && error && (
-                <div className="ai-invest-error">{error}</div>
-              )}
-
-              {/* ── Investigate panel ── */}
-              {!loading && !error && tab === "investigate" && aiReport && (
-                <div className="ai-invest-content">
-                  {aiReport.mode === "live" && (
-                    <div className="ai-invest-live-badge">
-                      <FiZap size={10} /> Live AI Response (GPT-4o / Gemini)
-                    </div>
-                  )}
-                  {(aiReport.mode === "mocked" || aiReport.mode === "coral-ai-v2") && (
-                    <div className="ai-invest-mock-badge">
-                      ⚡ AI-Enhanced Expert Template
-                    </div>
-                  )}
-                  <MiniMarkdown text={aiReport.report} />
+              ) : error ? (
+                <div className="gemini-error-state">
+                  <FiTool size={18} /> {error}
                 </div>
-              )}
-
-              {/* ── Remediation panel ── */}
-              {!loading && !error && tab === "remediate" && remediation && (
-                <div className="ai-invest-content">
-                  <div className="remediate-title">{remediation.title}</div>
-
-                  {/* Action checklist */}
-                  <div className="remediate-actions">
-                    {remediation.actions?.map((action, i) => (
-                      <div key={i} className="remediate-action-item">
-                        <span className="remediate-action-num">{i + 1}</span>
-                        {action}
-                      </div>
-                    ))}
+              ) : aiReport ? (
+                <>
+                  <div className="gemini-report-header">
+                    <div className="gemini-report-title">
+                      <FiCpu size={16} style={{ color: "#c084fc" }} />
+                      Security Intelligence Report
+                    </div>
+                    <div className={`gemini-badge ${aiReport.mode === 'live' ? 'live' : 'mocked'}`}>
+                      {aiReport.mode === 'live' ? '✨ Live Generation (Gemini 2.5 Flash)' : '🔄 Cached Fallback'}
+                    </div>
                   </div>
-
-                  {/* Scripts */}
-                  {remediation.scripts?.length > 0 && (
-                    <div className="remediate-scripts">
-                      <div className="remediate-scripts-label">
-                        <FiTool size={11} /> Shell Scripts
-                      </div>
-                      {remediation.scripts.map((script, i) => (
-                        <ScriptBlock key={i} code={script} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                  <div className="gemini-report-body">
+                    <GeminiMarkdown text={aiReport.report} />
+                  </div>
+                </>
+              ) : null}
             </div>
           </motion.div>
         )}

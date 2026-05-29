@@ -72,7 +72,8 @@ function toLogId(incidentId) {
 
 function IncidentCard({ item, index }) {
   const [expanded, setExpanded] = useState(false);
-  const severity = (item.vulnerability?.severity || "safe").toLowerCase(); // normalise
+  let severity = (item.vulnerability?.severity || "safe").toLowerCase(); // normalise
+  if (item.malicious_code_detected) severity = "critical";
   const cfg = SEVERITY_MAP[severity] || SEVERITY_MAP.safe;
   const SeverityIcon = cfg.icon;
 
