@@ -455,7 +455,12 @@ function ExportReportButton() {
     setDownloading(false);
   };
 
-  const printPdf = () => { setOpen(false); window.print(); };
+  const printPdf = () => {
+    setOpen(false);
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
 
   return (
     <div style={{ position: "relative" }}>
