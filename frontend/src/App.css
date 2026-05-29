@@ -3465,3 +3465,201 @@ button.source-badge:focus-visible {
     margin: 15mm;
   }
 }
+
+/* ======== LOGIN SCREEN STYLING ======== */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #0a0e1a 0%, #03050a 100%);
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.login-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: rgba(10, 18, 30, 0.45);
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 24px;
+  padding: 40px 32px;
+  backdrop-filter: blur(25px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 212, 255, 0.05);
+  overflow: hidden;
+}
+
+.login-glow {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 100px;
+  background: radial-gradient(ellipse at center, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-shield-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.login-shield-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(0, 212, 255, 0.3);
+  animation: ringRotate 15s linear infinite;
+}
+
+.login-shield-icon {
+  font-size: 40px;
+  color: #00d4ff;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.login-subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0, 212, 255, 0.6);
+  letter-spacing: 0.15em;
+}
+
+.login-error-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #ef4444;
+  margin-bottom: 20px;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.login-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-input-group label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.login-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: 14px;
+  color: rgba(0, 212, 255, 0.4);
+  font-size: 14px;
+}
+
+.login-input-wrapper input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px 12px 40px;
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.login-input-wrapper input:focus {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.15), inset 0 0 4px rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.login-submit-btn {
+  background: linear-gradient(135deg, #00d4ff 0%, #a855f7 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.3);
+}
+
+.login-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-footer {
+  margin-top: 32px;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.login-footer p:first-child {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.18em;
+  margin-bottom: 8px;
+}
+
+.login-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.login-hint span {
+  color: rgba(0, 212, 255, 0.7);
+  background: rgba(0, 212, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 4px;
+}

@@ -589,7 +589,7 @@ function SourceBadge({ id, className, children, onConfigure }) {
 }
 
 /* ── Main Header ──────────────────────────────────────────────────────── */
-function Header({ onRefreshed }) {
+function Header({ onRefreshed, onLogout }) {
   const [modalSource, setModalSource] = useState(null);
 
   return (
@@ -612,6 +612,31 @@ function Header({ onRefreshed }) {
             <SyncLiveDataButton />
             {/* Export button */}
             <ExportReportButton />
+            {/* Logout button */}
+            {onLogout && (
+              <button 
+                className="logout-btn" 
+                onClick={onLogout}
+                style={{
+                  background: "rgba(255, 77, 109, 0.1)",
+                  border: "1px solid rgba(255, 77, 109, 0.3)",
+                  color: "#ff4d6d",
+                  padding: "5px 10px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  transition: "background 0.2s"
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(255, 77, 109, 0.2)"}
+                onMouseLeave={e => e.currentTarget.style.background = "rgba(255, 77, 109, 0.1)"}
+              >
+                Log Out
+              </button>
+            )}
             <div className="header-status">
               <div className="status-dot" />
               LIVE

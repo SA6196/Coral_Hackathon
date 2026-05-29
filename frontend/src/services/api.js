@@ -20,6 +20,19 @@ const API = axios.create({
   },
 });
 
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("coral_jwt_token");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export const loginUser = (username, password) => API.post("/auth/login", { username, password });
+
 /* ── Response interceptor — normalize errors ────────────────────────── */
 API.interceptors.response.use(
   (response) => response,

@@ -12,6 +12,8 @@ const aiRoutes       = require("./routes/aiRoutes");
 const configRoutes   = require("./routes/configRoutes");
 const submitRoutes   = require("./routes/submitRoutes");
 const { router: webhookRoutes } = require("./routes/webhookRoutes");
+const authRoutes     = require("./routes/authRoutes");
+const { protect }    = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -78,11 +80,12 @@ app.get("/api", (req, res) => {
 });
 
 /* ─── Routes ──────────────────────────────────────────────────────────── */
-app.use("/api", securityRoutes);
-app.use("/api", coralRoutes);
-app.use("/api/chat", chatLimiter);
-app.use("/api", aiRoutes);
-app.use("/api", configRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api", protect, securityRoutes);
+app.use("/api", protect, coralRoutes);
+app.use("/api/chat", protect, chatLimiter);
+app.use("/api", protect, aiRoutes);
+app.use("/api", protect, configRoutes);
 app.use("/api", submitRoutes);
 app.use("/api", webhookRoutes);
 

@@ -15,6 +15,7 @@ import NotionPoliciesPanel from "./components/NotionPoliciesPanel";
 import SourceStatusPanel   from "./components/SourceStatusPanel";
 import ErrorBoundary       from "./components/ErrorBoundary";
 import DevSubmissionPortal from "./components/DevSubmissionPortal";
+import Login               from "./components/Login";
 import { useToast }        from "./components/Toast";
 
 import { getSummary, getHighRisk, getExportReport } from "./services/api";
@@ -81,6 +82,7 @@ function ErrorScreen({ message, onRetry }) {
 
 function App() {
   const toast = useToast();
+  const [token,      setToken]      = useState(localStorage.getItem("coral_jwt_token"));
   const [summary,    setSummary]    = useState(null);
   const [incidents,  setIncidents]  = useState([]);
   const [coralMeta,  setCoralMeta]  = useState(null);
@@ -88,6 +90,12 @@ function App() {
   const [error,      setError]      = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [exporting,  setExporting]  = useState(false);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem("coral_jwt_token");
+    setToken(null);
+    toast.success("Logged out successfully");
+  }, [toast]);
 
   const loadData = useCallback(async () => {
     setError(null);
@@ -108,7 +116,13 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { 
+    if (token) {
+      loadData(); 
+    } else {
+      setLoading(false);
+    }
+  }, [loadData, token]);
 
   const handleRefreshed = useCallback(() => {
     setRefreshKey(k => k + 1);
@@ -140,6 +154,18 @@ function App() {
     }
   }, [exporting, toast]);
 
+  if (!token) {
+    return (
+      <Login 
+        onLoginSuccess={(newToken) => {
+          localStorage.setItem("coral_jwt_token", newToken);
+          setToken(newToken);
+          setLoading(true);
+        }} 
+      />
+    );
+  }
+
   if (loading) return <LoadingScreen />;
   if (error)   return <ErrorScreen message={error} onRetry={loadData} />;
 
@@ -151,7 +177,7 @@ function App() {
       <div className="app-content">
 
         {/* ── Header: clickable badges + live refresh + export ───────── */}
-        <Header onRefreshed={handleRefreshed} onExport={handleExport} exporting={exporting} />
+        <Header onRefreshed={handleRefreshed} onExport={handleExport} exporting={exporting} onLogout={handleLogout} />
 
         {/* ── Coral powered banner ───────────────────────────────────── */}
         <div className="coral-powered">
