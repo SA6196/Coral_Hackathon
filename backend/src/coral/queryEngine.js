@@ -129,13 +129,41 @@ const runSecurityAnalysis = (joinedData) => {
     // ── Heuristic Backdoor/Malicious Code detection ────────────────
     const maliciousCode = scanTextForMaliciousCode(incident.github?.commit_diff || "");
 
-    // ── Risk score calculation ─────────────────────────────────────
-    let riskScore = cfg.base_score;
-    if (secrets.length > 0) riskScore = Math.min(100, riskScore + 10);
-    if (maliciousCode.length > 0) riskScore = Math.max(riskScore, 85); // Escalate immediately to high risk
-    if (incident.notion_policy) {
-      riskScore = Math.min(100, riskScore + (POLICY_BOOST[incident.notion_policy.policy_rule] || 0));
+    // ── Precise Risk score calculation ─────────────────────────────
+    let riskScore = 0;
+
+    // 1. Base Score from CVSS (if available) or Severity defaults
+    if (incident.vulnerability && incident.vulnerability.cvss) {
+      riskScore = parseFloat(incident.vulnerability.cvss) * 10; // CVSS is 0.0-10.0, maps to 0-100
+    } else {
+      riskScore = cfg.base_score; 
     }
+
+    // 2. Secret Exposure Penalty (Dynamic)
+    if (secrets.length > 0) {
+      // Add 15 points for the first secret, +5 for each additional
+      riskScore += 15 + ((secrets.length - 1) * 5);
+    }
+
+    // 3. Malicious Code Penalty
+    if (maliciousCode.length > 0) {
+      riskScore = Math.max(riskScore, 85); // Floor at 85
+      riskScore += (maliciousCode.length * 3); // +3 per malicious pattern
+    }
+
+    // 4. Policy Violation Penalty
+    if (incident.notion_policy) {
+      riskScore += (POLICY_BOOST[incident.notion_policy.policy_rule] || 0);
+    }
+
+    // 5. Code Complexity Penalty
+    const diffLines = (incident.github?.commit_diff || "").split("\\n").length;
+    if (diffLines > 50) riskScore += 1.5;
+    if (diffLines > 200) riskScore += 2.8;
+
+    // Cap at 100 and format precisely to 1 decimal place (e.g. 88.3)
+    riskScore = Math.min(100, Math.max(0, riskScore));
+    riskScore = parseFloat(riskScore.toFixed(1));
 
     // ── Build final incident object ────────────────────────────────
     const enrichedIncident = { ...incident, secrets, maliciousCode };
@@ -154,6 +182,7 @@ const runSecurityAnalysis = (joinedData) => {
         title:      incident.github?.title    || "Unknown PR",
         developer:  incident.github?.author   || "Unknown",
         merged_at:  incident.github?.merged_at || null,
+        commit_diff: incident.github?.commit_diff || "No code diff available",
       },
 
       package_details: {

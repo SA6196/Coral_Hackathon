@@ -144,14 +144,30 @@ function analyzeEvent(data) {
   const maliciousCode = scanTextForMaliciousCode(`${pr_title} ${commit_message}`);
   const policy  = POLICY_RULES[pkg] || null;
 
-  // Risk scoring
-  const BASE = { critical: 90, high: 70, medium: 40, safe: 5 };
-  let risk = BASE[vuln.severity] || 5;
-  if (secrets.length > 0) risk = Math.min(100, risk + 12);
-  if (maliciousCode.length > 0) risk = Math.max(risk, 85);
-  if (policy?.rule === "BANNED_PACKAGE")  risk = Math.min(100, risk + 15);
-  if (policy?.rule === "SECRETS_RISK")    risk = Math.min(100, risk + 18);
-  if (policy?.rule === "AUDIT_REQUIRED")  risk = Math.min(100, risk + 8);
+  // Precise Risk scoring
+  let risk = 0;
+  if (vuln.cvss) {
+    risk = parseFloat(vuln.cvss) * 10;
+  } else {
+    const BASE = { critical: 90, high: 70, medium: 40, safe: 5 };
+    risk = BASE[vuln.severity] || 5;
+  }
+
+  if (secrets.length > 0) risk += 15 + ((secrets.length - 1) * 5);
+  if (maliciousCode.length > 0) {
+    risk = Math.max(risk, 85);
+    risk += (maliciousCode.length * 3);
+  }
+
+  if (policy?.rule === "BANNED_PACKAGE")  risk += 15;
+  if (policy?.rule === "SECRETS_RISK")    risk += 18;
+  if (policy?.rule === "AUDIT_REQUIRED")  risk += 8;
+
+  const diffLines = (`${pr_title} ${commit_message}`).split("\\n").length;
+  if (diffLines > 5) risk += 1.5; // Slightly lower thresholds for webhook since we only have commit messages
+
+  risk = Math.min(100, Math.max(0, risk));
+  risk = parseFloat(risk.toFixed(1));
 
   // AI summary
   const e = { critical: "🔴", high: "🟠", medium: "🟡", safe: "✅" }[vuln.severity] || "⚪";
