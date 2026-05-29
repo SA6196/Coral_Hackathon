@@ -92,6 +92,7 @@ function IncidentCard({ item, index }) {
   const slackMsg = item.internal_discussion?.message || "";
   const secrets = item.secrets_detected;       // Feature 5
   const policy  = item.policy_violation;       // Feature 3
+  const maliciousCode = item.malicious_code_detected;
 
   return (
     <motion.div
@@ -126,6 +127,12 @@ function IncidentCard({ item, index }) {
             {policy && (
               <span className="incident-policy-badge" title={policy.policy_name}>
                 <FiShield size={9} /> {policy.policy_rule.replace(/_/g, " ")}
+              </span>
+            )}
+            {/* Malicious Code / Backdoor badge */}
+            {maliciousCode && (
+              <span className="incident-malicious-badge" title="Dynamic analysis backdoor check fired">
+                <FiAlertOctagon size={9} /> MALICIOUS CODE
               </span>
             )}
           </div>

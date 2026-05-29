@@ -12,6 +12,7 @@
  */
 
 const { scanForSecrets } = require("../utils/secretScanner");
+const { scanTextForMaliciousCode } = require("../utils/maliciousCodeScanner");
 
 // ── Risk scoring weights ─────────────────────────────────────────────
 const SEVERITY_CONFIG = {
@@ -84,15 +85,19 @@ const runSecurityAnalysis = (joinedData) => {
       incident.slack?.message  || ""
     );
 
+    // ── Heuristic Backdoor/Malicious Code detection ────────────────
+    const maliciousCode = scanTextForMaliciousCode(incident.github?.commit_diff || "");
+
     // ── Risk score calculation ─────────────────────────────────────
     let riskScore = cfg.base_score;
     if (secrets.length > 0) riskScore = Math.min(100, riskScore + 10);
+    if (maliciousCode.length > 0) riskScore = 100; // Escalate immediately to maximum risk
     if (incident.notion_policy) {
       riskScore = Math.min(100, riskScore + (POLICY_BOOST[incident.notion_policy.policy_rule] || 0));
     }
 
     // ── Build final incident object ────────────────────────────────
-    const enrichedIncident = { ...incident, secrets };
+    const enrichedIncident = { ...incident, secrets, maliciousCode };
 
     return {
       incident_id: `CORAL-${index + 1}`,
@@ -142,6 +147,13 @@ const runSecurityAnalysis = (joinedData) => {
           ({ critical: 0, high: 1, medium: 2 }[s.severity] < ({ critical: 0, high: 1, medium: 2 }[acc] ?? 99)
             ? s.severity : acc
           ), "medium"),
+      } : null,
+
+      // Malicious Code results
+      malicious_code_detected: maliciousCode.length > 0 ? {
+        count:    maliciousCode.length,
+        findings: maliciousCode,
+        highest_severity: "critical"
       } : null,
     };
   });

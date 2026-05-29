@@ -59,6 +59,7 @@ async function run() {
   let cleanCount = 0;
 
   const secrets = [];
+  const maliciousCodeAlerts = [];
   const accessAlerts = [];
   const cves = [];
 
@@ -67,7 +68,10 @@ async function run() {
     const title = inc.pr_details?.title || "";
     const severity = (inc.vulnerability?.severity || "safe").toLowerCase();
 
-    if (inc.secrets_detected || pkg === "credentials" || title.includes("Leaked secret")) {
+    if (inc.malicious_code_detected) {
+      maliciousCodeAlerts.push(inc);
+      criticalCount++;
+    } else if (inc.secrets_detected || pkg === "credentials" || title.includes("Leaked secret")) {
       secrets.push(inc);
       criticalCount++;
     } else if (pkg === "github-repo" || title.includes("main branch is unprotected")) {
@@ -94,6 +98,21 @@ async function run() {
   console.log(`\n==================================================`);
   console.log(`📊 SECURITY ANALYSIS REPORT`);
   console.log(`==================================================`);
+
+  if (maliciousCodeAlerts.length > 0) {
+    console.log(`\n☠️  CRITICAL: MALICIOUS CODE / BACKDOOR PATTERNS DETECTED`);
+    maliciousCodeAlerts.forEach(m => {
+      console.log(`  - [Developer: ${m.pr_details?.developer || "unknown"}] ${m.pr_details?.title || "Commit"}`);
+      if (m.malicious_code_detected.findings) {
+        m.malicious_code_detected.findings.forEach(f => {
+          console.log(`    ↳ Rule Match : ${f.description}`);
+          console.log(`      Line No    : ${f.line || "unknown"}`);
+          console.log(`      Preview    : "${f.preview}"`);
+          console.log(`      Remediation: ${f.recommendation}`);
+        });
+      }
+    });
+  }
   
   if (secrets.length > 0) {
     console.log(`\n🚨 CRITICAL: LEAKED CREDENTIALS FOUND`);

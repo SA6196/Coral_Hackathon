@@ -186,10 +186,34 @@ const checkGithubAccessRisk = tool(
   }
 );
 
+const { scanTextForMaliciousCode } = require("../utils/maliciousCodeScanner");
+
+// Tool 5: scan_code_for_malicious_patterns
+const scanCodeForMaliciousPatterns = tool(
+  async ({ code }) => {
+    console.log(`[Tool] Scanning code for backdoors & malicious logic...`);
+    const findings = scanTextForMaliciousCode(code);
+    
+    if (findings.length > 0) {
+      const descriptions = findings.map(f => `Rule: ${f.description} (Severity: ${f.severity.toUpperCase()}, Line: ${f.line || "unknown"}) - Match: ${f.preview}`);
+      return `CRITICAL: Malicious code pattern(s) detected! ${descriptions.join("; ")}`;
+    }
+    return "Scan complete. No obvious backdoor, shell spawn, or obfuscation patterns detected.";
+  },
+  {
+    name: "scan_code_for_malicious_patterns",
+    description: "Scans raw source code or commits for dynamic execution, shell execution, exfiltration webhooks, base64 payloads, or git hook overrides.",
+    schema: z.object({
+      code: z.string().describe("The raw source code or diff to analyze."),
+    }),
+  }
+);
+
 module.exports = {
   scanCommitsForSecrets,
   searchNotionPolicies,
   queryOsv,
   checkGithubAccessRisk,
-  scanTextForSecrets
+  scanTextForSecrets,
+  scanCodeForMaliciousPatterns
 };

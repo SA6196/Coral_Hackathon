@@ -19,8 +19,7 @@ const axios   = require("axios");
 
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { AgentExecutor, createToolCallingAgent } = require("langchain/agents");
-const { ChatPromptTemplate } = require("@langchain/core/prompts");
-const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk } = require("../ai/tools");
+const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns } = require("../ai/tools");
 
 const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
 const { runSecurityAnalysis }            = require("../coral/queryEngine");
@@ -791,7 +790,7 @@ router.post("/chat", async (req, res, next) => {
       diff: inc.pr_details?.commit_diff || "diff --git a/file b/file\n+ var AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';"
     }, null, 2);
 
-    const tools = [scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk];
+    const tools = [scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns];
     const llm = new ChatGoogleGenerativeAI({
       modelName: "gemini-2.5-flash",
       temperature: 0,

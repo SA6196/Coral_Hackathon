@@ -2,6 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { scanTextForSecrets } = require("../ai/tools");
+const { scanTextForMaliciousCode } = require("../utils/maliciousCodeScanner");
 const { diffAccessBaseline, saveBaseline, getBaseline } = require("../services/baselineService");
 
 const MOCK_DIR = path.join(__dirname, "../../mock-data");
@@ -106,9 +107,9 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
       }
     }
 
-    // ── Live Commit Diff Scanning (Secrets) ──
+    // ── Live Commit Diff Scanning (Secrets & Backdoors) ──
     try {
-      console.log(`[SYNC] Scanning recent commits for secrets...`);
+      console.log(`[SYNC] Scanning recent commits for secrets and malicious patterns...`);
       const commitsRes = await axios.get(`https://api.github.com/repos/${repoOwnerRepo}/commits?per_page=5`, { headers });
       
       for (const commitObj of commitsRes.data) {
@@ -118,6 +119,7 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
           const files = detailRes.data.files || [];
           const diffText = files.map(f => `--- ${f.filename}\n${f.patch || ""}`).join("\n");
           
+          // 1. Secrets Scan
           const findings = scanTextForSecrets(diffText);
           if (findings.length > 0) {
             findings.forEach((finding, idx) => {
@@ -128,6 +130,21 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
                 package_name: "credentials",
                 merged_at: commitObj.commit?.author?.date || new Date().toISOString(),
                 commit_diff: `Exposed ${finding.description} in file changes. Preview: ${finding.preview} (Line: ${finding.line || "unknown"})`
+              });
+            });
+          }
+
+          // 2. Malicious Code / Backdoor Scan
+          const maliciousFindings = scanTextForMaliciousCode(diffText);
+          if (maliciousFindings.length > 0) {
+            maliciousFindings.forEach((finding, idx) => {
+              formattedData.unshift({
+                pr_id: 3000 + idx,
+                author: commitObj.commit?.author?.name || "unknown",
+                title: `CRITICAL: Malicious backdoor code detected in commit ${sha.substring(0, 8)}`,
+                package_name: "malicious-code",
+                merged_at: commitObj.commit?.author?.date || new Date().toISOString(),
+                commit_diff: `Backdoor pattern: ${finding.description}. Preview: "${finding.preview}" (Line: ${finding.line || "unknown"})`
               });
             });
           }

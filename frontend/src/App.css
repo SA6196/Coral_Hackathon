@@ -3247,6 +3247,35 @@ button.source-badge:focus-visible {
   outline-offset: 2px;
 }
 
+/* Malicious code threat badge */
+.incident-malicious-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(225, 29, 72, 0.18);
+  border: 1px solid rgba(225, 29, 72, 0.55);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  color: #f43f5e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  animation: maliciousPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes maliciousPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+    border-color: rgba(225, 29, 72, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px rgba(225, 29, 72, 0.45);
+    border-color: rgba(225, 29, 72, 0.95);
+  }
+}
+
 /* ================================================================
    PRINT CSS — Export PDF / Report
    ================================================================ */
