@@ -98,8 +98,10 @@ function IncidentCard({ item, index }) {
   const riskScore = item.risk_score ?? 0;
   const aiSummary = item.ai_summary || "";
   const action = item.recommended_action || "";
-  const slackChannel = item.internal_discussion?.slack_channel;
-  const slackMsg = item.internal_discussion?.message || "";
+  const rawSlackChannel = item.internal_discussion?.slack_channel;
+  const rawSlackMsg = item.internal_discussion?.message;
+  const slackChannel = rawSlackChannel === "N/A" ? null : rawSlackChannel;
+  const slackMsg = rawSlackMsg === "No internal discussion found." ? null : (rawSlackMsg || null);
   const secrets = item.secrets_detected;       // Feature 5
   const policy  = item.policy_violation;       // Feature 3
   const maliciousCode = item.malicious_code_detected;
