@@ -14,10 +14,10 @@ const getSecuritySummary = async (req, res) => {
 
     const summary = {
       total_incidents: incidents.length,
-      critical: incidents.filter(i => i.vulnerability.severity === "critical").length,
-      high:     incidents.filter(i => i.vulnerability.severity === "high").length,
-      medium:   incidents.filter(i => i.vulnerability.severity === "medium").length,
-      safe:     incidents.filter(i => i.vulnerability.severity === "safe").length,
+      critical: incidents.filter(i => i.risk_score >= 90 || i.vulnerability?.severity === "critical").length,
+      high:     incidents.filter(i => (i.risk_score >= 70 && i.risk_score < 90) || (i.risk_score < 70 && i.vulnerability?.severity === "high")).length,
+      medium:   incidents.filter(i => (i.risk_score >= 40 && i.risk_score < 70) || (i.risk_score < 40 && i.vulnerability?.severity === "medium")).length,
+      safe:     incidents.filter(i => i.risk_score < 40 && (!i.vulnerability?.severity || i.vulnerability.severity === "safe")).length,
 
       // Feature 5 — secret scan stats
       secrets_detected: incidents.filter(i => i.secrets_detected !== null).length,

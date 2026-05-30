@@ -517,7 +517,13 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
             { parts: [{ text: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
           ],
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0.2, maxOutputTokens: 1000 }
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1000 },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ]
         },
         { headers: { "Content-Type": "application/json" }, timeout: 30000 }
       );
