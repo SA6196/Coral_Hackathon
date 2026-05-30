@@ -517,7 +517,7 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
             { parts: [{ text: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
           ],
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0.2, maxOutputTokens: 1000 },
+          generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
             { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
@@ -525,11 +525,16 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
             { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
           ]
         },
-        { headers: { "Content-Type": "application/json" }, timeout: 30000 }
+        { headers: { "Content-Type": "application/json" }, timeout: 45000 }
       );
       const candidate = response.data?.candidates?.[0];
       report = candidate?.content?.parts?.[0]?.text || "";
       
+      console.log("[GEMINI_FINISH_REASON]", candidate?.finishReason);
+      console.log("[GEMINI_REPORT]", report);
+      require('fs').appendFileSync('gemini_debug.txt', JSON.stringify(response.data) + '\n');
+
+
       if (candidate?.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
         console.warn(`[INVESTIGATE] Gemini truncated due to ${candidate.finishReason}. Falling back.`);
         report = "";
@@ -654,9 +659,9 @@ Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions"
             { parts: [{ text: `Generate a remediation playbook for incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
           ],
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192, responseMimeType: "application/json" }
         },
-        { headers: { "Content-Type": "application/json" }, timeout: 30000 }
+        { headers: { "Content-Type": "application/json" }, timeout: 45000 }
       );
       const candidate = response.data?.candidates?.[0];
       if (candidate?.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
