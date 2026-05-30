@@ -78,6 +78,18 @@ function GeminiMarkdown({ text }) {
     rendered.push(<p key={i} className="gemini-p" dangerouslySetInnerHTML={{ __html: fmt(line) }} />);
   }
 
+  if (inCodeBlock && codeLines.length > 0) {
+    rendered.push(
+      <div key={`code-unclosed`} className="gemini-code-block">
+        <div className="gemini-code-header">
+          <span>{codeLines.lang || "code"}</span>
+          <CopyBtn text={codeLines.join("\n")} small />
+        </div>
+        <pre className="gemini-code-pre">{codeLines.join("\n")}</pre>
+      </div>
+    );
+  }
+
   return (
     <div className="gemini-markdown-container">
       {rendered}
