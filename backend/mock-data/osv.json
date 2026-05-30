@@ -1,308 +1,308 @@
 [
   {
     "cve": "GHSA-29mw-wpgm-hmr9",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-35jh-r3h4-6jhm",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-4xc9-xhrj-v574",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-f23m-r3pf-42rh",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-fvqr-27wr-82fm",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-jf85-cpcp-j695",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-p6mc-m468-83gw",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-r5fr-rjxr-66jc",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-x5rq-j2xg-h7qm",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-xxjr-mmjv-4gpg",
-    "package_name": "lodash",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "lodash"
   },
   {
     "cve": "GHSA-35jp-ww65-95wh",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-3g43-6gmg-66jw",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-3p68-rc4w-qgx5",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-3w6x-2g7m-8v23",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-42xw-2xvc-qx8m",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-43fc-jf86-j433",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-445q-vr5w-6q77",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-4hjh-wcwx-xvwj",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-4w2v-q235-vp99",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-5c9x-8gcm-mpgx",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-62hf-57xw-28j9",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-654m-c8p4-x5fp",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-6chq-wfr3-2hj9",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-898c-q2cr-xwhg",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-8hc4-vh64-cxmj",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-cph5-m8f7-6c5x",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-fvcv-3m26-pcqx",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-jr5f-v2jv-69x6",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-m7pr-hjqh-92cm",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-pf86-5x62-jrwf",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-pjwm-pj3p-43mv",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-pmwg-cvhr-8vh7",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-q8qp-cvcw-x6jj",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-qj83-cq47-w5f8",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-vf2m-468p-8v99",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-w9j2-pvgh-6h63",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-wf5p-g6vw-rhxx",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-xhjh-pmcv-23jw",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-xx6v-rp6x-q39c",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "MAL-2026-2307",
-    "package_name": "axios",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "axios"
   },
   {
     "cve": "GHSA-g53w-52xc-2j85",
-    "package_name": "react",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "react"
   },
   {
     "cve": "GHSA-hg79-j56m-fxgv",
-    "package_name": "react",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "react"
   },
   {
     "cve": "GHSA-cm5g-3pgc-8rg4",
-    "package_name": "express",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "express"
   },
   {
     "cve": "GHSA-gpvr-g6gh-9mc2",
-    "package_name": "express",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "express"
   },
   {
     "cve": "GHSA-jj78-5fmv-mv28",
-    "package_name": "express",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "express"
   },
   {
     "cve": "GHSA-qw6h-vgh9-j6wx",
-    "package_name": "express",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "express"
   },
   {
     "cve": "GHSA-rv95-896h-c2vc",
-    "package_name": "express",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "express"
   },
   {
     "cve": "GHSA-8cf7-32gw-wr33",
-    "package_name": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "jsonwebtoken"
   },
   {
     "cve": "GHSA-c7hr-j4mj-j2w6",
-    "package_name": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "jsonwebtoken"
   },
   {
     "cve": "GHSA-hjrf-2m68-5959",
-    "package_name": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "jsonwebtoken"
   },
   {
     "cve": "GHSA-qwph-4952-7xr6",
-    "package_name": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found"
+    "description": "Vulnerability found",
+    "package": "jsonwebtoken"
   }
 ]
