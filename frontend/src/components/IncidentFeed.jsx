@@ -94,7 +94,7 @@ function IncidentCard({ item, index }) {
     : "N/A";
   const packageName = item.package_details?.package_name || "Unknown";
   const cve = item.vulnerability?.cve;
-  const cveDisplay = (!cve || cve === "NO_CVE_FOUND") ? null : cve;
+  const cveDisplay = (!cve || cve === "NO_CVE_FOUND" || cve === "N/A") ? "None" : cve;
   const riskScore = item.risk_score ?? 0;
   const aiSummary = item.ai_summary || "";
   const action = item.recommended_action || "";
