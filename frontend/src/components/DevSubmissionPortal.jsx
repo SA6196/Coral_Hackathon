@@ -178,12 +178,18 @@ function EventCard({ event, index }) {
 
               {/* Technical details grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12 }}>
-                <DetailTile label="Vulnerability / CVE" value={event.vulnerability?.cve === "NO_CVE_FOUND" ? "No Vulnerabilities" : event.vulnerability?.cve} highlight={event.vulnerability?.cve !== "NO_CVE_FOUND" ? cfg.color : null} />
-                <DetailTile label="Vulnerability Severity" value={event.vulnerability?.severity?.toUpperCase()} highlight={event.vulnerability?.severity !== "safe" ? cfg.color : null} />
-                <DetailTile label="CVSS Score" value={event.vulnerability?.cvss > 0 ? `${event.vulnerability.cvss} / 10` : "N/A"} highlight={event.vulnerability?.cvss > 7.5 ? "#e11d48" : null} />
+                <DetailTile label="Vulnerability / CVE" value={event.vulnerability?.cve === "NO_CVE_FOUND" ? "None detected" : (event.vulnerability?.cve || "None detected")} highlight={event.vulnerability?.cve && event.vulnerability?.cve !== "NO_CVE_FOUND" ? cfg.color : null} />
+                <DetailTile label="Vulnerability Severity" value={event.vulnerability?.severity?.toUpperCase() || "SAFE"} highlight={event.vulnerability?.severity && event.vulnerability?.severity !== "safe" ? cfg.color : null} />
+                {event.vulnerability?.cvss > 0 && (
+                  <DetailTile label="CVSS Score" value={`${event.vulnerability.cvss} / 10`} highlight={event.vulnerability.cvss > 7.5 ? "#e11d48" : null} />
+                )}
                 <DetailTile label="Dependency Package" value={event.package_name || "none"} mono />
-                <DetailTile label="Git Commit SHA" value={event.commit_sha} mono />
-                <DetailTile label="Delivery ID" value={event.delivery_id?.slice(0, 16)} mono />
+                {event.commit_sha && event.commit_sha !== "unknown" && (
+                  <DetailTile label="Git Commit SHA" value={event.commit_sha} mono />
+                )}
+                {event.delivery_id && (
+                  <DetailTile label="Delivery ID" value={event.delivery_id?.slice(0, 16)} mono />
+                )}
               </div>
 
               {/* Secrets Detection Details */}

@@ -39,6 +39,16 @@ export const registerUser = (username, password, confirmPassword) => API.post("/
 API.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Auto-logout on 401 (expired/invalid token) — redirect to login cleanly
+    if (error?.response?.status === 401) {
+      const currentToken = localStorage.getItem("coral_jwt_token");
+      if (currentToken) {
+        localStorage.removeItem("coral_jwt_token");
+        // Trigger a clean reload so App.jsx re-renders the login screen
+        window.location.reload();
+        return new Promise(() => {}); // Never resolve — page is reloading
+      }
+    }
     const message =
       error?.response?.data?.error ||
       error?.response?.data?.message ||

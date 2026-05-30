@@ -72,10 +72,11 @@ function toLogId(incidentId) {
 
 function IncidentCard({ item, index }) {
   const [expanded, setExpanded] = useState(false);
-  // Drive severity color from risk_score (consistent with webhook feed)
+  // Drive severity color purely from risk_score — consistent with webhook feed
+  // (≥90 = critical/red, ≥70 = high/orange, ≥40 = medium/yellow, else safe/green)
   const rsk = item.risk_score ?? 0;
   let severity = "safe";
-  if (rsk >= 90 || item.malicious_code_detected) severity = "critical";
+  if (rsk >= 90) severity = "critical";
   else if (rsk >= 70) severity = "high";
   else if (rsk >= 40) severity = "medium";
   else if ((item.vulnerability?.severity || "").toLowerCase() !== "safe") {

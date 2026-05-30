@@ -463,15 +463,82 @@ function ExportReportButton() {
     setDownloading(false);
   };
 
-  const printPdf = () => {
+  const printPdf = async () => {
     setOpen(false);
-    // Expand all collapsed accordion sections so they show in print
-    document.querySelectorAll("[aria-expanded='false'][role='button']").forEach(btn => {
-      try { btn.click(); } catch(e) {}
-    });
-    setTimeout(() => {
-      window.print();
-    }, 600);
+    setDownloading(true);
+    try {
+      const res = await getExportReport();
+      const report = res.data?.report;
+      const printWindow = window.open("", "_blank", "width=900,height=700");
+      if (!printWindow) {
+        alert("Please allow pop-ups for this site, then try Print / PDF again.");
+        return;
+      }
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Coral Security Report — ${new Date().toLocaleDateString()}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #fff; margin: 0; padding: 24px 32px; }
+    h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .subtitle { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+    .section { margin-bottom: 28px; }
+    .section h2 { font-size: 14px; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; color: #0f172a; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+    .stat-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-val { font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+    .incident { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; page-break-inside: avoid; border-left: 4px solid #e11d48; }
+    .incident.high { border-left-color: #ea580c; }
+    .incident.medium { border-left-color: #f59e0b; }
+    .incident-id { font-size: 10px; font-weight: 700; color: #e11d48; }
+    .incident-title { font-size: 13px; font-weight: 600; margin: 4px 0; }
+    .incident-meta { font-size: 11px; color: #64748b; display: flex; gap: 16px; margin-top: 6px; }
+    .score { font-weight: 700; color: #0f172a; }
+    .ai-summary { font-size: 11px; color: #334155; background: #f1f5f9; border-radius: 6px; padding: 8px 10px; margin-top: 8px; line-height: 1.6; }
+    .footer { font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 24px; display: flex; justify-content: space-between; }
+    @page { size: A4; margin: 15mm; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>🛡 Coral Security Report</h1>
+  <div class="subtitle">Generated: ${new Date().toLocaleString()} · Multi-Source Enterprise Threat Intelligence</div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Critical CVEs</div><div class="stat-val" style="color:#e11d48">${report?.critical_cves ?? 0}</div></div>
+    <div class="stat-card"><div class="stat-label">High Severity</div><div class="stat-val" style="color:#ea580c">${report?.high_severity ?? 0}</div></div>
+    <div class="stat-card"><div class="stat-label">Secret Leaks</div><div class="stat-val" style="color:#8b5cf6">${report?.secrets_found ?? 0}</div></div>
+    <div class="stat-card"><div class="stat-label">Policy Violations</div><div class="stat-val" style="color:#f59e0b">${report?.policy_violations ?? 0}</div></div>
+  </div>
+  ${report?.top_risk_incident ? `
+  <div class="section">
+    <h2>⚠ Top Risk Incident</h2>
+    <div class="incident">
+      <div class="incident-id">${report.top_risk_incident.incident_id}</div>
+      <div class="incident-title">${report.top_risk_incident.pr_details?.title || "Unknown PR"}</div>
+      <div class="incident-meta">
+        <span>Developer: <b>${report.top_risk_incident.pr_details?.developer || "Unknown"}</b></span>
+        <span>Package: <b>${report.top_risk_incident.package_details?.package_name || "N/A"}</b></span>
+        <span>Risk Score: <b class="score">${report.top_risk_incident.risk_score}</b></span>
+      </div>
+      ${report.top_risk_incident.ai_summary ? `<div class="ai-summary">${report.top_risk_incident.ai_summary}</div>` : ""}
+    </div>
+  </div>` : ""}
+  <div class="footer">
+    <span>Coral Security Command Center · Enterprise Threat Intelligence</span>
+    <span>Printed: ${new Date().toLocaleString()}</span>
+  </div>
+</body>
+</html>`;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => { printWindow.print(); printWindow.close(); }, 600);
+    } catch {
+      alert("Print failed — is the backend running on port 5000?");
+    }
+    setDownloading(false);
   };
 
   return (

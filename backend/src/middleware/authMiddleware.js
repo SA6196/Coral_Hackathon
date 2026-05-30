@@ -2,7 +2,7 @@ const crypto = require("crypto");
 
 const SECRET = process.env.JWT_SECRET || "coral-super-secret-key-123456789";
 
-function signToken(payload, expiresInHours = 8) {
+function signToken(payload, expiresInHours = 720) {
   try {
     const now = Math.floor(Date.now() / 1000);
     const enriched = { ...payload, iat: now, exp: now + expiresInHours * 3600 };
