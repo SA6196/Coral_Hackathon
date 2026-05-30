@@ -47,7 +47,12 @@ export default function SourceStatusPanel({ onRefreshed }) {
     finally { setLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => { fetchStatus(); }, []);
+  useEffect(() => { 
+    fetchStatus();
+    // Poll every 4s so source count updates immediately after token save/restore
+    const interval = setInterval(() => fetchStatus(), 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleRefresh = async () => {
     setRefreshing(true);

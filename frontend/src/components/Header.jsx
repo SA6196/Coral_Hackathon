@@ -111,9 +111,11 @@ function PasswordInput({ value, onChange, placeholder, id }) {
   );
 }
 
-function TokenModal({ sourceId, onClose }) {
+function TokenModal({ sourceId, onClose, onSaved }) {
   const meta = SOURCE_META[sourceId];
-  const [values, setValues] = useState({});
+  // Pre-fill with any values already saved in localStorage
+  const stored = JSON.parse(localStorage.getItem(`coral_tokens_${sourceId}`) || "null") || {};
+  const [values, setValues] = useState(stored);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -121,12 +123,18 @@ function TokenModal({ sourceId, onClose }) {
     if (meta.isPublic) { onClose(); return; }
     setSaving(true);
     try {
+      // Persist to localStorage first for reload persistence
+      localStorage.setItem(`coral_tokens_${sourceId}`, JSON.stringify(values));
       await configSources({ [sourceId]: values });
       setSaved(true);
-      setTimeout(onClose, 1500);
+      if (onSaved) onSaved();
+      setTimeout(onClose, 1200);
     } catch {
-      setSaved(true); // still mark saved for UI even if backend not running
-      setTimeout(onClose, 1500);
+      // Still save to localStorage even if backend is temporarily down
+      localStorage.setItem(`coral_tokens_${sourceId}`, JSON.stringify(values));
+      setSaved(true);
+      if (onSaved) onSaved();
+      setTimeout(onClose, 1200);
     } finally {
       setSaving(false);
     }
@@ -457,9 +465,13 @@ function ExportReportButton() {
 
   const printPdf = () => {
     setOpen(false);
+    // Expand all collapsed accordion sections so they show in print
+    document.querySelectorAll("[aria-expanded='false'][role='button']").forEach(btn => {
+      try { btn.click(); } catch(e) {}
+    });
     setTimeout(() => {
       window.print();
-    }, 150);
+    }, 600);
   };
 
   return (
@@ -592,6 +604,23 @@ function SourceBadge({ id, className, children, onConfigure }) {
 function Header({ onRefreshed, onLogout }) {
   const [modalSource, setModalSource] = useState(null);
 
+  // On mount: re-hydrate backend with any tokens saved in localStorage
+  useEffect(() => {
+    const sourcesToRestore = ["github", "slack", "notion"];
+    const toSend = {};
+    let hasAny = false;
+    sourcesToRestore.forEach(id => {
+      const stored = JSON.parse(localStorage.getItem(`coral_tokens_${id}`) || "null");
+      if (stored && Object.values(stored).some(v => v)) {
+        toSend[id] = stored;
+        hasAny = true;
+      }
+    });
+    if (hasAny) {
+      configSources(toSend).catch(() => {}); // Best-effort restore
+    }
+  }, []);
+
   return (
     <>
       <header className="header">
@@ -697,6 +726,7 @@ function Header({ onRefreshed, onLogout }) {
           <TokenModal
             sourceId={modalSource}
             onClose={() => setModalSource(null)}
+            onSaved={() => { if (onRefreshed) onRefreshed(); }}
           />
         )}
       </AnimatePresence>

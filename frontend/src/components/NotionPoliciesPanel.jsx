@@ -191,25 +191,23 @@ export default function NotionPoliciesPanel() {
   const [expanded, setExpanded] = useState(true);
   const [sqlVis,   setSqlVis]   = useState(false);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const res = await getPolicyViolations();
       setData(res.data);
     } catch (e) {
-      setError(e.message || "Failed to fetch");
+      if (!silent) setError(e.message || "Failed to fetch");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { 
-    fetchData(); 
-    // Auto-poll to keep policies panel magically synced with the webhook stream
-    const interval = setInterval(() => {
-      fetchData();
-    }, 5000);
+    fetchData(false); 
+    // Auto-poll silently — no loading flicker on background refresh
+    const interval = setInterval(() => fetchData(true), 5000);
     return () => clearInterval(interval);
   }, []);
 

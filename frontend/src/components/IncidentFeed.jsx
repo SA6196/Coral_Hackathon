@@ -72,8 +72,15 @@ function toLogId(incidentId) {
 
 function IncidentCard({ item, index }) {
   const [expanded, setExpanded] = useState(false);
-  let severity = (item.vulnerability?.severity || "safe").toLowerCase(); // normalise
-  if (item.malicious_code_detected) severity = "critical";
+  // Drive severity color from risk_score (consistent with webhook feed)
+  const rsk = item.risk_score ?? 0;
+  let severity = "safe";
+  if (rsk >= 90 || item.malicious_code_detected) severity = "critical";
+  else if (rsk >= 70) severity = "high";
+  else if (rsk >= 40) severity = "medium";
+  else if ((item.vulnerability?.severity || "").toLowerCase() !== "safe") {
+    severity = (item.vulnerability?.severity || "safe").toLowerCase();
+  }
   const cfg = SEVERITY_MAP[severity] || SEVERITY_MAP.safe;
   const SeverityIcon = cfg.icon;
 
@@ -85,11 +92,12 @@ function IncidentCard({ item, index }) {
       })
     : "N/A";
   const packageName = item.package_details?.package_name || "Unknown";
-  const cve = item.vulnerability?.cve || "NO_CVE_FOUND";
+  const cve = item.vulnerability?.cve;
+  const cveDisplay = (!cve || cve === "NO_CVE_FOUND") ? null : cve;
   const riskScore = item.risk_score ?? 0;
   const aiSummary = item.ai_summary || "";
   const action = item.recommended_action || "";
-  const slackChannel = item.internal_discussion?.slack_channel || "N/A";
+  const slackChannel = item.internal_discussion?.slack_channel;
   const slackMsg = item.internal_discussion?.message || "";
   const secrets = item.secrets_detected;       // Feature 5
   const policy  = item.policy_violation;       // Feature 3
@@ -194,15 +202,17 @@ function IncidentCard({ item, index }) {
             <div className="incident-meta-val">{packageName}</div>
           </div>
 
-          <div className="incident-meta-item">
-            <div className="incident-meta-key">CVE ID</div>
-            <div
-              className="incident-meta-val incident-cve"
-              style={{ color: cfg.scoreColor, fontSize: 12 }}
-            >
-              {cve}
+          {cveDisplay && (
+            <div className="incident-meta-item">
+              <div className="incident-meta-key">CVE ID</div>
+              <div
+                className="incident-meta-val incident-cve"
+                style={{ color: cfg.scoreColor, fontSize: 12 }}
+              >
+                {cveDisplay}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* AI Summary */}
@@ -220,8 +230,8 @@ function IncidentCard({ item, index }) {
             {getActionLabel(action)}
           </button>
 
-          {/* Slack info */}
-          {slackMsg && (
+          {/* Slack info — only show when there's an actual message */}
+          {slackMsg && slackChannel && (
             <div className="incident-slack-msg">
               <FaSlack size={12} />
               <span className="slack-channel">{slackChannel}</span>
@@ -272,8 +282,8 @@ function IncidentCard({ item, index }) {
                       <FiMessageSquare size={10} /> Slack Discussion
                     </span>
                   </div>
-                  <div className="incident-meta-val" style={{ fontSize: 12 }}>
-                    {slackMsg || "No discussion"}
+                  <div className="incident-meta-val" style={{ fontSize: 12, color: slackMsg ? "inherit" : "rgba(255,255,255,0.3)" }}>
+                    {slackMsg || "No internal discussion found."}
                   </div>
                 </div>
               </div>
