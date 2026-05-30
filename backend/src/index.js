@@ -94,12 +94,12 @@ app.get("/api", (req, res) => {
 
 /* ─── Routes ──────────────────────────────────────────────────────────── */
 app.use("/api/auth", authRoutes);
+app.use("/api", submitRoutes);
+app.use("/api", webhookRoutes);
 app.use("/api", protect, securityRoutes);
 app.use("/api", protect, coralRoutes);
 app.use("/api", protect, aiRoutes);        // chat limiter applied inside aiRoutes
 app.use("/api", protect, configRoutes);
-app.use("/api", submitRoutes);
-app.use("/api", webhookRoutes);
 
 /* ─── Global error handler ────────────────────────────────────────────── */
 app.use((err, req, res, next) => {

@@ -527,8 +527,15 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
         },
         { headers: { "Content-Type": "application/json" }, timeout: 30000 }
       );
-      report = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      mode = "live";
+      const candidate = response.data?.candidates?.[0];
+      report = candidate?.content?.parts?.[0]?.text || "";
+      
+      if (candidate?.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
+        console.warn(`[INVESTIGATE] Gemini truncated due to ${candidate.finishReason}. Falling back.`);
+        report = "";
+      } else if (report) {
+        mode = "live";
+      }
     } catch (err) {
       console.error("[INVESTIGATE_GEMINI_ERROR]", err.message);
     }
@@ -651,8 +658,14 @@ Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions"
         },
         { headers: { "Content-Type": "application/json" }, timeout: 30000 }
       );
-      remediationData = JSON.parse(response.data?.candidates?.[0]?.content?.parts?.[0]?.text);
-      mode = "live";
+      const candidate = response.data?.candidates?.[0];
+      if (candidate?.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
+        console.warn(`[REMEDIATE] Gemini truncated due to ${candidate.finishReason}. Falling back.`);
+        remediationData = null;
+      } else {
+        remediationData = JSON.parse(candidate?.content?.parts?.[0]?.text);
+        mode = "live";
+      }
     } catch (err) {
       console.error("[REMEDIATE_GEMINI_ERROR]", err.message);
     }
