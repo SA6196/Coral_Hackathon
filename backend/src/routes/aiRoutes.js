@@ -193,7 +193,7 @@ If you have your final answer, just output it normally as text.`;
       };
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
         requestBody,
         { headers: { "Content-Type": "application/json" }, timeout: 15000 }
       );
@@ -594,7 +594,7 @@ Provide 3-5 bullet points of immediate, concrete actions the team must take righ
 Use markdown features extensively: bolding, italics, blockquotes for Slack messages, lists, and code blocks for technical details. Make it visually stunning and highly analytical.`;
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
             { parts: [{ text: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
@@ -731,7 +731,7 @@ The JSON MUST follow this format exactly:
 Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions" and "scripts" arrays MUST have the exact same length (1 script block per action). Provide exactly 3 or 4 comprehensive actions.`;
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
             { parts: [{ text: `Generate a remediation playbook for incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
