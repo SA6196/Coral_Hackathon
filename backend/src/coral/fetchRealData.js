@@ -160,7 +160,7 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
     // Inject a clean/successful commit on top to show a successful gate pass in the demo
     formattedData.unshift({
       pr_id: 106,
-      author: "tanmayshukla60-netizen",
+      author: "ci-bot",
       title: "feat(ci): resolve metric processing backdoor and AWS credentials risk",
       package_name: "none",
       merged_at: new Date().toISOString(),

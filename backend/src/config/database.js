@@ -56,7 +56,17 @@ function initializeTables() {
       recommended_action TEXT
     )`, (err) => {
       if (err) console.error("Error creating webhook_events table:", err.message);
-      else seedDefaultWebhooks();
+      else {
+        // Remove any previously injected demo entries that should not appear in webhook history
+        db.run(
+          `DELETE FROM webhook_events WHERE developer IN ('tanmayshukla60-netizen', 'ci-bot') AND id LIKE 'WH-sync-%'`,
+          (delErr) => {
+            if (delErr) console.warn("[DB] Cleanup warning:", delErr.message);
+            else console.log("[DB] Cleaned up any injected demo webhook entries.");
+          }
+        );
+        seedDefaultWebhooks();
+      }
     });
 
     // Auxiliary tables used by the webhook sync and seed services

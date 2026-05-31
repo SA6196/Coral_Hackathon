@@ -150,8 +150,8 @@ router.post("/sync-real-data", async (req, res) => {
       const repo = runtimeTokens.github_repo || "unknown/repo";
 
       results.github.data.forEach((item) => {
-        // Only ingest commit changes and PR notifications, not default system items or access changes
-        if (item.author === "system") return;
+        // Only ingest commit changes and PR notifications, not default system items, access changes, or demo bot entries
+        if (item.author === "system" || item.author === "ci-bot") return;
 
         const eventId = `WH-sync-${item.pr_id}`;
         const analysisData = {
