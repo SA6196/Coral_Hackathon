@@ -188,7 +188,7 @@ export default function AICopilot({ activeIncidentId = 1, maxIncidents = 25 }) {
                 </div>
                 <div>
                   <div className="copilot-header-title">SecOps AI Copilot</div>
-                  <div className="copilot-header-sub">Powered by Coral · GPT-4o-mini</div>
+                  <div className="copilot-header-sub">Powered by Coral</div>
                 </div>
               </div>
 

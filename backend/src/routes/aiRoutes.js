@@ -185,13 +185,13 @@ Always be extremely concise and fast.`;
     let response;
     try {
       response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`,
         requestBody,
         { headers: { "Content-Type": "application/json" }, timeout: 15000 }
       );
     } catch (e) {
       response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey.trim()}`,
         requestBody,
         { headers: { "Content-Type": "application/json" }, timeout: 15000 }
       );
