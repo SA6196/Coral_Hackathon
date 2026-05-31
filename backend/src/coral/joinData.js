@@ -20,6 +20,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { getSessionDir } = require("../utils/sessionHelper");
 
 function getMockData(filename) {
   try {
@@ -45,9 +46,42 @@ function setSessionData(sessionId, data) {
   sessionStore[sessionId] = data;
 }
 
+function _loadTokensFromDisk(sessionId) {
+  try {
+    const sessionDir = getSessionDir(sessionId);
+    const tokenFile = path.join(sessionDir, "tokens.json");
+    if (fs.existsSync(tokenFile)) {
+      return JSON.parse(fs.readFileSync(tokenFile, "utf-8"));
+    }
+  } catch (e) {
+    console.warn(`[TOKEN] Could not load tokens from disk for ${sessionId}:`, e.message);
+  }
+  return null;
+}
+
+function _saveTokensToDisk(sessionId, tokens) {
+  try {
+    const sessionDir = getSessionDir(sessionId);
+    const tokenFile = path.join(sessionDir, "tokens.json");
+    fs.writeFileSync(tokenFile, JSON.stringify(tokens, null, 2));
+  } catch (e) {
+    console.warn(`[TOKEN] Could not save tokens to disk for ${sessionId}:`, e.message);
+  }
+}
+
 function getRuntimeTokens(sessionId) {
   if (!sessionId) return {};
-  return tokenStore[sessionId] || {
+  // 1. In-memory cache hit
+  if (tokenStore[sessionId]) return tokenStore[sessionId];
+  // 2. Load from disk (survives server restarts)
+  const persisted = _loadTokensFromDisk(sessionId);
+  if (persisted) {
+    tokenStore[sessionId] = persisted;
+    console.log(`[TOKEN] Loaded persisted tokens from disk for session: ${sessionId}`);
+    return persisted;
+  }
+  // 3. Fall back to env vars
+  return {
     github: process.env.GITHUB_TOKEN || null,
     github_repo: process.env.GITHUB_REPO || null,
     slack:  process.env.SLACK_BOT_TOKEN || null,
@@ -59,7 +93,10 @@ function getRuntimeTokens(sessionId) {
 
 function setRuntimeTokens(sessionId, tokens) {
   if (!sessionId) return;
-  tokenStore[sessionId] = { ...getRuntimeTokens(sessionId), ...tokens };
+  const merged = { ...getRuntimeTokens(sessionId), ...tokens };
+  tokenStore[sessionId] = merged;
+  _saveTokensToDisk(sessionId, merged);
+  console.log(`[TOKEN] Saved tokens to disk for session: ${sessionId}`);
 }
 
 // ── Build lookup maps for O(1) key-based joins ──────────────────────
