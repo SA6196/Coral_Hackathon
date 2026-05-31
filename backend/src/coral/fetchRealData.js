@@ -307,7 +307,22 @@ async function fetchSlack(channelId, token, githubAuthors = []) {
 
     if (!res.data.ok) throw new Error(res.data.error);
 
-    const promises = res.data.messages.map(async (msg) => {
+    // Filter out Slack system events — only keep real human messages
+    const SYSTEM_SUBTYPES = new Set([
+      "channel_join", "channel_leave", "channel_archive", "channel_unarchive",
+      "channel_name", "channel_purpose", "channel_topic",
+      "bot_add", "bot_remove", "group_join", "group_leave",
+      "thread_broadcast",
+    ]);
+    const realMessages = res.data.messages.filter(msg => {
+      if (msg.subtype && SYSTEM_SUBTYPES.has(msg.subtype)) return false;
+      if (!msg.text || msg.text.trim() === "") return false;
+      // Skip "X has joined the channel" style auto-texts
+      if (/has joined the channel|has left the channel/i.test(msg.text) && !msg.user) return false;
+      return true;
+    });
+
+    const promises = realMessages.map(async (msg) => {
       let username = msg.user || "unknown";
       if (msg.user && msg.user.startsWith("U")) {
         if (slackUserCache[msg.user]) {
@@ -342,6 +357,12 @@ async function fetchSlack(channelId, token, githubAuthors = []) {
     });
 
     const formattedData = await Promise.all(promises);
+
+    if (formattedData.length === 0) {
+      console.warn("[SYNC WARN] No real Slack messages found (only system events). Using fallback.");
+      return { success: false, error: "No real messages in channel (only system events)" };
+    }
+
     return { success: true, count: formattedData.length, data: formattedData };
   } catch (err) {
     console.error("[SYNC ERROR] Slack fetch failed:", err.message);
