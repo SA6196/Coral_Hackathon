@@ -1,7 +1,7 @@
 [
   {
     "pr_id": 219573,
-    "author": "tanmayshukla60-netizen",
+    "author": "contractor_x",
     "title": "fix(ui): remove hidden zero-width space in title component",
     "package_name": "lodash",
     "merged_at": "2026-05-31T00:15:30.177Z",
@@ -9,7 +9,7 @@
   },
   {
     "pr_id": 191289,
-    "author": "tanmayshukla60-netizen",
+    "author": "contractor_x",
     "title": "feat(analytics): add dynamic metric processing support",
     "package_name": "metrics-engine",
     "merged_at": "2026-05-31T00:15:26.134Z",
