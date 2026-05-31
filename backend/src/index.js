@@ -116,10 +116,21 @@ app.use((err, req, res, next) => {
 
 /* ─── Serve Frontend (Single-Host Bundle) ─────────────────────────────── */
 const frontendDistPath = path.join(__dirname, "../../frontend/dist");
-app.use(express.static(frontendDistPath));
+app.use(express.static(frontendDistPath, {
+  setHeaders: (res, filePath) => {
+    if (path.basename(filePath) === "index.html") {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
+  }
+}));
 
 app.use((req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     return res.sendFile(path.join(frontendDistPath, "index.html"));
   }
   next();
