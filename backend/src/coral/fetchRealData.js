@@ -40,7 +40,7 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
 
       return {
         pr_id: pr.number,
-        author: pr.user.login === "tanmay60" ? "tanmayshukla60-netizen" : pr.user.login,
+        author: pr.user.login,
         title: pr.title,
         package_name: pkgName.toLowerCase().replace(/[^a-zA-Z0-9_-]/g, ""),
         merged_at: pr.merged_at || pr.created_at,
@@ -126,7 +126,7 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
             findings.forEach((finding, idx) => {
               formattedData.unshift({
                 pr_id: 2000 + idx,
-                author: (commitObj.author?.login || commitObj.commit?.author?.name || "unknown").replace(/^tanmay60$/i, "tanmayshukla60-netizen"),
+                author: (commitObj.author?.login || commitObj.commit?.author?.name || "unknown"),
                 title: `CRITICAL: Leaked secret detected in commit ${sha.substring(0, 8)}`,
                 package_name: "credentials",
                 merged_at: commitObj.commit?.author?.date || new Date().toISOString(),
@@ -141,7 +141,7 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
             maliciousFindings.forEach((finding, idx) => {
               formattedData.unshift({
                 pr_id: 3000 + idx,
-                author: (commitObj.author?.login || commitObj.commit?.author?.name || "unknown").replace(/^tanmay60$/i, "tanmayshukla60-netizen"),
+                author: (commitObj.author?.login || commitObj.commit?.author?.name || "unknown"),
                 title: `CRITICAL: Malicious backdoor code detected in commit ${sha.substring(0, 8)}`,
                 package_name: "malicious-code",
                 merged_at: commitObj.commit?.author?.date || new Date().toISOString(),

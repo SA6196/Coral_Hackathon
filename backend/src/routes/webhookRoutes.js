@@ -238,7 +238,6 @@ router.post("/webhook/github", (req, res) => {
     const repo     = payload.repository?.full_name || "unknown/repo";
     const branch   = (payload.ref || "").replace("refs/heads/", "");
     let pusher   = payload.pusher?.name || payload.sender?.login || "unknown";
-    if (pusher === "tanmay60") pusher = "tanmayshukla60-netizen";
 
     commits.slice(0, 10).forEach(commit => {
       const id = `WH-${Math.floor(Math.random() * 900000) + 100000}`;
@@ -325,7 +324,6 @@ router.post("/webhook/github", (req, res) => {
       const repo    = payload.repository?.full_name || "unknown/repo";
       const branch  = pr.head?.ref || "feature-branch";
       let developer = pr.user?.login || "unknown";
-      if (developer === "tanmay60") developer = "tanmayshukla60-netizen";
 
       // Extract package_name (sandbox or match in title/body)
       let pkg = pr.package_name;

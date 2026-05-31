@@ -58,7 +58,7 @@ app.use(cors({
 /* ─── Rate Limiting (100 users × burst) ──────────────────────────────── */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500,                  // 500 requests per window per IP
+  max: 5000,                  // 5000 requests per window per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: "Too many requests — please slow down." },
@@ -66,7 +66,7 @@ const limiter = rateLimit({
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,       // 1 minute
-  max: 30,                   // 30 chat messages per minute per IP
+  max: 300,                   // 300 chat messages per minute per IP
   message: { success: false, error: "Chat rate limit exceeded — please wait." },
 });
 

@@ -29,7 +29,7 @@ const { runSecurityAnalysis }            = require("../coral/queryEngine");
 const rateLimit = require("express-rate-limit");
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 300,
   message: { success: false, error: "Chat rate limit exceeded — please wait." },
   standardHeaders: true,
   legacyHeaders: false,
