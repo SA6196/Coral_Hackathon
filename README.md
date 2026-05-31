@@ -133,4 +133,5 @@ Built with ❤️ for the WeMakeDevs Hackathon.
 - **SA6196**
 - **Sohan-2025**
 - **Ramsri12**
-  
+
+*(Note: Documentation updated safely during Coral testing.)*
