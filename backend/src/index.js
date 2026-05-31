@@ -29,6 +29,7 @@ const allowedOrigins = [
   "http://127.0.0.1:5174",
   "http://192.168.29.47:5174",   // local network (phone access via Vite)
   "http://192.168.29.47:5173",
+  "https://coral-production-cd18.up.railway.app",
 ];
 if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
 if (process.env.PUBLIC_URL)   allowedOrigins.push(process.env.PUBLIC_URL);
@@ -38,12 +39,15 @@ app.use(cors({
     // If request has no origin (like curl, postman, or same-origin), allow it
     if (!origin) return callback(null, true);
     
-    // Check if origin matches allowed whitelist
-    const isAllowed = allowedOrigins.some(o => origin.startsWith(o));
+    // Check if origin matches allowed whitelist or is a deployment domain
+    const isAllowed = allowedOrigins.some(o => origin.startsWith(o)) ||
+                      origin.includes("railway.app") ||
+                      origin.includes("vercel.app");
+                      
     if (isAllowed || process.env.NODE_ENV === "development") {
       callback(null, true);
     } else {
-      callback(new Error("Blocked by CORS"));
+      callback(new Error(`Blocked by CORS: ${origin}`));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
