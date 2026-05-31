@@ -148,6 +148,16 @@ async function fetchGithub(repoOwnerRepo, token, updateBaseline = false) {
                 commit_diff: `Backdoor pattern: ${finding.description}. Preview: "${finding.preview}" (Line: ${finding.line || "unknown"})`
               });
             });
+          } else if (findings.length === 0) {
+            // Include safe commits in the feed!
+            formattedData.unshift({
+              pr_id: parseInt(sha.substring(0, 6), 16) % 9000, // pseudo-unique PR ID
+              author: (commitObj.author?.login || commitObj.commit?.author?.name || "unknown"),
+              title: commitObj.commit?.message?.split('\n')[0] || `Safe commit ${sha.substring(0, 8)}`,
+              package_name: "none",
+              merged_at: commitObj.commit?.author?.date || new Date().toISOString(),
+              commit_diff: "Clean code passing security checks."
+            });
           }
         } catch (innerErr) {
           console.warn(`[SYNC WARN] Could not check commit details for ${sha}:`, innerErr.message);

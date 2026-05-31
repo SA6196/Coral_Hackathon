@@ -119,7 +119,7 @@ function ViolationCard({ v, index }) {
 
         {/* Risk score */}
         <div style={{
-          fontSize: 16, fontWeight: 800, color: SEVERITY_COLOR[v.severity] || sevColor,
+          fontSize: 16, fontWeight: 800, color: v.risk_score >= 90 ? "#e11d48" : (SEVERITY_COLOR[v.severity] || sevColor),
           flexShrink: 0, minWidth: 30, textAlign: "right",
         }}>
           {v.risk_score}
