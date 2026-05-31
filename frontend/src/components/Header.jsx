@@ -388,9 +388,10 @@ function LiveRefreshIndicator({ onRefreshed }) {
 }
 
 /* ── Sync Live Data Button ────────────────────────────────────────────── */
-function SyncLiveDataButton() {
+function SyncLiveDataButton({ onRefreshed }) {
   const [syncing, setSyncing] = useState(false);
   const [done, setDone] = useState(false);
+  const [syncError, setSyncError] = useState(false);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -413,20 +414,28 @@ function SyncLiveDataButton() {
       whileTap={{ scale: 0.97 }}
       onClick={handleSync}
       disabled={syncing}
+      title={syncError ? "Sync failed — check backend connection & keys" : "Pull live data from all connected sources"}
       style={{
         display: "flex", alignItems: "center", gap: 6,
-        background: done 
+        background: syncError
+          ? "linear-gradient(135deg,rgba(239,68,68,0.15),rgba(239,68,68,0.08))"
+          : done
           ? "linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.08))"
           : "linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05))",
-        border: done ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(245,158,11,0.4)",
+        border: syncError
+          ? "1px solid rgba(239,68,68,0.4)"
+          : done ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(245,158,11,0.4)",
         borderRadius: 8, padding: "6px 12px",
-        color: done ? "#10b981" : "#f59e0b",
+        color: syncError ? "#ef4444" : done ? "#10b981" : "#f59e0b",
         fontSize: 11, fontWeight: 600, cursor: syncing ? "wait" : "pointer",
         whiteSpace: "nowrap",
+        transition: "all 0.3s",
       }}
     >
-      {done ? (
-        <><FiCheck size={12} /> Synced & Reloading!</>
+      {syncError ? (
+        <>⚠️ Sync failed — check keys</>
+      ) : done ? (
+        <><FiCheck size={12} /> Synced!</>
       ) : syncing ? (
         <><FiRefreshCw size={12} style={{ animation: "spin 1s linear infinite" }} /> Fetching APIs…</>
       ) : (
@@ -1149,7 +1158,7 @@ function Header({ onRefreshed, onLogout }) {
 
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
             {/* Sync Live button */}
-            <SyncLiveDataButton />
+            <SyncLiveDataButton onRefreshed={onRefreshed} />
             {/* Export button */}
             <ExportReportButton />
             {/* Logout button */}

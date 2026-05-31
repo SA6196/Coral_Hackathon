@@ -408,6 +408,7 @@ router.post("/webhook/github", (req, res) => {
 router.get("/webhook/events", (req, res) => {
   const { severity, developer, page = 1, limit = 30 } = req.query;
 
+  // Push all filters to the DB layer for efficiency
   let queryStr = "SELECT * FROM webhook_events WHERE 1=1";
   const params = [];
 
@@ -415,11 +416,18 @@ router.get("/webhook/events", (req, res) => {
     queryStr += " AND developer LIKE ?";
     params.push(`%${developer}%`);
   }
+  if (severity) {
+    queryStr += " AND vulnerability_json LIKE ?";
+    params.push(`%"severity":"${severity}"%`);
+  }
+
+  // Sort newest first at the DB level
+  queryStr += " ORDER BY received_at DESC";
 
   db.all(queryStr, params, (err, rows) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
 
-    let mapped = (rows || []).map(row => ({
+    const mapped = (rows || []).map(row => ({
       id: row.id,
       source: row.source,
       event_type: row.event_type,
@@ -440,13 +448,6 @@ router.get("/webhook/events", (req, res) => {
       secrets_detected: JSON.parse(row.secrets_detected_json),
       policy_violation: JSON.parse(row.policy_violation_json),
     }));
-
-    if (severity) {
-      mapped = mapped.filter(e => e.vulnerability?.severity === severity);
-    }
-
-    // Sort by newest received_at first
-    mapped.sort((a, b) => new Date(b.received_at) - new Date(a.received_at));
 
     const p     = Math.max(1, parseInt(page, 10));
     const l     = Math.min(100, parseInt(limit, 10));

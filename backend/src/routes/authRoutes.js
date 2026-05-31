@@ -1,15 +1,13 @@
 const express  = require("express");
 const router   = express.Router();
-const crypto   = require("crypto");
+const bcrypt   = require("bcryptjs");
 const db       = require("../config/database");
 const { signToken, protect } = require("../middleware/authMiddleware");
 
-function hashPass(plain) {
-  return crypto.createHash("sha256").update(plain).digest("hex");
-}
+const BCRYPT_ROUNDS = 12;
 
 /* ── POST /api/auth/register ────────────────────────────────────────── */
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const { username, password, confirmPassword } = req.body;
 
   if (!username || !password) {
@@ -25,32 +23,37 @@ router.post("/register", (req, res) => {
     return res.status(400).json({ success: false, error: "Passwords do not match." });
   }
 
-  const hashed = hashPass(password);
-  const now    = new Date().toISOString();
+  try {
+    const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const now    = new Date().toISOString();
+    const user   = username.toLowerCase().trim();
 
-  db.run(
-    "INSERT INTO users (username, password, role, team, created_at) VALUES (?, ?, 'analyst', 'security', ?)",
-    [username.toLowerCase().trim(), hashed, now],
-    function (err) {
-      if (err) {
-        if (err.message.includes("UNIQUE")) {
-          return res.status(409).json({ success: false, error: "Username already taken. Please choose another." });
+    db.run(
+      "INSERT INTO users (username, password, role, team, created_at) VALUES (?, ?, 'analyst', 'security', ?)",
+      [user, hashed, now],
+      function (err) {
+        if (err) {
+          if (err.message.includes("UNIQUE")) {
+            return res.status(409).json({ success: false, error: "Username already taken. Please choose another." });
+          }
+          return res.status(500).json({ success: false, error: "Registration failed: " + err.message });
         }
-        return res.status(500).json({ success: false, error: "Registration failed: " + err.message });
+        const token = signToken({ username: user, role: "analyst", team: "security" });
+        return res.status(201).json({
+          success: true,
+          message: "Account created successfully.",
+          token,
+          user: { username: user, role: "analyst", team: "security" }
+        });
       }
-      const token = signToken({ username: username.toLowerCase().trim(), role: "analyst", team: "security" });
-      return res.status(201).json({
-        success: true,
-        message: "Account created successfully.",
-        token,
-        user: { username: username.toLowerCase().trim(), role: "analyst", team: "security" }
-      });
-    }
-  );
+    );
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Server error during registration." });
+  }
 });
 
 /* ── POST /api/auth/login ───────────────────────────────────────────── */
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -60,7 +63,7 @@ router.post("/login", (req, res) => {
   const ADMIN_USER = process.env.ADMIN_USER || "admin";
   const ADMIN_PASS = process.env.ADMIN_PASS || "admin123";
 
-  // Check built-in admin account first
+  // Check built-in admin account first (env-controlled, not stored in DB)
   if (username === ADMIN_USER && password === ADMIN_PASS) {
     const token = signToken({ username, role: "admin", team: "security" });
     return res.json({
@@ -71,22 +74,28 @@ router.post("/login", (req, res) => {
     });
   }
 
-  // Check registered SQLite users
-  const hashed = hashPass(password);
+  // Check registered SQLite users — fetch hash then compare with bcrypt
   db.get(
-    "SELECT username, role, team FROM users WHERE username = ? AND password = ?",
-    [username.toLowerCase().trim(), hashed],
-    (err, row) => {
+    "SELECT username, password, role, team FROM users WHERE username = ?",
+    [username.toLowerCase().trim()],
+    async (err, row) => {
       if (err) return res.status(500).json({ success: false, error: "Auth check failed." });
       if (!row) return res.status(401).json({ success: false, error: "Invalid username or password." });
 
-      const token = signToken({ username: row.username, role: row.role, team: row.team });
-      return res.json({
-        success: true,
-        message: "Authentication successful",
-        token,
-        user: { username: row.username, role: row.role, team: row.team }
-      });
+      try {
+        const match = await bcrypt.compare(password, row.password);
+        if (!match) return res.status(401).json({ success: false, error: "Invalid username or password." });
+
+        const token = signToken({ username: row.username, role: row.role, team: row.team });
+        return res.json({
+          success: true,
+          message: "Authentication successful",
+          token,
+          user: { username: row.username, role: row.role, team: row.team }
+        });
+      } catch (e) {
+        return res.status(500).json({ success: false, error: "Auth verification failed." });
+      }
     }
   );
 });

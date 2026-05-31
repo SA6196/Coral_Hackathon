@@ -586,11 +586,6 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
       );
       const candidate = response.data?.candidates?.[0];
       report = candidate?.content?.parts?.[0]?.text || "";
-      
-      console.log("[GEMINI_FINISH_REASON]", candidate?.finishReason);
-      console.log("[GEMINI_REPORT]", report);
-      require('fs').appendFileSync('gemini_debug.txt', JSON.stringify(response.data) + '\n');
-
 
       if (candidate?.finishReason && candidate.finishReason !== "STOP" && candidate.finishReason !== "MAX_TOKENS") {
         console.warn(`[INVESTIGATE] Gemini truncated due to ${candidate.finishReason}. Falling back.`);

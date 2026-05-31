@@ -198,6 +198,7 @@ router.post("/submit-commit", (req, res) => {
 router.get("/submissions", (req, res) => {
   const { developer, severity, page = 1, limit = 20 } = req.query;
 
+  // Build the SQL query with all filters at the DB level
   let queryStr = "SELECT * FROM submissions WHERE 1=1";
   const params = [];
 
@@ -205,11 +206,19 @@ router.get("/submissions", (req, res) => {
     queryStr += " AND developer LIKE ?";
     params.push(`%${developer}%`);
   }
+  if (severity) {
+    // severity is stored inside vulnerability_json — use JSON extract via LIKE for SQLite compat
+    queryStr += " AND vulnerability_json LIKE ?";
+    params.push(`%"severity":"${severity}"%`);
+  }
+
+  // Sort newest first at the DB level
+  queryStr += " ORDER BY submitted_at DESC";
 
   db.all(queryStr, params, (err, rows) => {
     if (err) return res.status(500).json({ success: false, error: err.message });
 
-    let mapped = (rows || []).map(row => ({
+    const mapped = (rows || []).map(row => ({
       id: row.id,
       developer: row.developer,
       pr_title: row.pr_title,
@@ -237,13 +246,6 @@ router.get("/submissions", (req, res) => {
         message: row.slack_message || "No Slack message provided.",
       },
     }));
-
-    if (severity) {
-      mapped = mapped.filter(s => s.vulnerability?.severity === severity);
-    }
-
-    // Sort by newest submitted_at first
-    mapped.sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at));
 
     const p     = Math.max(1, parseInt(page, 10));
     const l     = Math.min(50, Math.max(1, parseInt(limit, 10)));

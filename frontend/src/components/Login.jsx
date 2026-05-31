@@ -5,7 +5,7 @@ import { loginUser, registerUser } from "../services/api";
 
 const LS_REMEMBER = "coral_remember_me";
 const LS_SAVED_UN = "coral_saved_username";
-const LS_SAVED_PW = "coral_saved_password";
+// NOTE: We never persist passwords in localStorage — security risk.
 
 /* ── Password visibility toggle input ──────────────────────────────── */
 function PasswordField({ id, value, onChange, placeholder, disabled, label }) {
@@ -58,8 +58,10 @@ export default function Login({ onLoginSuccess }) {
     if (saved) {
       setRemember(true);
       setUsername(localStorage.getItem(LS_SAVED_UN) || "");
-      setPassword(localStorage.getItem(LS_SAVED_PW) || "");
+      // Password is never stored — user types it each session
     }
+    // Clean up any legacy plaintext passwords saved by old versions
+    localStorage.removeItem("coral_saved_password");
   }, []);
 
   /* ── Clear state when switching modes ── */
@@ -92,15 +94,13 @@ export default function Login({ onLoginSuccess }) {
       }
 
       if (res.data?.token) {
-        /* ── Persist credentials if remember me checked ── */
+        /* ── Persist username only if remember me checked (NEVER the password) ── */
         if (remember) {
           localStorage.setItem(LS_REMEMBER, "true");
           localStorage.setItem(LS_SAVED_UN, username);
-          localStorage.setItem(LS_SAVED_PW, password);
         } else {
           localStorage.removeItem(LS_REMEMBER);
           localStorage.removeItem(LS_SAVED_UN);
-          localStorage.removeItem(LS_SAVED_PW);
         }
 
         if (mode === "signup") {

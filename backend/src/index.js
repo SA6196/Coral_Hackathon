@@ -55,7 +55,7 @@ app.use(cors({
   credentials: true,
 }));
 
-/* ─── Rate Limiting (100 users × burst) ──────────────────────────────── */
+/* ─── Rate Limiting (5000 req / 15 min global, 300 chat / min) ────────────── */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5000,                  // 5000 requests per window per IP
@@ -151,7 +151,7 @@ const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Coral Security API v2.0 running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔒 CORS whitelist: localhost:5173, localhost:3000`);
-  console.log(`🛡️  Rate limit: 500 req/15min global, 30 chat/min`);
+  console.log(`🛡️  Rate limit: 5000 req/15min global, 300 chat/min`);
 });
 
 process.on("SIGTERM", () => {

@@ -108,6 +108,17 @@ function initializeTables() {
       created_at TEXT
     )`, (err) => {
       if (err) console.error("Error creating users table:", err.message);
+      else {
+        // Migration: delete legacy SHA-256 hashed passwords (64-char hex strings).
+        // These cannot be verified by bcryptjs and users must simply re-register.
+        db.run(
+          `DELETE FROM users WHERE password NOT LIKE '$2%' AND length(password) = 64`,
+          (delErr) => {
+            if (delErr) console.warn("[DB] Migration warning:", delErr.message);
+            else console.log("[DB] Cleared any legacy SHA-256 password hashes — users will re-register.");
+          }
+        );
+      }
     });
   });
 }
