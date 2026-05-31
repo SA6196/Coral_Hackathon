@@ -74,15 +74,32 @@ app.use(morgan("dev"));
 
 /* ─── Health check (monitoring tools, load balancers) ────────────────── */
 app.get("/health", (req, res) => {
+  const fs = require("fs");
+  const path = require("path");
+  const frontendDistPath = path.join(__dirname, "../../frontend/dist");
+  let distFiles = [];
+  let distExists = false;
+  try {
+    distExists = fs.existsSync(frontendDistPath);
+    if (distExists) {
+      distFiles = fs.readdirSync(frontendDistPath);
+      if (fs.existsSync(path.join(frontendDistPath, "assets"))) {
+        distFiles = distFiles.concat(fs.readdirSync(path.join(frontendDistPath, "assets")).map(f => "assets/" + f));
+      }
+    }
+  } catch (e) {
+    distFiles = [e.message];
+  }
   res.json({
     status: "healthy",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     version: "2.0.0",
-    services: {
-      coral_engine: "running",
-      mock_data: "loaded",
-    }
+    __dirname,
+    cwd: process.cwd(),
+    frontendDistPath,
+    distExists,
+    distFiles,
   });
 });
 
