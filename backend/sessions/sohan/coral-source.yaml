@@ -1,0 +1,79 @@
+name: coral_hackathon
+version: 0.1.0
+dsl_version: 3
+backend: file
+tables:
+  - name: github
+    description: GitHub pull requests
+    format: json
+    source:
+      location: file:./mock-data/
+      glob: "github.json"
+    columns:
+      - name: pr_id
+        type: Int64
+      - name: author
+        type: Utf8
+      - name: title
+        type: Utf8
+      - name: package_name
+        type: Utf8
+      - name: merged_at
+        type: Utf8
+      - name: commit_diff
+        type: Utf8
+  - name: slack
+    description: Slack messages
+    format: json
+    source:
+      location: file:./mock-data/
+      glob: "slack.json"
+    columns:
+      - name: id
+        type: Int64
+      - name: channel
+        type: Utf8
+      - name: message
+        type: Utf8
+      - name: user
+        type: Utf8
+      - name: timestamp
+        type: Utf8
+  - name: osv
+    description: OSV vulnerabilities
+    format: json
+    source:
+      location: file:./mock-data/
+      glob: "osv.json"
+    columns:
+      - name: id
+        type: Int64
+      - name: package
+        type: Utf8
+      - name: cve
+        type: Utf8
+      - name: severity
+        type: Utf8
+      - name: cvss
+        type: Float64
+  - name: notion
+    description: Notion policies
+    format: json
+    source:
+      location: file:./mock-data/
+      glob: "notion.json"
+    columns:
+      - name: policy_id
+        type: Utf8
+      - name: applies_to
+        type: Utf8
+      - name: policy_name
+        type: Utf8
+      - name: policy_rule
+        type: Utf8
+      - name: severity
+        type: Utf8
+      - name: description
+        type: Utf8
+      - name: owner_team
+        type: Utf8

@@ -83,7 +83,15 @@ function ErrorScreen({ message, onRetry }) {
 function App() {
   const toast = useToast();
   const [token,      setToken]      = useState(localStorage.getItem("coral_jwt_token"));
-  const [summary,    setSummary]    = useState(null);
+  const [summary,    setSummary]    = useState({
+    total_incidents: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    safe: 0,
+    secrets_detected: 0,
+    policy_violations: 0,
+  });
   const [incidents,  setIncidents]  = useState([]);
   const [coralMeta,  setCoralMeta]  = useState(null);
   const [loading,    setLoading]    = useState(true);

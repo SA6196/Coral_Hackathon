@@ -1,0 +1,3 @@
+vuln_id,package_name,severity,description
+CVE-2026-1111,backend-api,CRITICAL,"Hardcoded credential exposure discovered in configuration"
+CVE-2026-2222,frontend-app,LOW,"Minor styling vulnerability in layout templates"

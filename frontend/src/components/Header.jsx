@@ -8,6 +8,7 @@
  * ─────────────────────────────────────────────────────────────────────
  */
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaShieldAlt, FaGithub, FaSlack } from "react-icons/fa";
 import { MdSecurity } from "react-icons/md";
@@ -16,7 +17,7 @@ import {
   FiCheck, FiExternalLink, FiPrinter, FiFileText,
   FiAlertTriangle, FiChevronDown,
 } from "react-icons/fi";
-import { refreshCache, configSources, getExportReport, syncRealData } from "../services/api";
+import { refreshCache, configSources, getExportReport, syncRealData, getDeveloperRisk } from "../services/api";
 
 /* ── Live clock ──────────────────────────────────────────────────────── */
 function LiveClock() {
@@ -440,7 +441,10 @@ function ExportReportButton() {
   const [open,        setOpen]       = useState(false);
   const [downloading, setDownloading]= useState(false);
   const [done,        setDone]       = useState(false);
+  const [dropPos,     setDropPos]    = useState({ top: 0, right: 0 });
+  const btnRef = useRef(null);
 
+  /* ── JSON download (unchanged from original) ── */
   const downloadJson = async () => {
     setOpen(false);
     setDownloading(true);
@@ -463,100 +467,144 @@ function ExportReportButton() {
     setDownloading(false);
   };
 
-  const printPdf = async () => {
+  /* ── PDF download — all users / vulnerabilities / risk scores ── */
+  const downloadPdf = async () => {
     setOpen(false);
     setDownloading(true);
     try {
-      const res = await getExportReport();
-      const report = res.data?.report;
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Coral Security Report — ${new Date().toLocaleDateString()}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #0f172a; background: #fff; margin: 0; padding: 24px 32px; }
-    h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
-    .subtitle { font-size: 12px; color: #64748b; margin-bottom: 24px; }
-    .section { margin-bottom: 28px; }
-    .section h2 { font-size: 14px; font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 12px; color: #0f172a; }
-    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
-    .stat-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-    .stat-val { font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 4px; }
-    .incident { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; page-break-inside: avoid; border-left: 4px solid #e11d48; }
-    .incident.high { border-left-color: #ea580c; }
-    .incident.medium { border-left-color: #f59e0b; }
-    .incident-id { font-size: 10px; font-weight: 700; color: #e11d48; }
-    .incident-title { font-size: 13px; font-weight: 600; margin: 4px 0; }
-    .incident-meta { font-size: 11px; color: #64748b; display: flex; gap: 16px; margin-top: 6px; }
-    .score { font-weight: 700; color: #0f172a; }
-    .ai-summary { font-size: 11px; color: #334155; background: #f1f5f9; border-radius: 6px; padding: 8px 10px; margin-top: 8px; line-height: 1.6; }
-    .footer { font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 24px; display: flex; justify-content: space-between; }
-    @page { size: A4; margin: 15mm; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <h1>🛡 Coral Security Report</h1>
-  <div class="subtitle">Generated: ${new Date().toLocaleString()} · Multi-Source Enterprise Threat Intelligence</div>
-  <div class="stat-grid">
-    <div class="stat-card"><div class="stat-label">Critical CVEs</div><div class="stat-val" style="color:#e11d48">${report?.critical_cves ?? 0}</div></div>
-    <div class="stat-card"><div class="stat-label">High Severity</div><div class="stat-val" style="color:#ea580c">${report?.high_severity ?? 0}</div></div>
-    <div class="stat-card"><div class="stat-label">Secret Leaks</div><div class="stat-val" style="color:#8b5cf6">${report?.secrets_found ?? 0}</div></div>
-    <div class="stat-card"><div class="stat-label">Policy Violations</div><div class="stat-val" style="color:#f59e0b">${report?.policy_violations ?? 0}</div></div>
-  </div>
-  ${report?.top_risk_incident ? `
-  <div class="section">
-    <h2>⚠ Top Risk Incident</h2>
-    <div class="incident">
-      <div class="incident-id">${report.top_risk_incident.incident_id}</div>
-      <div class="incident-title">${report.top_risk_incident.pr_details?.title || "Unknown PR"}</div>
-      <div class="incident-meta">
-        <span>Developer: <b>${report.top_risk_incident.pr_details?.developer || "Unknown"}</b></span>
-        <span>Package: <b>${report.top_risk_incident.package_details?.package_name || "N/A"}</b></span>
-        <span>Risk Score: <b class="score">${report.top_risk_incident.risk_score}</b></span>
-      </div>
-      ${report.top_risk_incident.ai_summary ? `<div class="ai-summary">${report.top_risk_incident.ai_summary}</div>` : ""}
-    </div>
-  </div>` : ""}
-  <div class="footer">
-    <span>Coral Security Command Center · Enterprise Threat Intelligence</span>
-    <span>Printed: ${new Date().toLocaleString()}</span>
-  </div>
-</body>
-</html>`;
+      const [reportRes, devRiskRes] = await Promise.allSettled([
+        getExportReport(),
+        getDeveloperRisk(),
+      ]);
+      /* ── API data — fix field names to match actual backend response ── */
+      // /api/export-report → res.data.report.executive_summary.{critical, high, secrets_leaked, policy_violations}
+      // /api/developer-risk → res.data.profiles[].{avg_risk_score, total_prs, high_count, secret_leaks, ...}
+      const report  = reportRes.status  === "fulfilled" ? reportRes.value.data?.report   : null;
+      const devRisk = devRiskRes.status === "fulfilled" ? (devRiskRes.value.data?.profiles ?? devRiskRes.value.data?.data ?? []) : [];
+      const execSum = report?.executive_summary ?? {};
+
+      const scoreColor = (s) => {
+        if (!s && s !== 0) return "#64748b";
+        if (s >= 80) return "#e11d48";
+        if (s >= 60) return "#ea580c";
+        if (s >= 40) return "#f59e0b";
+        return "#10b981";
+      };
+      const scoreLabel = (s) => {
+        if (!s && s !== 0) return "Unknown";
+        if (s >= 80) return "CRITICAL";
+        if (s >= 60) return "HIGH";
+        if (s >= 40) return "MEDIUM";
+        return "LOW";
+      };
+      const esc = (str) => String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+      /* ── Developer rows — using correct field names from /api/developer-risk ── */
+      const userRows = (Array.isArray(devRisk) ? devRisk : [])
+        .sort((a, b) => (b.avg_risk_score || b.risk_score || 0) - (a.avg_risk_score || a.risk_score || 0))
+        .map((u, i) => {
+          const sc  = u.avg_risk_score ?? u.risk_score ?? u.score ?? 0;
+          const col = scoreColor(sc);
+          const lbl = scoreLabel(sc);
+          // packages_affected is an array of strings
+          const pkgs = Array.isArray(u.packages_affected) ? u.packages_affected.join(", ") : (u.packages || "—");
+          // recent_incidents is [{id, title, risk_score}]
+          const incidents = Array.isArray(u.recent_incidents) ? u.recent_incidents : [];
+          const incHtml = incidents.length
+            ? incidents.map(inc => `<div class="vuln-item"><span class="vuln-id">${esc(inc.id)}</span><span class="vuln-pkg">${esc(inc.title)}</span><span class="vuln-sev" style="color:${scoreColor(inc.risk_score)}">Score: ${esc(inc.risk_score)}</span></div>`).join("")
+            : `<div class="vuln-none">No recent incidents on record</div>`;
+          return `<tr class="user-row">
+            <td class="rank">${i+1}</td>
+            <td class="dev-name">${esc(u.developer||u.author||u.name||"Unknown")}</td>
+            <td><span class="score-badge" style="background:${col}22;color:${col};border-color:${col}55">${sc} — ${lbl}</span></td>
+            <td class="num">${esc(u.total_prs ?? u.total_incidents ?? u.incident_count ?? 0)}</td>
+            <td class="num">${esc(u.high_count ?? u.high_risk_prs ?? 0)}</td>
+            <td class="num">${esc(u.secret_leaks ?? u.secrets_found ?? 0)}</td>
+            <td class="num">${esc(u.critical_count ?? u.vuln_count ?? 0)}</td>
+          </tr>
+          <tr class="vuln-row"><td colspan="7"><div class="vuln-detail">
+            <strong style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em">
+              Recent Incidents &nbsp;|&nbsp; Packages: ${esc(pkgs)}
+            </strong>
+            ${incHtml}
+          </div></td></tr>`;
+        }).join("");
+
+      /* ── Incident rows — using correct field names from /api/export-report ── */
+      const incidentRows = (Array.isArray(report?.incidents) ? report.incidents : [])
+        .sort((a, b) => (b.risk_score || 0) - (a.risk_score || 0))
+        .slice(0, 50)
+        .map(inc => {
+          const sc  = inc.risk_score ?? 0;
+          const col = scoreColor(sc);
+          const sev = inc.vulnerability?.severity || scoreLabel(sc);
+          return `<tr>
+            <td class="inc-id">${esc(inc.incident_id||inc.id)}</td>
+            <td>${esc(inc.pr_details?.title||inc.title||"—")}</td>
+            <td>${esc(inc.pr_details?.developer||inc.developer||"—")}</td>
+            <td>${esc(inc.package_details?.package_name||inc.package||"—")}</td>
+            <td><span class="score-badge" style="background:${col}22;color:${col};border-color:${col}55">${sc}</span></td>
+            <td style="color:${col};font-weight:700">${esc(sev).toUpperCase()}</td>
+          </tr>`;
+        }).join("");
+
+      /* ── Stat strip — correct paths into executive_summary ── */
+      const statCritical  = execSum.critical         ?? 0;
+      const statHigh      = execSum.high              ?? 0;
+      const statSecrets   = execSum.secrets_leaked    ?? 0;
+      const statPolicies  = execSum.policy_violations ?? 0;
+      const statDevs      = (Array.isArray(devRisk) ? devRisk : []).length;
+
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Coral Security — Full Vulnerability Report ${new Date().toLocaleDateString()}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#0f172a;background:#fff;padding:28px 36px;font-size:13px}h1{font-size:22px;font-weight:800;margin-bottom:2px}.subtitle{font-size:11px;color:#64748b;margin-bottom:20px}.stat-strip{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}.stat-box{flex:1;min-width:100px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px}.stat-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em}.stat-val{font-size:24px;font-weight:800;margin-top:3px}.section-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#0f172a;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin:24px 0 12px}table{width:100%;border-collapse:collapse;font-size:11.5px}th{background:#f1f5f9;text-align:left;padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;border-bottom:1px solid #e2e8f0}td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top}.user-row td{background:#fff;font-weight:500}.vuln-row td{background:#fafafa;padding:0 10px 10px 10px}.vuln-detail{padding:8px 10px;border-left:3px solid #e2e8f0;margin-left:16px}.vuln-item{display:flex;gap:10px;align-items:center;padding:3px 0;border-bottom:1px dashed #f1f5f9;flex-wrap:wrap}.vuln-item:last-child{border-bottom:none}.vuln-id{font-family:monospace;font-size:10px;font-weight:700;color:#6366f1;min-width:90px}.vuln-pkg{font-size:10px;color:#334155;flex:1}.vuln-sev{font-size:10px;font-weight:700;min-width:60px}.vuln-cvss{font-size:9.5px;color:#94a3b8}.vuln-none{font-size:10px;color:#94a3b8;font-style:italic}.score-badge{display:inline-block;padding:2px 9px;border-radius:30px;font-size:10px;font-weight:700;border:1px solid}.rank{font-weight:800;color:#94a3b8;width:28px}.dev-name{font-weight:700}.num{text-align:center;color:#334155}.inc-id{font-family:monospace;font-size:10px;font-weight:700;color:#6366f1}.footer{font-size:9.5px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px;margin-top:28px;display:flex;justify-content:space-between}@page{size:A4;margin:14mm}@media print{body{padding:0}}</style></head><body>
+<h1>🛡 Coral Security — Vulnerability &amp; Risk Report</h1>
+<div class="subtitle">Generated: ${new Date().toLocaleString()} &nbsp;&middot;&nbsp; Multi-Source Enterprise Threat Intelligence &nbsp;&middot;&nbsp; Coral Security Command Center</div>
+<div class="stat-strip">
+  <div class="stat-box"><div class="stat-lbl">Critical CVEs</div><div class="stat-val" style="color:#e11d48">${statCritical}</div></div>
+  <div class="stat-box"><div class="stat-lbl">High Severity</div><div class="stat-val" style="color:#ea580c">${statHigh}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Secret Leaks</div><div class="stat-val" style="color:#8b5cf6">${statSecrets}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Policy Violations</div><div class="stat-val" style="color:#f59e0b">${statPolicies}</div></div>
+  <div class="stat-box"><div class="stat-lbl">Developers Tracked</div><div class="stat-val" style="color:#0ea5e9">${statDevs}</div></div>
+</div>
+<div class="section-title">👤 Developer Risk Scores &amp; Vulnerabilities</div>
+${userRows ? `<table><thead><tr><th>#</th><th>Developer</th><th>Avg Risk Score</th><th>Total PRs</th><th>High Severity</th><th>Secret Leaks</th><th>Critical</th></tr></thead><tbody>${userRows}</tbody></table>` : '<p style="color:#94a3b8;font-size:11px">No developer risk data available.</p>'}
+${incidentRows ? `<div class="section-title">⚠ All Incidents (top 50 by risk)</div><table><thead><tr><th>ID</th><th>Title</th><th>Developer</th><th>Package</th><th>Risk Score</th><th>Severity</th></tr></thead><tbody>${incidentRows}</tbody></table>` : ''}
+<div class="footer">
+  <span>Coral Security Command Center &middot; Enterprise Threat Intelligence &middot; Coral Hackathon 2026</span>
+  <span>Printed: ${new Date().toLocaleString()}</span>
+</div></body></html>`;
+
       const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.right = "0";
-      iframe.style.bottom = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "0";
+      iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
       document.body.appendChild(iframe);
-      
       iframe.contentWindow.document.open();
       iframe.contentWindow.document.write(html);
       iframe.contentWindow.document.close();
       iframe.contentWindow.focus();
-      
-      setTimeout(() => {
-        iframe.contentWindow.print();
-        setTimeout(() => document.body.removeChild(iframe), 2000);
-      }, 500);
-    } catch {
-      alert("Print failed — is the backend running on port 5000?");
+      setTimeout(() => { iframe.contentWindow.print(); setTimeout(() => document.body.removeChild(iframe), 2500); }, 600);
+    } catch (err) {
+      console.error(err);
+      alert("PDF generation failed — is the backend running?");
     }
     setDownloading(false);
+  };
+
+  /* open the dropdown and record button position for portal placement */
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+    setOpen(o => !o);
   };
 
   return (
     <div style={{ position: "relative" }}>
       <motion.button
+        ref={btnRef}
         id="export-report-btn"
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.97 }}
-        onClick={() => setOpen(o => !o)}
+        onClick={handleOpen}
         disabled={downloading}
         aria-label="Export report"
         aria-expanded={open}
@@ -581,27 +629,51 @@ function ExportReportButton() {
         )}
       </motion.button>
 
-      <AnimatePresence>
-        {open && (
-          <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 98 }} onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -6, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -6, scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-              style={{
-                position: "absolute", top: "calc(100% + 6px)", right: 0,
-                background: "rgba(8,12,28,0.98)", border: "1px solid rgba(14,165,233,0.2)",
-                borderRadius: 10, padding: 6, zIndex: 99, minWidth: 180,
-                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-              }}
-            >
-              <ExportOption icon={FiFileText} label="JSON Report" sub="Full structured data" color="#0ea5e9" onClick={downloadJson} />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/*
+        ★ Portal: renders backdrop + dropdown directly into document.body
+          This breaks out of ANY stacking context (backdrop-filter, transform, etc.)
+          so z-index is always global. Both options are guaranteed clickable.
+      */}
+      {open && createPortal(
+        <>
+          {/* invisible backdrop — click to close */}
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 99990, cursor: "default" }}
+            onClick={() => setOpen(false)}
+          />
+          {/* dropdown panel */}
+          <div
+            style={{
+              position: "fixed",
+              top: dropPos.top,
+              right: dropPos.right,
+              zIndex: 99999,
+              background: "rgba(8,12,28,0.98)",
+              border: "1px solid rgba(139,92,246,0.35)",
+              borderRadius: 10,
+              padding: 6,
+              minWidth: 220,
+              boxShadow: "0 12px 40px rgba(0,0,0,0.85), 0 0 0 1px rgba(139,92,246,0.1)",
+            }}
+          >
+            <ExportOption
+              icon={FiFileText}
+              label="JSON Report"
+              sub="Full structured data"
+              color="#0ea5e9"
+              onClick={downloadJson}
+            />
+            <ExportOption
+              icon={FiPrinter}
+              label="PDF Report"
+              sub="All users · vulnerabilities · risk scores"
+              color="#a855f7"
+              onClick={downloadPdf}
+            />
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
@@ -612,27 +684,30 @@ function ExportOption({ icon: Icon, label, sub, color, onClick }) {
       onClick={onClick}
       style={{
         width: "100%", display: "flex", alignItems: "center", gap: 10,
-        background: "transparent", border: "none", padding: "8px 10px",
+        background: "transparent", border: "none", padding: "10px 12px",
         borderRadius: 7, cursor: "pointer", textAlign: "left",
-        color: "rgba(255,255,255,0.8)", transition: "background 0.15s",
+        color: "rgba(255,255,255,0.88)", transition: "background 0.15s",
       }}
-      onMouseEnter={e => e.currentTarget.style.background = `${color}12`}
+      onMouseEnter={e => e.currentTarget.style.background = `${color}18`}
       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
     >
       <div style={{
-        width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-        background: `${color}15`, border: `1px solid ${color}25`,
+        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+        background: `${color}15`, border: `1px solid ${color}30`,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <Icon size={13} style={{ color }} />
+        <Icon size={14} style={{ color }} />
       </div>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.35)", marginTop: 1 }}>{sub}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 600 }}>{label}</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.38)", marginTop: 2 }}>{sub}</div>
       </div>
     </button>
   );
 }
+
+
+
 
 /* ── Clickable Source Badge ──────────────────────────────────────────── */
 function SourceBadge({ id, className, children, onConfigure }) {
@@ -675,9 +750,370 @@ function SourceBadge({ id, className, children, onConfigure }) {
   );
 }
 
+/* ── How To Use Modal ───────────────────────────────────────────────── */
+function HowToModal({ onClose }) {
+  const steps = [
+    { icon: "🔑", title: "Configure Sources", desc: "Click the GitHub, Slack, or Notion badges to enter your API tokens. OSV is public — no token needed." },
+    { icon: "⚡", title: "Sync Live Data", desc: "Hit 'Sync Live Data' to pull real-time events from all connected sources into Coral's cache." },
+    { icon: "🔍", title: "Search Threats", desc: "Use the NL → SQL search bar to ask questions in plain English — Coral translates them to queries instantly." },
+    { icon: "🛡", title: "Review Incidents", desc: "Browse the Incident Feed, click any card to investigate with AI, and follow the remediation steps." },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "20px", overflowY: "auto",
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.91, y: 24 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.91, y: 24 }}
+        transition={{ duration: 0.24, type: "spring", stiffness: 260, damping: 22 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: "rgba(8,12,28,0.98)",
+          border: "1px solid rgba(16,185,129,0.25)",
+          borderRadius: 20, padding: 36,
+          maxWidth: 720, width: "100%",
+          marginTop: "auto", marginBottom: "auto",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(16,185,129,0.08), 0 0 60px rgba(16,185,129,0.06)",
+          position: "relative",
+        }}
+        role="dialog"
+        aria-label="How to use Coral Security"
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute", top: 16, right: 16,
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 8, cursor: "pointer", color: "rgba(255,255,255,0.5)",
+            padding: "4px 8px", display: "flex", alignItems: "center",
+          }}
+        >
+          <FiX size={16} />
+        </button>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 64, height: 64, borderRadius: 20,
+            background: "linear-gradient(135deg,rgba(16,185,129,0.15),rgba(0,212,255,0.15))",
+            border: "1px solid rgba(16,185,129,0.25)",
+            fontSize: 32, marginBottom: 14,
+          }}>▶</div>
+          <div style={{
+            fontSize: 22, fontWeight: 800,
+            background: "linear-gradient(135deg,#fff 0%,#10b981 50%,#00d4ff 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            backgroundClip: "text", marginBottom: 6,
+          }}>How to Use</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Coral Security Command Center — Demo Walkthrough
+          </div>
+        </div>
+
+        {/* Video Player */}
+        <div style={{
+          position: "relative", borderRadius: 14, overflow: "hidden",
+          border: "1px solid rgba(16,185,129,0.2)",
+          background: "#000", marginBottom: 28,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 20px rgba(16,185,129,0.08)",
+        }}>
+          <video
+            controls
+            style={{ width: "100%", display: "block", maxHeight: 400, background: "#000" }}
+            preload="metadata"
+          >
+            <source src="/Coral_video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+
+        {/* Step guide */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 14, textAlign: "center" }}>
+          QUICK START GUIDE
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+          {steps.map((step, i) => (
+            <div key={i} style={{
+              background: "rgba(16,185,129,0.05)",
+              border: "1px solid rgba(16,185,129,0.15)",
+              borderRadius: 12, padding: "14px 16px",
+              display: "flex", gap: 12, alignItems: "flex-start",
+            }}>
+              <div style={{
+                fontSize: 22, flexShrink: 0, lineHeight: 1,
+                marginTop: 2,
+              }}>{step.icon}</div>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "#10b981", marginBottom: 4 }}>
+                  {i + 1}. {step.title}
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                  {step.desc}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
+          Built for Coral Hackathon 2026 · Track 1: Enterprise Agent
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ── About Modal ─────────────────────────────────────────────────────── */
+const DEVELOPERS = [
+  {
+    name: "S. Sohan Kumar",
+    role: "Frontend & UI/UX",
+    description: "Designed the user interface · Created smooth user journeys · Built responsive frontend screens",
+    github: "https://github.com/Sohan-2025",
+    linkedin: "https://www.linkedin.com/in/s-sohan-kumar-0377b136a/",
+    avatar: "SK",
+    color: "#0ea5e9",
+  },
+  {
+    name: "Shivansh Agarwal",
+    role: "Backend & API",
+    description: "Developed backend services · Handled APIs and database integration · Ensured secure and scalable architecture",
+    github: "https://github.com/SA6196",
+    linkedin: "https://www.linkedin.com/in/shivansh-agarwal-a76756375",
+    avatar: "SA",
+    color: "#a855f7",
+  },
+  {
+    name: "Tanmay Shukla",
+    role: "Coral Integration, DevOps & QA",
+    description: "Integrated Coral features and data sources · Managed deployment and infrastructure · Conducted testing and performance optimization",
+    github: "https://github.com/tanmayshukla60-netizen",
+    linkedin: "https://www.linkedin.com/in/tanmay-shukla-3703052b7?trk=contact-info",
+    avatar: "TS",
+    color: "#f59e0b",
+  },
+  {
+    name: "Ramsrivathsan R",
+    role: "AI / LLM",
+    description: "Designed AI workflows and prompts · Integrated LLMs and AI agents · Built intelligent decision-making capabilities",
+    github: "https://github.com/Ramsri12",
+    linkedin: "https://www.linkedin.com/in/ramsrivathsan-ramasubramanian-954a38375?utm_source=share_via&utm_content=profile&utm_medium=member_android",
+    avatar: "RR",
+    color: "#10b981",
+  },
+];
+
+function AboutModal({ onClose }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "rgba(0,0,0,0.8)", backdropFilter: "blur(10px)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "20px 20px", overflowY: "auto",
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.91, y: 24 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.91, y: 24 }}
+        transition={{ duration: 0.24, type: "spring", stiffness: 260, damping: 22 }}
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: "rgba(8,12,28,0.98)",
+          border: "1px solid rgba(0,212,255,0.2)",
+          borderRadius: 20, padding: 36,
+          maxWidth: 620, width: "100%",
+          marginTop: "auto", marginBottom: "auto",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(0,212,255,0.08), 0 0 60px rgba(0,212,255,0.06)",
+          position: "relative",
+        }}
+        role="dialog"
+        aria-label="About Coral Security"
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute", top: 16, right: 16,
+            background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 8, cursor: "pointer", color: "rgba(255,255,255,0.5)",
+            padding: "4px 8px", display: "flex", alignItems: "center",
+          }}
+        >
+          <FiX size={16} />
+        </button>
+
+        {/* Logo & title */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: 64, height: 64, borderRadius: 20,
+            background: "linear-gradient(135deg,rgba(0,212,255,0.15),rgba(168,85,247,0.15))",
+            border: "1px solid rgba(0,212,255,0.25)",
+            fontSize: 32, marginBottom: 14,
+          }}>🛡</div>
+          <div style={{
+            fontSize: 22, fontWeight: 800,
+            background: "linear-gradient(135deg,#fff 0%,#00d4ff 50%,#a855f7 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            backgroundClip: "text", marginBottom: 6,
+          }}>Coral Security Command Center</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Enterprise Threat Intelligence Platform
+          </div>
+        </div>
+
+        {/* About text */}
+        <div style={{
+          background: "rgba(0,212,255,0.04)",
+          border: "1px solid rgba(0,212,255,0.12)",
+          borderRadius: 14, padding: "20px 22px",
+          marginBottom: 28, lineHeight: 1.75,
+          fontSize: 13.5, color: "rgba(255,255,255,0.78)",
+        }}>
+          <p style={{ marginBottom: 12 }}>
+            Security threats don't announce themselves — they hide in a merged pull request, a Slack
+            message with a leaked key, a CVE quietly matching a dependency you shipped three months ago.
+            Most teams only find out when it's too late, because the signals were always there, just
+            scattered across too many tools for any human to connect in time.
+          </p>
+          <p style={{ marginBottom: 12 }}>
+            <strong style={{ color: "#00d4ff" }}>Coral Security Command Center</strong> was built not
+            just as a concept, but as a direct answer to this real-world crisis. Instead of forcing
+            teams to dig through messy, disconnected logs, our platform instantly connects the dots to
+            show you exactly where your system is vulnerable.
+          </p>
+          <p>
+            <strong style={{ color: "#00d4ff" }}>Coral Security Command Centre</strong> is an
+            enterprise-grade threat monitor that connects your GitHub repos, Slack channels, OSV
+            vulnerability database, and Notion policies into a single intelligent layer. Built on the
+            <strong> Coral agentic platform</strong>, it continuously cross-references signals across
+            all four sources — surfacing vulnerabilities, policy violations, and leaked secrets in real
+            time, with clear context on what went wrong and exactly what to do next.
+          </p>
+        </div>
+
+        {/* Feature pills */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28, justifyContent: "center" }}>
+          {["4-Source SQL JOIN","AI Copilot","Secret Detection","Policy Enforcement",
+            "NL → SQL Search","Developer Risk Scoring","MCP Integration","Live Caching"].map(f => (
+            <span key={f} style={{
+              padding: "4px 12px", borderRadius: 30,
+              background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)",
+              fontSize: 11, fontWeight: 600, color: "#a855f7",
+            }}>{f}</span>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)", marginBottom: 24 }} />
+
+        {/* Developers */}
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 16, textAlign: "center" }}>
+          DEVELOPERS
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {DEVELOPERS.map(dev => (
+            <div key={dev.name} style={{
+              background: `${dev.color}08`,
+              border: `1px solid ${dev.color}22`,
+              borderRadius: 14, padding: "16px 18px",
+              display: "flex", flexDirection: "column", gap: 10,
+            }}>
+              {/* Avatar + name + role */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                  background: `linear-gradient(135deg,${dev.color}30,${dev.color}10)`,
+                  border: `1px solid ${dev.color}35`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 14, fontWeight: 800, color: dev.color,
+                }}>{dev.avatar}</div>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>{dev.name}</div>
+                  <div style={{ fontSize: 10.5, color: dev.color, fontWeight: 600, marginTop: 1 }}>{dev.role}</div>
+                </div>
+              </div>
+              {/* Description */}
+              {dev.description && (
+                <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.55 }}>
+                  {dev.description.split(" · ").map((line, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 5 }}>
+                      <span style={{ color: dev.color, marginTop: 1 }}>›</span>
+                      <span>{line}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Links */}
+              <div style={{ display: "flex", gap: 8 }}>
+                <a
+                  href={dev.github} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    padding: "6px 0", borderRadius: 8,
+                    background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                    fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)",
+                    textDecoration: "none", transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                  onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                >
+                  <FaGithub size={12} /> GitHub
+                </a>
+                <a
+                  href={dev.linkedin} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    padding: "6px 0", borderRadius: 8,
+                    background: `${dev.color}12`, border: `1px solid ${dev.color}30`,
+                    fontSize: 11, fontWeight: 600, color: dev.color,
+                    textDecoration: "none", transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = `${dev.color}22`}
+                  onMouseLeave={e => e.currentTarget.style.background = `${dev.color}12`}
+                >
+                  <FiExternalLink size={11} /> LinkedIn
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer note */}
+        <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
+          Built for Coral Hackathon 2026 · Track 1: Enterprise Agent
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 /* ── Main Header ──────────────────────────────────────────────────────── */
 function Header({ onRefreshed, onLogout }) {
   const [modalSource, setModalSource] = useState(null);
+  const [showAbout,   setShowAbout]   = useState(false);
+  const [showHowTo,   setShowHowTo]   = useState(false);
 
   // On mount: re-hydrate backend with any tokens saved in localStorage
   useEffect(() => {
@@ -783,6 +1219,30 @@ function Header({ onRefreshed, onLogout }) {
             <SourceBadge id="notion" className="badge-notion" onConfigure={setModalSource}>
               <span>📄</span> Notion Policies
             </SourceBadge>
+            <motion.button
+              className="source-badge badge-about"
+              onClick={() => setShowAbout(true)}
+              whileHover={{ scale: 1.06, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              title="About this project"
+              aria-label="About Coral Security Command Center"
+              id="badge-about"
+              style={{ cursor: "pointer", border: "none", outline: "none", position: "relative" }}
+            >
+              <span>ℹ</span> About
+            </motion.button>
+            <motion.button
+              className="source-badge badge-howto"
+              onClick={() => setShowHowTo(true)}
+              whileHover={{ scale: 1.06, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              title="How to use Coral Security"
+              aria-label="How to use Coral Security Command Center"
+              id="badge-howto"
+              style={{ cursor: "pointer", border: "none", outline: "none", position: "relative" }}
+            >
+              <span>▶</span> How to Use
+            </motion.button>
             <div className="source-badge badge-coral">
               <span>◈</span> Powered by Coral
             </div>
@@ -804,6 +1264,16 @@ function Header({ onRefreshed, onLogout }) {
             onSaved={() => { if (onRefreshed) onRefreshed(); }}
           />
         )}
+      </AnimatePresence>
+
+      {/* About modal */}
+      <AnimatePresence>
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      </AnimatePresence>
+
+      {/* How to Use modal */}
+      <AnimatePresence>
+        {showHowTo && <HowToModal onClose={() => setShowHowTo(false)} />}
       </AnimatePresence>
     </>
   );

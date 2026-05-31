@@ -1,0 +1,65 @@
+[
+  {
+    "policy_id": "370d153e-db29-80d9-b954-d58a1c4ba23c",
+    "applies_to": "lodash",
+    "policy_name": "Enterprise Security Policy",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Dynamic script execution (e.g., eval, exec) is strictly prohibited in the production codebase. All abstract syntax tree modifications must undergo a Level 3 Security Audit before merge."
+  },
+  {
+    "policy_id": "370d153e-db29-8056-a122-c8f23a43963f",
+    "applies_to": "malicious-code",
+    "policy_name": "Enterprise Security Policy",
+    "policy_rule": "No eval() allowed",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Dynamic script execution is strictly prohibited in the production codebase"
+  },
+  {
+    "policy_id": "bab10109-42a1-4462-89f5-942edab2d3f4",
+    "applies_to": "vm2",
+    "policy_name": "Banned Sandbox Package",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "critical",
+    "owner_team": "security-engineering",
+    "description": "Complete sandbox escape leading to Remote Code Execution."
+  },
+  {
+    "policy_id": "370d153e-db29-80c3-8976-d96fee3d94c5",
+    "applies_to": "credentials",
+    "policy_name": "Secret Management",
+    "policy_rule": "SECRETS_RISK",
+    "severity": "critical",
+    "owner_team": "CloudSec",
+    "description": "AWS Keys and sensitive secrets must be dynamically loaded via AWS KMS or HashiCorp Vault. Hardcoding secrets in git history violates SOC-2 compliance. Immediate rotation required"
+  },
+  {
+    "policy_id": "POL-001",
+    "applies_to": "express",
+    "policy_name": "Strict Validation",
+    "policy_rule": "No eval() allowed",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Any use of dynamic execution must be blocked."
+  },
+  {
+    "policy_id": "POL-002",
+    "applies_to": "github-repo",
+    "policy_name": "Branch Protection",
+    "policy_rule": "2 reviewers required",
+    "severity": "high",
+    "owner_team": "DevOps",
+    "description": "Direct pushes to main are heavily restricted."
+  },
+  {
+    "policy_id": "POL-003",
+    "applies_to": "credentials",
+    "policy_name": "Secret Management",
+    "policy_rule": "No hardcoded AWS keys",
+    "severity": "critical",
+    "owner_team": "CloudSec",
+    "description": "AWS Keys must be loaded via KMS, never committed."
+  }
+]

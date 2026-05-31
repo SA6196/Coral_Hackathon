@@ -1,0 +1,74 @@
+[
+  {
+    "user": "Coral Bot",
+    "channel": "#security-alerts",
+    "message": "<@U0B6QGWM8VD> has joined the channel",
+    "timestamp": "2026-05-30T10:34:48.840Z"
+  },
+  {
+    "user": "Coral Bot",
+    "channel": "#security-alerts",
+    "message": "<@U0B6QGWM8VD> has joined the channel",
+    "timestamp": "2026-05-30T10:34:48.840Z"
+  },
+  {
+    "user": "alice_dev",
+    "channel": "#auth-alerts",
+    "message": "I've checked in temporary DB password supersecret123 to PG client setup so we can finish integration testing today. Remember to rotate it before deploy!",
+    "timestamp": "2026-05-25T10:12:00.000Z"
+  },
+  {
+    "user": "bob_engineer",
+    "channel": "#dependency-updates",
+    "message": "Just updated lodash to version 4.17.20. Let's make sure the vulnerability dashboard is clean.",
+    "timestamp": "2026-05-25T14:25:00.000Z"
+  },
+  {
+    "user": "Shivay",
+    "channel": "#engineering",
+    "message": "Integrated payment gateway stripe package successfully. Sandbox testing is fully passing.",
+    "timestamp": "2026-05-25T09:58:00.000Z"
+  },
+  {
+    "user": "Rahul",
+    "channel": "#auth-alerts",
+    "message": "OAuth login and JWT token generation using jsonwebtoken is done. Ready for review.",
+    "timestamp": "2026-05-25T10:58:00.000Z"
+  },
+  {
+    "user": "Alex",
+    "channel": "#security-alerts",
+    "message": "I committed the AWS credentials for S3 bucket access temporarily to unblock the CI build.",
+    "timestamp": "2026-05-26T08:55:00.000Z"
+  },
+  {
+    "user": "John",
+    "channel": "#engineering",
+    "message": "Added helmet protection headers to secure our API against common XSS and clickjacking vectors.",
+    "timestamp": "2026-05-27T09:55:00.000Z"
+  },
+  {
+    "user": "sara_sec",
+    "channel": "#security-alerts",
+    "message": "Configured rate limiting middleware to prevent brute force login attempts on our auth endpoints.",
+    "timestamp": "2026-05-26T13:55:00.000Z"
+  },
+  {
+    "user": "priya_devops",
+    "channel": "#devops",
+    "message": "Docker configuration complete. Checked in the Dockerfile and dockerode configs.",
+    "timestamp": "2026-05-27T08:55:00.000Z"
+  },
+  {
+    "user": "admin_sarah",
+    "channel": "#security-alerts",
+    "message": "Can someone investigate the recent commit on lodash? Seems anomalous.",
+    "timestamp": "2026-05-30T10:48:28.470Z"
+  },
+  {
+    "user": "dev_priya",
+    "channel": "#engineering",
+    "message": "Is anyone else seeing CI build failures related to helmet?",
+    "timestamp": "2026-05-30T10:46:29.952Z"
+  }
+]
