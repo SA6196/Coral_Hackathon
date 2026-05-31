@@ -256,7 +256,7 @@ function App() {
 
       {/* ── Floating AI Copilot ────────────────────────────────────── */}
       <ErrorBoundary>
-        <AICopilot activeIncidentId={1} />
+        <AICopilot activeIncidentId={1} maxIncidents={incidents.length} />
       </ErrorBoundary>
     </div>
   );

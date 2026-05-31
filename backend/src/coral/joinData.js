@@ -104,7 +104,7 @@ const joinSecurityData = async (sessionId = "default") => {
   }
 
   // Use real Coral!
-  const rows = await getCriticalIncidents();
+  const rows = await getCriticalIncidents(sessionId);
 
   const joined = rows.map((row, idx) => {
     return {
@@ -168,4 +168,13 @@ const getCacheInfo = (sessionId = "default") => {
   };
 };
 
-module.exports = { joinSecurityData, invalidateCache, getCacheInfo, setSessionData, getRuntimeTokens, setRuntimeTokens };
+function findSessionsByRepo(repo) {
+  if (!repo) return ["default"];
+  const matched = Object.keys(tokenStore).filter(sid => {
+    const t = tokenStore[sid];
+    return t && t.github_repo && t.github_repo.toLowerCase() === repo.toLowerCase();
+  });
+  return matched.length > 0 ? matched : ["default"];
+}
+
+module.exports = { joinSecurityData, invalidateCache, getCacheInfo, setSessionData, getRuntimeTokens, setRuntimeTokens, findSessionsByRepo };

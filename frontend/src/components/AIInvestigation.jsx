@@ -15,7 +15,7 @@ import { investigateIncident, getRemediation } from "../services/api";
 /* ─── Premium Gemini-style Markdown Renderer ─────────────────────────────── */
 function GeminiMarkdown({ text }) {
   if (!text) return null;
-  const lines = text.split("\n");
+  const lines = String(text || "").split("\n");
   
   let inCodeBlock = false;
   let codeLines = [];

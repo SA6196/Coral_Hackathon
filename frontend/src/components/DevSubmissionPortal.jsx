@@ -70,13 +70,14 @@ function EventCard({ event, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.4), duration: 0.3 }}
       style={{
-        background: cfg.bg,
-        border: `1px solid ${cfg.border}`,
-        borderRadius: 12,
+        background: `linear-gradient(145deg, ${cfg.bg}, rgba(0,0,0,0.4))`,
+        backdropFilter: "blur(12px)",
+        border: `1px solid ${cfg.color}30`,
+        borderRadius: 14,
         overflow: "hidden",
-        marginBottom: 10,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        transition: "border-color 0.2s, background-color 0.2s",
+        marginBottom: 14,
+        boxShadow: `0 6px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)`,
+        transition: "all 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       className="webhook-event-card"
     >
@@ -588,26 +589,53 @@ export default function DevSubmissionPortal() {
                     </div>
 
                     {/* Step list */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
                       {config?.instructions?.map((inst, idx) => (
                         <div key={idx} style={{
                           display: "flex", gap: 10, padding: "8px 12px",
-                          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)",
-                          borderRadius: 6, fontSize: 10.5, color: "rgba(255,255,255,0.7)"
+                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+                          borderRadius: 8, fontSize: 10.5, color: "rgba(255,255,255,0.8)"
                         }}>
                           <span style={{ color: "#f43f5e", fontWeight: 700 }}>0{idx + 1}</span>
                           <span>{inst}</span>
                         </div>
                       ))}
                     </div>
+
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                      <FiActivity style={{ color: "#e01e5a" }} /> Slack Threat Alerting (Powered by Coral SQL)
+                    </h3>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, marginBottom: 16 }}>
+                      Connect Coral to your workspace to stream critical alerts to <code style={{color: "#e01e5a"}}>#security-alerts</code>.
+                      <br/><br/>
+                      <strong>Coral Engine Query:</strong>
+                      <div style={{ background: "rgba(0,0,0,0.5)", padding: "8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", marginTop: "6px", fontFamily: "var(--font-mono)", color: "#10b981" }}>
+                        SELECT user, message, timestamp FROM slack.messages<br/>
+                        WHERE channel = '#security-alerts' ORDER BY timestamp DESC;
+                      </div>
+                    </div>
+
+                    <h3 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 12, display: "flex", alignItems: "center", gap: 6, marginTop: 24 }}>
+                      <FiBookOpen style={{ color: "#e2e8f0" }} /> Notion Policy Engine (Powered by Coral SQL)
+                    </h3>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, marginBottom: 16 }}>
+                      Coral natively syncs with your corporate Notion databases to validate pull requests against your internal SOC2 policies without writing API wrappers!
+                      <br/><br/>
+                      <strong>Coral Engine Query:</strong>
+                      <div style={{ background: "rgba(0,0,0,0.5)", padding: "8px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.1)", marginTop: "6px", fontFamily: "var(--font-mono)", color: "#10b981" }}>
+                        SELECT policy_name, rule, severity FROM notion.pages<br/>
+                        WHERE database_id = 'your-soc2-db-id';
+                      </div>
+                    </div>
                   </div>
 
                   {/* Flow graphic */}
                   <div style={{
-                    background: "rgba(0,0,0,0.15)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                    borderRadius: 10,
-                    padding: 16,
+                    background: "linear-gradient(145deg, rgba(0,0,0,0.4), rgba(0,0,0,0.2))",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                    borderRadius: 12,
+                    padding: 20,
                   }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 12, display: "flex", alignItems: "center", gap: 5 }}>
                       <FiCpu size={12} /> SECURE INGESTION FLOW PIPELINE

@@ -469,11 +469,6 @@ function ExportReportButton() {
     try {
       const res = await getExportReport();
       const report = res.data?.report;
-      const printWindow = window.open("", "_blank", "width=900,height=700");
-      if (!printWindow) {
-        alert("Please allow pop-ups for this site, then try Print / PDF again.");
-        return;
-      }
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -531,10 +526,24 @@ function ExportReportButton() {
   </div>
 </body>
 </html>`;
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => { printWindow.print(); printWindow.close(); }, 600);
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+      
+      iframe.contentWindow.document.open();
+      iframe.contentWindow.document.write(html);
+      iframe.contentWindow.document.close();
+      iframe.contentWindow.focus();
+      
+      setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 2000);
+      }, 500);
     } catch {
       alert("Print failed — is the backend running on port 5000?");
     }
@@ -589,7 +598,6 @@ function ExportReportButton() {
               }}
             >
               <ExportOption icon={FiFileText} label="JSON Report" sub="Full structured data" color="#0ea5e9" onClick={downloadJson} />
-              <ExportOption icon={FiPrinter}  label="Print / PDF"  sub="Browser print dialog" color="#8b5cf6" onClick={printPdf} />
             </motion.div>
           </>
         )}

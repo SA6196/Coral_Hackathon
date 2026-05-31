@@ -9,7 +9,7 @@ import { chatWithCopilot } from "../services/api";
 /* ─── tiny markdown-to-JSX renderer ──────────────────────────────────────── */
 function MiniMarkdown({ text }) {
   if (!text) return null;
-  const lines = text.split("\n");
+  const lines = String(text || "").split("\n");
   return (
     <div className="copilot-md">
       {lines.map((line, i) => {
@@ -95,7 +95,7 @@ const SUGGESTION_GROUPS = [
 ];
 
 /* ─── Main Component ──────────────────────────────────────────────────────── */
-export default function AICopilot({ activeIncidentId = 1 }) {
+export default function AICopilot({ activeIncidentId = 1, maxIncidents = 25 }) {
   const [open, setOpen]       = useState(false);
   const [activeGroup, setActiveGroup] = useState(0);
   const [messages, setMessages] = useState([
@@ -130,7 +130,7 @@ export default function AICopilot({ activeIncidentId = 1 }) {
 
     try {
       const res = await chatWithCopilot(msg, logId);
-      const reply = res.data?.reply || "No response from AI.";
+      const reply = res.data?.success === false ? `Error: ${res.data.error}` : (res.data?.reply || "No response from AI.");
       const mode  = res.data?.mode || "mocked";
       setMessages((prev) => [
         ...prev,
@@ -196,11 +196,12 @@ export default function AICopilot({ activeIncidentId = 1 }) {
               <div className="copilot-incident-select">
                 <select
                   value={logId}
-                  onChange={(e) => setLogId(Number(e.target.value))}
+                  onChange={(e) => setLogId(e.target.value === "GLOBAL" ? "GLOBAL" : Number(e.target.value))}
                   className="copilot-select"
                   aria-label="Select active incident"
                 >
-                  {Array.from({ length: 15 }, (_, i) => i + 1).map(n => (
+                  <option value="GLOBAL">🌎 GLOBAL (All Incidents)</option>
+                  {Array.from({ length: Math.max(1, maxIncidents) }, (_, i) => i + 1).map(n => (
                     <option key={n} value={n}>CORAL-{n}</option>
                   ))}
                 </select>

@@ -2,30 +2,31 @@ const { spawn } = require("child_process");
 const path = require("path");
 const os = require("os");
 const fs = require("fs");
+const { getSessionDir, getSessionMockDir } = require("../utils/sessionHelper");
 
 const exeName = os.platform() === 'win32' ? 'coral.exe' : 'coral';
 const CORAL_BIN = path.resolve(__dirname, `../../../coral_bin/${exeName}`);
 const CORAL_SOURCE_FILE = path.join(__dirname, "../../coral-source.yaml");
-const MOCK_DATA_DIR = path.join(__dirname, "../../mock-data");
 
 // ── Node.js fallback JOIN (runs when Coral binary is unavailable) ────
 // Performs the exact same LEFT JOIN logic as the Coral SQL query,
 // but directly in Node.js against the mock JSON files.
 // This ensures the dashboard always displays real incident data with
 // correct severities — prevents the "100% score / blank feed" bug.
-function getFallbackData() {
+function getFallbackData(sessionId = "default") {
   try {
-    const github = JSON.parse(fs.readFileSync(path.join(MOCK_DATA_DIR, "github.json"), "utf-8"));
-    const osv    = JSON.parse(fs.readFileSync(path.join(MOCK_DATA_DIR, "osv.json"),    "utf-8"));
-    const slack  = JSON.parse(fs.readFileSync(path.join(MOCK_DATA_DIR, "slack.json"),  "utf-8"));
-    const notion = JSON.parse(fs.readFileSync(path.join(MOCK_DATA_DIR, "notion.json"), "utf-8"));
+    const mockDir = getSessionMockDir(sessionId);
+    const github = JSON.parse(fs.readFileSync(path.join(mockDir, "github.json"), "utf-8"));
+    const osv    = JSON.parse(fs.readFileSync(path.join(mockDir, "osv.json"),    "utf-8"));
+    const slack  = JSON.parse(fs.readFileSync(path.join(mockDir, "slack.json"),  "utf-8"));
+    const notion = JSON.parse(fs.readFileSync(path.join(mockDir, "notion.json"), "utf-8"));
 
     // Build lookup maps (same as Coral's JOIN keys)
     const osvByPackage    = {};
     const slackByUser     = {};
     const notionByPackage = {};
 
-    for (const v of osv)    osvByPackage[v.package_name]  = v;
+    for (const v of osv)    osvByPackage[v.package || v.package_name]  = v;
     for (const s of slack)  slackByUser[s.user]            = s;
     for (const n of notion) notionByPackage[n.applies_to]  = n;
 
@@ -64,8 +65,43 @@ function getFallbackData() {
   }
 }
 
-const getCriticalIncidents = async () => {
+const getCriticalIncidents = async (sessionId = "default") => {
   return new Promise((resolve) => {
+    // ── Global manifest redirection to target session data ──
+    const manifestPath = path.resolve(
+      os.homedir(),
+      "AppData/Roaming/withcoral/coral/config/workspaces/default/sources/coral_hackathon/manifest.yaml"
+    );
+    let originalManifestContent = null;
+    let manifestUpdated = false;
+
+    try {
+      if (fs.existsSync(manifestPath)) {
+        originalManifestContent = fs.readFileSync(manifestPath, "utf8");
+        const sessionMockDir = getSessionMockDir(sessionId);
+        const sessionMockPath = path.resolve(sessionMockDir).replace(/\\/g, "/");
+        const fileUri = "file:///" + sessionMockPath.replace(/ /g, "%20") + "/";
+        const modifiedContent = originalManifestContent.replace(
+          /location:\s*[^\r\n]+/g,
+          "location: " + fileUri
+        );
+        fs.writeFileSync(manifestPath, modifiedContent, "utf8");
+        manifestUpdated = true;
+      }
+    } catch (e) {
+      console.warn("[CORAL] Failed to redirect manifest.yaml:", e.message);
+    }
+
+    const restoreManifest = () => {
+      if (manifestUpdated && originalManifestContent !== null) {
+        try {
+          fs.writeFileSync(manifestPath, originalManifestContent, "utf8");
+        } catch (e) {
+          console.warn("[CORAL] Failed to restore manifest.yaml:", e.message);
+        }
+      }
+    };
+
     // Hackathon Winning Query: Cross-Source JOIN across 4 JSON files natively via Coral!
     const query = `
       SELECT 
@@ -74,15 +110,28 @@ const getCriticalIncidents = async () => {
         s.channel, s.message, s.timestamp,
         n.policy_name, n.policy_rule, n.owner_team, n.description
       FROM coral_hackathon.github g
-      LEFT JOIN coral_hackathon.osv o ON g.package_name = o.package AND (o.severity != 'safe' OR o.severity IS NULL)
-      LEFT JOIN coral_hackathon.slack s ON g.author = s.user
-      LEFT JOIN coral_hackathon.notion n ON g.package_name = n.applies_to AND n.policy_name LIKE '%policy%'
+      LEFT JOIN (
+        SELECT package, MAX(cve) AS cve, MAX(severity) AS severity, MAX(cvss) AS cvss
+        FROM coral_hackathon.osv
+        GROUP BY package
+      ) o ON g.package_name = o.package
+      LEFT JOIN (
+        SELECT s1.user, s1.channel, s1.message, s1.timestamp
+        FROM coral_hackathon.slack s1
+        INNER JOIN (
+          SELECT user, MAX(timestamp) as max_ts
+          FROM coral_hackathon.slack
+          GROUP BY user
+        ) s2 ON s1.user = s2.user AND s1.timestamp = s2.max_ts
+      ) s ON g.author = s.user
+      LEFT JOIN coral_hackathon.notion n ON g.package_name = n.applies_to
       ORDER BY g.pr_id DESC
     `;
 
     // Ensure we run the process cleanly, specifying the cwd so it finds coral-source.yaml
+    const sessionDir = getSessionDir(sessionId);
     const child = spawn(CORAL_BIN, ["sql", "--format", "json", query], {
-      cwd: path.dirname(CORAL_SOURCE_FILE),
+      cwd: sessionDir,
       env: process.env
     });
 
@@ -98,26 +147,28 @@ const getCriticalIncidents = async () => {
     });
 
     child.on("close", (code) => {
+      restoreManifest();
       if (code !== 0) {
         console.warn("[CORAL] Binary execution failed — using Node.js fallback JOIN:", stderr.trim() || `exit code ${code}`);
-        return resolve(getFallbackData());
+        return resolve(getFallbackData(sessionId));
       }
       try {
         const data = JSON.parse(stdout);
         if (!Array.isArray(data) || data.length === 0) {
           console.warn("[CORAL] Binary returned empty result — using Node.js fallback JOIN.");
-          return resolve(getFallbackData());
+          return resolve(getFallbackData(sessionId));
         }
         resolve(data);
       } catch (e) {
         console.error("[CORAL] Parse error — using Node.js fallback JOIN:", e.message);
-        resolve(getFallbackData());
+        resolve(getFallbackData(sessionId));
       }
     });
 
     child.on("error", (err) => {
+      restoreManifest();
       console.error("[CORAL] Spawn error — using Node.js fallback JOIN:", err.message);
-      resolve(getFallbackData());
+      resolve(getFallbackData(sessionId));
     });
   });
 };

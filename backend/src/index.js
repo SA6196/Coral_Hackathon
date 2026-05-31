@@ -66,7 +66,9 @@ const chatLimiter = rateLimit({
   message: { success: false, error: "Chat rate limit exceeded — please wait." },
 });
 
-app.use(limiter);
+if (process.env.NODE_ENV !== "development") {
+  app.use(limiter);
+}
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 

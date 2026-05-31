@@ -29,7 +29,7 @@ const {
 router.get("/coral-query", async (req, res) => {
 
   try {
-    const sessionId = req.headers["x-session-id"] || "default";
+    const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
     const result = await runCoralQuery(sessionId);
 
     res.json(result);
@@ -56,8 +56,8 @@ router.get("/coral-query", async (req, res) => {
 router.get("/coral-critical", async (req, res) => {
 
   try {
-
-    const data = await getCriticalIncidents();
+    const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
+    const data = await getCriticalIncidents(sessionId);
 
     res.json({
       success: true,

@@ -1,92 +1,74 @@
 [
   {
-    "message_ts": "2026-05-25T10:20:00Z",
-    "user": "alice_dev",
+    "user": "Coral Bot",
     "channel": "#security-alerts",
-    "message": "Hey team, I committed the postgres credentials to the dev branch so CI/CD works. Please don't merge to main yet!"
+    "message": "<@U0B6QGWM8VD> has joined the channel",
+    "timestamp": "2026-05-30T10:34:48.840Z"
   },
   {
-    "message_ts": "2026-05-25T14:35:00Z",
+    "user": "Coral Bot",
+    "channel": "#security-alerts",
+    "message": "<@U0B6QGWM8VD> has joined the channel",
+    "timestamp": "2026-05-30T10:34:48.840Z"
+  },
+  {
+    "user": "alice_dev",
+    "channel": "#auth-alerts",
+    "message": "I've checked in temporary DB password supersecret123 to PG client setup so we can finish integration testing today. Remember to rotate it before deploy!",
+    "timestamp": "2026-05-25T10:12:00.000Z"
+  },
+  {
     "user": "bob_engineer",
-    "channel": "#backend",
-    "message": "Just upgraded lodash dependencies. Can someone review the build logs? The prototype pollution CVE should be fixed now."
+    "channel": "#dependency-updates",
+    "message": "Just updated lodash to version 4.17.20. Let's make sure the vulnerability dashboard is clean.",
+    "timestamp": "2026-05-25T14:25:00.000Z"
   },
   {
-    "message_ts": "2026-05-25T19:10:00Z",
-    "user": "contractor_x",
-    "channel": "#dev-ops",
-    "message": "I added a testing hook to execute shell scripts on dev nodes. It speeds up local execution."
-  },
-  {
-    "message_ts": "2026-05-25T10:05:00Z",
     "user": "Shivay",
-    "channel": "#payments",
-    "message": "Payment service acting suspiciously after stripe integration. Seeing random 500 errors."
+    "channel": "#engineering",
+    "message": "Integrated payment gateway stripe package successfully. Sandbox testing is fully passing.",
+    "timestamp": "2026-05-25T09:58:00.000Z"
   },
   {
-    "message_ts": "2026-05-25T11:10:00Z",
     "user": "Rahul",
-    "channel": "#backend",
-    "message": "JWT authentication behaving unexpectedly after dashboard update. Users getting logged out randomly."
+    "channel": "#auth-alerts",
+    "message": "OAuth login and JWT token generation using jsonwebtoken is done. Ready for review.",
+    "timestamp": "2026-05-25T10:58:00.000Z"
   },
   {
-    "message_ts": "2026-05-26T09:05:00Z",
     "user": "Alex",
-    "channel": "#security",
-    "message": "Possible AWS key exposure detected in latest commit. The AKIA key format matches real credentials. Rotating now."
-  },
-  {
-    "message_ts": "2026-05-26T10:10:00Z",
-    "user": "Mike",
-    "channel": "#docs",
-    "message": "Documentation update only - no security concerns."
-  },
-  {
-    "message_ts": "2026-05-26T11:05:00Z",
-    "user": "John",
-    "channel": "#auth",
-    "message": "bcrypt is working fine. Authentication middleware update looks clean."
-  },
-  {
-    "message_ts": "2026-05-26T12:05:00Z",
-    "user": "Rahul",
-    "channel": "#auth",
-    "message": "JWT authentication failing intermittently after OAuth integration. Tokens expiring too fast."
-  },
-  {
-    "message_ts": "2026-05-26T13:05:00Z",
-    "user": "alice_dev",
     "channel": "#security-alerts",
-    "message": "Found raw SQL query in user endpoint - could be injectable. Patching now with parameterized queries."
+    "message": "I committed the AWS credentials for S3 bucket access temporarily to unblock the CI build.",
+    "timestamp": "2026-05-26T08:55:00.000Z"
   },
   {
-    "message_ts": "2026-05-26T14:05:00Z",
-    "user": "sara_sec",
-    "channel": "#security",
-    "message": "Rate limiting middleware is live. We were getting hammered with 10k req/min from bots."
-  },
-  {
-    "message_ts": "2026-05-26T15:05:00Z",
-    "user": "contractor_x",
-    "channel": "#dev-ops",
-    "message": "eval() is needed for dynamic config. I know it looks bad but it's sandboxed... probably."
-  },
-  {
-    "message_ts": "2026-05-26T16:05:00Z",
-    "user": "bob_engineer",
-    "channel": "#backend",
-    "message": "Axios upgrade done. The prototype pollution issue in older versions was nasty."
-  },
-  {
-    "message_ts": "2026-05-27T09:05:00Z",
-    "user": "priya_devops",
-    "channel": "#infra",
-    "message": "Docker deployment config added. Containers are isolated but we should review the dockerode permissions."
-  },
-  {
-    "message_ts": "2026-05-27T10:05:00Z",
     "user": "John",
-    "channel": "#security",
-    "message": "Helmet.js headers added. XSS protection, HSTS, and CSP are all enabled now."
+    "channel": "#engineering",
+    "message": "Added helmet protection headers to secure our API against common XSS and clickjacking vectors.",
+    "timestamp": "2026-05-27T09:55:00.000Z"
+  },
+  {
+    "user": "sara_sec",
+    "channel": "#security-alerts",
+    "message": "Configured rate limiting middleware to prevent brute force login attempts on our auth endpoints.",
+    "timestamp": "2026-05-26T13:55:00.000Z"
+  },
+  {
+    "user": "priya_devops",
+    "channel": "#devops",
+    "message": "Docker configuration complete. Checked in the Dockerfile and dockerode configs.",
+    "timestamp": "2026-05-27T08:55:00.000Z"
+  },
+  {
+    "user": "admin_sarah",
+    "channel": "#security-alerts",
+    "message": "Can someone investigate the recent commit on lodash? Seems anomalous.",
+    "timestamp": "2026-05-30T10:48:28.470Z"
+  },
+  {
+    "user": "dev_priya",
+    "channel": "#engineering",
+    "message": "Is anyone else seeing CI build failures related to helmet?",
+    "timestamp": "2026-05-30T10:46:29.952Z"
   }
 ]

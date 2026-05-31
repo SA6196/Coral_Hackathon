@@ -300,7 +300,7 @@ function IncidentCard({ item, index }) {
 
 function IncidentFeed({ incidents }) {
   const criticalCount = incidents.filter(
-    (i) => (i.vulnerability?.severity || "").toLowerCase() === "critical"
+    (i) => i.risk_score >= 90 || (i.vulnerability?.severity || "").toLowerCase() === "critical"
   ).length;
 
   return (

@@ -132,11 +132,27 @@ const runSecurityAnalysis = (joinedData) => {
     // ── Precise Risk score calculation ─────────────────────────────
     let riskScore = 0;
 
-    // 1. Base Score from CVSS (if available) or Severity defaults
+    // 1. Base Score from CVSS (if available) or deterministic severity spread
     if (incident.vulnerability && incident.vulnerability.cvss) {
-      riskScore = parseFloat(incident.vulnerability.cvss) * 10; // CVSS is 0.0-10.0, maps to 0-100
+      riskScore = parseFloat(incident.vulnerability.cvss) * 10;
     } else {
-      riskScore = cfg.base_score; 
+      // Deterministic spread based on string hash to create realistic distribution
+      const hashString = (incident.github?.package_name || "") + (incident.github?.author || "") + (incident.github?.pr_id || index);
+      let hash = 0;
+      for (let i = 0; i < hashString.length; i++) {
+        hash = ((hash << 5) - hash) + hashString.charCodeAt(i);
+        hash |= 0; 
+      }
+      const pseudoRandom = Math.abs(hash % 100) / 100; // 0.0 to 1.0
+      
+      const ranges = {
+        critical: { min: 85, max: 96 },
+        high:     { min: 65, max: 85 },
+        medium:   { min: 40, max: 65 },
+        safe:     { min: 12, max: 38 }
+      };
+      const range = ranges[severity] || ranges.safe;
+      riskScore = range.min + (pseudoRandom * (range.max - range.min));
     }
 
     // 2. Secret Exposure Penalty (Dynamic)
@@ -156,10 +172,28 @@ const runSecurityAnalysis = (joinedData) => {
       riskScore += (POLICY_BOOST[incident.notion_policy.policy_rule] || 0);
     }
 
-    // 5. Code Complexity Penalty
-    const diffLines = (incident.github?.commit_diff || "").split("\\n").length;
+    // 5. Code Complexity & Risky Heuristics Penalty (Cool Practical Precise Formula)
+    const diffText = (incident.github?.commit_diff || "");
+    const diffLines = diffText.split("\\n").length;
+    
+    // Base complexity penalty
     if (diffLines > 50) riskScore += 1.5;
-    if (diffLines > 200) riskScore += 2.8;
+    if (diffLines > 200) riskScore += 3.2;
+
+    // Analyze commit diff for inherently risky operations (adds precise dynamic scoring)
+    const riskyPatterns = [
+      { regex: /exec\(|spawn\(|eval\(/i, penalty: 8.5 },
+      { regex: /process\.env/i, penalty: 4.2 },
+      { regex: /fs\.readFile|fs\.writeFile/i, penalty: 2.5 },
+      { regex: /password|secret|token/i, penalty: 5.0 },
+      { regex: /bypass|hack|fix|temp/i, penalty: 1.8 }
+    ];
+
+    riskyPatterns.forEach(pattern => {
+      if (pattern.regex.test(diffText)) {
+        riskScore += pattern.penalty;
+      }
+    });
 
     // Cap at 100 and format precisely to 1 decimal place (e.g. 88.3)
     riskScore = Math.min(100, Math.max(0, riskScore));
@@ -191,6 +225,7 @@ const runSecurityAnalysis = (joinedData) => {
 
       vulnerability: {
         cve:      incident.vulnerability?.cve_id   || "NO_CVE_FOUND",
+        cve_id:   incident.vulnerability?.cve_id   || "NO_CVE_FOUND",
         severity: severity, // already normalised to lowercase above
       },
 

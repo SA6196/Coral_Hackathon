@@ -1,308 +1,724 @@
 [
   {
     "cve": "GHSA-29mw-wpgm-hmr9",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-35jh-r3h4-6jhm",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-4xc9-xhrj-v574",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-f23m-r3pf-42rh",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-fvqr-27wr-82fm",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-jf85-cpcp-j695",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-p6mc-m468-83gw",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-r5fr-rjxr-66jc",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-x5rq-j2xg-h7qm",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-xxjr-mmjv-4gpg",
+    "package": "lodash",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "lodash"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-35jp-ww65-95wh",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-3g43-6gmg-66jw",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-3p68-rc4w-qgx5",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-3w6x-2g7m-8v23",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-42xw-2xvc-qx8m",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-43fc-jf86-j433",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-445q-vr5w-6q77",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-4hjh-wcwx-xvwj",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-4w2v-q235-vp99",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-5c9x-8gcm-mpgx",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-62hf-57xw-28j9",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-654m-c8p4-x5fp",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-6chq-wfr3-2hj9",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-898c-q2cr-xwhg",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-8hc4-vh64-cxmj",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-cph5-m8f7-6c5x",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-fvcv-3m26-pcqx",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-jr5f-v2jv-69x6",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-m7pr-hjqh-92cm",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-pf86-5x62-jrwf",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-pjwm-pj3p-43mv",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-pmwg-cvhr-8vh7",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-q8qp-cvcw-x6jj",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-qj83-cq47-w5f8",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-vf2m-468p-8v99",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-w9j2-pvgh-6h63",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-wf5p-g6vw-rhxx",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-xhjh-pmcv-23jw",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-xx6v-rp6x-q39c",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "MAL-2026-2307",
+    "package": "axios",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "axios"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-g53w-52xc-2j85",
+    "package": "react",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "react"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-hg79-j56m-fxgv",
+    "package": "react",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "react"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-cm5g-3pgc-8rg4",
+    "package": "express",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "express"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-gpvr-g6gh-9mc2",
+    "package": "express",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "express"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-jj78-5fmv-mv28",
+    "package": "express",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "express"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-qw6h-vgh9-j6wx",
+    "package": "express",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "express"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-rv95-896h-c2vc",
+    "package": "express",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "express"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-8cf7-32gw-wr33",
+    "package": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "jsonwebtoken"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-c7hr-j4mj-j2w6",
+    "package": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "jsonwebtoken"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-hjrf-2m68-5959",
+    "package": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "jsonwebtoken"
+    "description": "Vulnerability found"
   },
   {
     "cve": "GHSA-qwph-4952-7xr6",
+    "package": "jsonwebtoken",
     "severity": "high",
-    "description": "Vulnerability found",
-    "package": "jsonwebtoken"
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-j965-2qgj-vjmq",
+    "package": "aws-sdk",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-rrc9-gqf8-8rwg",
+    "package": "aws-sdk",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-5wg4-74h6-q47v",
+    "package": "bcrypt",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-wc9v-mj63-m9g5",
+    "package": "pg",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-46wh-pxpv-q5gq",
+    "package": "express-rate-limit",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-248r-7h7q-cr24",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-2cm2-m3w5-gp2f",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-47x8-96vw-5wg6",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-4w2j-2rg4-5mjw",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-55hx-c926-fr95",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-6785-pvv7-mvg7",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-6j2x-vhqr-qr7q",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-6pw2-5hjv-9pf7",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-76w7-j9cq-rx2j",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-7jxr-cg7f-gpgv",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-8hg8-63c5-gwmx",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-947f-4v7f-x2v8",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-99p7-6v5w-7xg8",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-9g8x-92q2-p28f",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-9qj6-qjgg-37qq",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-9vg3-4rfj-wgcm",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-c4cf-2hgv-2qv6",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-cchq-frgv-rjh5",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-ch3r-j5x3-6q2m",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-cp6g-6699-wx9c",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-ffh4-j6h5-pg66",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-g644-9gfx-q4q4",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-grj5-jjm8-h35p",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-hw58-p9xv-2mjh",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-m4wx-m65x-ghrr",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-m5q2-4fm3-vfqp",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-mpf8-4hx2-7cjg",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-mrgp-mrhc-5jrq",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-p5gc-c584-jj6v",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-q3fm-4wcw-g57x",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-qcp4-v2jj-fjx8",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-qvjj-29qf-hp7p",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-r9pm-gxmw-wv6p",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-rjf2-j2r6-q8gr",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-rp36-8xq3-r6c4",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-v27g-jcqj-v8rw",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-v37h-5mfm-c47c",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-v6mx-mf47-r5wg",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-vwrp-x96c-mhwq",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-wf5x-cr3r-xr77",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-whpj-8f3w-67p5",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-wp5r-2gw5-m7q7",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "GHSA-xj72-wvfv-8985",
+    "package": "vm2",
+    "severity": "high",
+    "description": "Vulnerability found"
+  },
+  {
+    "cve": "CVE-2024-4236",
+    "package": "malicious-code",
+    "severity": "high",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in malicious-code"
+  },
+  {
+    "cve": "CVE-2024-4180",
+    "package": "credentials",
+    "severity": "safe",
+    "description": "No known vulnerabilities"
+  },
+  {
+    "cve": "CVE-2024-9956",
+    "package": "postgresql-client",
+    "severity": "medium",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in postgresql-client"
+  },
+  {
+    "cve": "CVE-2024-4102",
+    "package": "node-setup",
+    "severity": "critical",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in node-setup"
+  },
+  {
+    "cve": "CVE-2024-5843",
+    "package": "stripe",
+    "severity": "medium",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in stripe"
+  },
+  {
+    "cve": "CVE-2024-4192",
+    "package": "none",
+    "severity": "safe",
+    "description": "No known vulnerabilities"
+  },
+  {
+    "cve": "CVE-2024-7320",
+    "package": "dockerode",
+    "severity": "high",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in dockerode"
+  },
+  {
+    "cve": "CVE-2024-4547",
+    "package": "helmet",
+    "severity": "medium",
+    "description": "Discovered via AI Heuristics: Zero-day or simulated vulnerability found in helmet"
+  },
+  {
+    "package": "node-serialize",
+    "cve_id": "CVE-2017-5941",
+    "cve": "CVE-2017-5941",
+    "severity": "critical",
+    "cvss_score": 9.8,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "Remote code execution via deserialization"
+  },
+  {
+    "package": "minimist",
+    "cve_id": "CVE-2021-44906",
+    "cve": "CVE-2021-44906",
+    "severity": "critical",
+    "cvss_score": 9.8,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "Prototype pollution"
+  },
+  {
+    "package": "ejs",
+    "cve_id": "CVE-2022-29078",
+    "cve": "CVE-2022-29078",
+    "severity": "critical",
+    "cvss_score": 9.8,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "Template injection leading to RCE"
+  },
+  {
+    "package": "shelljs",
+    "cve_id": "CVE-2022-0144",
+    "cve": "CVE-2022-0144",
+    "severity": "high",
+    "cvss_score": 7.8,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "Privilege escalation via shell execution"
+  },
+  {
+    "package": "semver",
+    "cve_id": "CVE-2022-25883",
+    "cve": "CVE-2022-25883",
+    "severity": "medium",
+    "cvss_score": 5.3,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "ReDoS in version range parsing"
+  },
+  {
+    "package": "tar",
+    "cve_id": "CVE-2021-37713",
+    "cve": "CVE-2021-37713",
+    "severity": "high",
+    "cvss_score": 7.5,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "Arbitrary file write via symlink"
+  },
+  {
+    "package": "log4js",
+    "cve_id": "CVE-2022-21704",
+    "cve": "CVE-2022-21704",
+    "severity": "medium",
+    "cvss_score": 5.5,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "ReDoS via category name"
+  },
+  {
+    "package": "path-parse",
+    "cve_id": "CVE-2021-23343",
+    "cve": "CVE-2021-23343",
+    "severity": "high",
+    "cvss_score": 7.5,
+    "published_at": "2026-05-01T00:00:00Z",
+    "affected_versions": "all",
+    "summary": "ReDoS vulnerability"
   }
 ]

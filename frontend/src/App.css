@@ -29,7 +29,6 @@
   position: relative;
   padding: 40px 0 32px;
   text-align: center;
-  overflow: hidden;
 }
 
 .header-bg-glow {
@@ -781,16 +780,21 @@
 
 .incident-card {
   position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: rgba(15, 15, 20, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform var(--transition-med), box-shadow var(--transition-med), border-color var(--transition-med);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .incident-card:hover {
-  transform: translateY(-3px) translateX(3px);
+  transform: translateY(-4px) scale(1.01);
+  background: rgba(25, 25, 30, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .incident-card-inner {

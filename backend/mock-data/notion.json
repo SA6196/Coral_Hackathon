@@ -1,118 +1,65 @@
 [
   {
-    "policy_id": "POL-001",
-    "policy_name": "BANNED_PACKAGE",
-    "applies_to": "stripe",
+    "policy_id": "370d153e-db29-80d9-b954-d58a1c4ba23c",
+    "applies_to": "lodash",
+    "policy_name": "Enterprise Security Policy",
+    "policy_rule": "BANNED_PACKAGE",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Dynamic script execution (e.g., eval, exec) is strictly prohibited in the production codebase. All abstract syntax tree modifications must undergo a Level 3 Security Audit before merge."
+  },
+  {
+    "policy_id": "370d153e-db29-8056-a122-c8f23a43963f",
+    "applies_to": "malicious-code",
+    "policy_name": "Enterprise Security Policy",
+    "policy_rule": "No eval() allowed",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Dynamic script execution is strictly prohibited in the production codebase"
+  },
+  {
+    "policy_id": "bab10109-42a1-4462-89f5-942edab2d3f4",
+    "applies_to": "vm2",
+    "policy_name": "Banned Sandbox Package",
     "policy_rule": "BANNED_PACKAGE",
     "severity": "critical",
     "owner_team": "security-engineering",
-    "description": "Active critical CVE — deployment blocked",
-    "last_updated": "2026-05-20T00:00:00Z"
+    "description": "Complete sandbox escape leading to Remote Code Execution."
+  },
+  {
+    "policy_id": "370d153e-db29-80c3-8976-d96fee3d94c5",
+    "applies_to": "credentials",
+    "policy_name": "Secret Management",
+    "policy_rule": "SECRETS_RISK",
+    "severity": "critical",
+    "owner_team": "CloudSec",
+    "description": "AWS Keys and sensitive secrets must be dynamically loaded via AWS KMS or HashiCorp Vault. Hardcoding secrets in git history violates SOC-2 compliance. Immediate rotation required"
+  },
+  {
+    "policy_id": "POL-001",
+    "applies_to": "express",
+    "policy_name": "Strict Validation",
+    "policy_rule": "No eval() allowed",
+    "severity": "critical",
+    "owner_team": "AppSec",
+    "description": "Any use of dynamic execution must be blocked."
   },
   {
     "policy_id": "POL-002",
-    "policy_name": "AUDIT_REQUIRED",
-    "applies_to": "jsonwebtoken",
-    "policy_rule": "AUDIT_REQUIRED",
+    "applies_to": "github-repo",
+    "policy_name": "Branch Protection",
+    "policy_rule": "2 reviewers required",
     "severity": "high",
-    "owner_team": "auth-team",
-    "description": "JWT library changes require security audit",
-    "last_updated": "2026-05-18T00:00:00Z"
+    "owner_team": "DevOps",
+    "description": "Direct pushes to main are heavily restricted."
   },
   {
     "policy_id": "POL-003",
-    "policy_name": "SECRETS_RISK",
-    "applies_to": "aws-sdk",
-    "policy_rule": "SECRETS_RISK",
+    "applies_to": "credentials",
+    "policy_name": "Secret Management",
+    "policy_rule": "No hardcoded AWS keys",
     "severity": "critical",
-    "owner_team": "platform-team",
-    "description": "Must use IAM roles — hardcoded keys not allowed",
-    "last_updated": "2026-05-22T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-004",
-    "policy_name": "REVIEW_REQUIRED",
-    "applies_to": "bcrypt",
-    "policy_rule": "REVIEW_REQUIRED",
-    "severity": "medium",
-    "owner_team": "auth-team",
-    "description": "Auth library changes require senior review",
-    "last_updated": "2026-05-15T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-005",
-    "policy_name": "Database Credentials Policy",
-    "applies_to": "postgresql-client",
-    "policy_rule": "SECRETS_RISK",
-    "severity": "critical",
-    "owner_team": "security-engineering",
-    "description": "No database credentials may be committed to source control. Use environment variables or vault.",
-    "last_updated": "2026-05-24T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-006",
-    "policy_name": "BANNED_PACKAGE",
-    "applies_to": "vm2",
-    "policy_rule": "BANNED_PACKAGE",
-    "severity": "critical",
-    "owner_team": "security-engineering",
-    "description": "CVE-2023-29017 — complete sandbox escape, permanently banned",
-    "last_updated": "2023-04-10T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-007",
-    "policy_name": "Docker Socket Access Review",
-    "applies_to": "dockerode",
-    "policy_rule": "REVIEW_REQUIRED",
-    "severity": "medium",
-    "owner_team": "platform-team",
-    "description": "Any package accessing Docker socket requires security review. Container escape vectors must be assessed.",
-    "last_updated": "2026-05-10T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-008",
-    "policy_name": "Lodash Prototype Pollution Ban",
-    "applies_to": "lodash",
-    "policy_rule": "AUDIT_REQUIRED",
-    "severity": "high",
-    "owner_team": "security-engineering",
-    "description": "lodash versions below 4.17.21 are prohibited due to prototype pollution. Audit any usage patterns.",
-    "last_updated": "2021-01-01T00:00:00Z"
-  },
-  {
-    "policy_id": "POL-2",
-    "applies_to": "node-serialize",
-    "policy_name": "BANNED_PACKAGE",
-    "policy_rule": "BANNED_PACKAGE",
-    "severity": "high",
-    "description": "Known RCE vector — permanently banned",
-    "owner_team": "security-engineering"
-  },
-  {
-    "policy_id": "POL-427",
-    "applies_to": "pg",
-    "policy_name": "AUDIT_REQUIRED",
-    "policy_rule": "AUDIT_REQUIRED",
-    "severity": "high",
-    "description": "DB query changes require SQL injection audit",
-    "owner_team": "security-engineering"
-  },
-  {
-    "policy_id": "POL-764",
-    "applies_to": "shelljs",
-    "policy_name": "AUDIT_REQUIRED",
-    "policy_rule": "AUDIT_REQUIRED",
-    "severity": "high",
-    "description": "Shell execution requires explicit security sign-off",
-    "owner_team": "security-engineering"
-  },
-  {
-    "policy_id": "POL-9",
-    "applies_to": "ejs",
-    "policy_name": "BANNED_PACKAGE",
-    "policy_rule": "BANNED_PACKAGE",
-    "severity": "high",
-    "description": "RCE via template injection — use handlebars instead",
-    "owner_team": "security-engineering"
+    "owner_team": "CloudSec",
+    "description": "AWS Keys must be loaded via KMS, never committed."
   }
 ]

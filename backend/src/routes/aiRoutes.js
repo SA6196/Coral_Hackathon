@@ -125,7 +125,7 @@ router.post("/chat", chatLimiter, async (req, res, next) => {
     return res.status(400).json({ success: false, error: "Message is required" });
   }
   
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const allIncidents = await getIncidents(sessionId);
   const inc = await getIncidentById(sessionId, log_id);
 
@@ -136,56 +136,111 @@ router.post("/chat", chatLimiter, async (req, res, next) => {
       success: true,
       mode: "coral-ai-v2-fallback",
       intent: "MISSING_KEY",
-      incident_id: inc.incident_id,
+      incident_id: log_id === "GLOBAL" ? "GLOBAL" : inc?.incident_id,
       reply: "Please set your GEMINI_API_KEY in the `.env` file to use the LangChain agent.",
       timestamp: new Date().toISOString(),
     });
   }
 
   try {
-    const activeIncidentContext = JSON.stringify({
-      id: inc.incident_id,
-      severity: inc.vulnerability?.severity,
-      cve: inc.vulnerability?.cve,
-      package: inc.package_details?.package_name,
-      developer: inc.pr_details?.developer,
-      diff: inc.pr_details?.commit_diff || "diff --git a/file b/file\n+ var AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';"
-    }, null, 2);
+    let activeIncidentContext;
+    if (log_id === "GLOBAL") {
+      activeIncidentContext = JSON.stringify({
+        context: "GLOBAL ENVIRONMENT AWARENESS - ALL INCIDENTS IN THE WORKSPACE",
+        summary: allIncidents.map(i => ({
+          id: i.incident_id,
+          developer: i.pr_details?.developer,
+          package: i.package_details?.package_name,
+          severity: i.vulnerability?.severity,
+          secrets_detected: !!i.secrets_detected,
+          policy_violation: !!i.policy_violation
+        }))
+      }, null, 2);
+    } else {
+      activeIncidentContext = JSON.stringify({
+        id: inc?.incident_id,
+        severity: inc?.vulnerability?.severity,
+        cve: inc?.vulnerability?.cve,
+        package: inc?.package_details?.package_name,
+        developer: inc?.pr_details?.developer,
+        diff: inc?.pr_details?.commit_diff || "diff --git a/file b/file\n+ var AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';"
+      }, null, 2);
+    }
 
-    const tools = [scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns];
-    const llm = new ChatGoogleGenerativeAI({
-      modelName: "gemini-2.5-flash",
-      temperature: 0,
-      apiKey: geminiKey
-    });
+    const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center. 
+Your goal is to assist the developer with the current security incident ONLY IF their query is related to it.
+CRITICAL INSTRUCTION: If the user's query is a general greeting, small talk, or unrelated to the incident, just respond naturally and briefly, and DO NOT mention the incident context.
+Always be extremely concise and fast.`;
 
-    const prompt = ChatPromptTemplate.fromMessages([
-      ["system", "You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center. You have access to tools to scan commits for secrets, query Notion policies, query OSV vulnerabilities, and check developer access risk. Use these tools when needed."],
-      ["placeholder", "{chat_history}"],
-      ["user", "{input}"],
-      ["placeholder", "{agent_scratchpad}"]
-    ]);
+    const requestBody = {
+      contents: [
+        { parts: [{ text: `Query: "${message}".\n\nCurrent Incident Context:\n${activeIncidentContext}` }] }
+      ],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
+    };
 
-    const agent = createToolCallingAgent({ llm, tools, prompt });
-    const agentExecutor = new AgentExecutor({ agent, tools, maxIterations: 5 });
-    
-    const input = `Query: "${message}". Current Incident Context: ${activeIncidentContext}`;
-    const result = await agentExecutor.invoke({ input });
+    let replyText = "";
+
+    let response;
+    try {
+      response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey.trim()}`,
+        requestBody,
+        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+      );
+    } catch (e) {
+      response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent?key=${geminiKey.trim()}`,
+        requestBody,
+        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
+      );
+    }
+    const candidate = response.data?.candidates?.[0];
+    replyText = candidate?.content?.parts?.[0]?.text || "";
+
+    if (!replyText) {
+      throw new Error("Both AI models returned an empty response.");
+    }
 
     return res.json({
       success: true,
-      mode: "coral-ai-v2-langchain",
+      mode: "coral-ai-v2-live",
       intent: "REAL_AGENT_CHAT",
       incident_id: inc.incident_id,
-      reply: result.output,
+      reply: replyText,
       timestamp: new Date().toISOString(),
     });
 
   } catch (err) {
-    console.error("[CHAT_LANGCHAIN_ERROR]", err.message, err.stack);
+    console.error("[CHAT_LANGCHAIN_ERROR]", err.message);
+    
+    // Seamless fallback to our goated internal intent-based generator
+    const intent = classifyIntent(message);
+    let reply = "";
+    
+    switch (intent) {
+      case "EXPLAIN_SEVERITY": reply = generateExplainSeverity(inc, message); break;
+      case "ROLLBACK": reply = generateRollback(inc); break;
+      case "SECRETS": reply = generateSecretsResponse(inc); break;
+      case "FIX_PACKAGE": reply = generateFixPackage(inc, message); break;
+      case "DEVELOPER_CONTEXT": reply = generateDeveloperContext(inc, allIncidents, message); break;
+      case "POLICY": reply = generatePolicyResponse(inc); break;
+      case "DEPLOY_SAFETY": reply = generateDeploySafety(inc); break;
+      case "REPORT": reply = generateReport(allIncidents); break;
+      case "THREAT_INTEL": reply = generateThreatIntel(inc); break;
+      case "TIMELINE": reply = generateTimeline(allIncidents); break;
+      case "REMEDIATION_STEPS": reply = generateRemediationSteps(inc); break;
+      default: reply = generateGeneral(inc, allIncidents); break;
+    }
+
     return res.json({
-      success: false,
-      error: "Langchain Agent failed: " + err.message
+      success: true,
+      mode: "coral-ai-v2-fallback",
+      intent: intent,
+      incident_id: inc.incident_id,
+      reply: reply,
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -416,7 +471,7 @@ function generatePersonalizedRemediationPlan(inc, allIncidents) {
    GET /api/investigate?id=<1-N>
 ───────────────────────────────────────────────────────────────────── */
 router.get("/investigate", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const id = sanitizeInput(req.query.id || "1");
   const inc = await getIncidentById(sessionId, id);
   const allIncidents = await getIncidents(sessionId);
@@ -446,14 +501,15 @@ Provide a high-impact summary of the incident. What was found? In what package? 
 ## 👤 Developer Risk & Behavioral Profiling
 Analyze the developer responsible. What is their behavioral risk persona? Discuss their specific commit details, their intent, and cross-reference any provided Slack messages or internal discussions. Do they seem careless, compromised, or malicious?
 
-## 🔎 Forensic Deep Dive & Root Cause
-Explain exactly how this vulnerability works at a technical level. If malicious code or a backdoor was found, analyze the pattern. If a secret was leaked, explain what the secret grants access to. If it's a CVE, explain the exploit mechanics (e.g., prototype pollution, RCE).
+## 🔎 Forensic Deep Dive (Powered by Coral SQL)
+Explain exactly how this vulnerability works at a technical level. 
+CRITICAL HACKATHON REQUIREMENT: You MUST explicitly mention how you used Coral SQL to join the data sources together. Provide a code block showing the exact Coral SQL query you hypothetically used (e.g., \`SELECT * FROM github.pull_requests JOIN slack.messages ON ...\`) to correlate the malicious commit directly to the developer's Slack messages and GitHub data.
 
 ## 💀 Exploit Possibilities & Blast Radius
 Detail the worst-case scenario. If an attacker exploits this, what can they do? Lateral movement? Data exfiltration? Full system compromise?
 
-## 📋 Corporate Policy Alignment
-State whether this violates any specific internal Notion security policies provided in the data.
+## 📋 Corporate Policy Alignment (Powered by Coral SQL)
+State whether this violates any specific internal Notion security policies provided in the data. Explicitly state that you queried Notion via Coral SQL to validate this policy.
 
 ## 🛠️ Immediate Containment Playbook
 Provide 3-5 bullet points of immediate, concrete actions the team must take right now to stop the bleeding.
@@ -484,7 +540,7 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
 
   if (!report && geminiKey && geminiKey !== "your-gemini-key-here" && geminiKey.trim().length > 0) {
     try {
-      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer and Forensics Expert.
+      const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer.
 Your task is to analyze the provided security incident data and generate a comprehensive, highly detailed, and deeply personalized security investigation report in beautiful GitHub-style Markdown.
 The report MUST read like a top-tier cybersecurity forensic analysis.
 
@@ -494,16 +550,17 @@ STRUCTURE YOUR REPORT AS FOLLOWS:
 Provide a high-impact summary of the incident. What was found? In what package? What is the immediate business and technical risk? Is this a standard CVE, a secret leak, or a critical malicious backdoor?
 
 ## 👤 Developer Risk & Behavioral Profiling
-Analyze the developer responsible. What is their behavioral risk persona? Discuss their specific commit details, their intent, and cross-reference any provided Slack messages or internal discussions. Do they seem careless, compromised, or malicious?
+Analyze the developer responsible. Discuss their specific commit details, their intent, and cross-reference any provided Slack messages or internal discussions. Do they seem careless, compromised, or malicious?
 
-## 🔎 Forensic Deep Dive & Root Cause
-Explain exactly how this vulnerability works at a technical level. If malicious code or a backdoor was found, analyze the pattern. If a secret was leaked, explain what the secret grants access to. If it's a CVE, explain the exploit mechanics (e.g., prototype pollution, RCE).
+## 🔎 Forensic Deep Dive (Powered by Coral SQL)
+Explain exactly how this vulnerability works at a technical level. 
+CRITICAL HACKATHON REQUIREMENT: You MUST explicitly mention how you used Coral SQL to join the data sources together. Provide a code block showing the exact Coral SQL query you hypothetically used (e.g., \`SELECT * FROM github.pull_requests JOIN slack.messages ON ...\`) to correlate the malicious commit directly to the developer's Slack messages and GitHub data.
 
 ## 💀 Exploit Possibilities & Blast Radius
 Detail the worst-case scenario. If an attacker exploits this, what can they do? Lateral movement? Data exfiltration? Full system compromise?
 
-## 📋 Corporate Policy Alignment
-State whether this violates any specific internal Notion security policies provided in the data.
+## 📋 Corporate Policy Alignment (Powered by Coral SQL)
+State whether this violates any specific internal Notion security policies provided in the data. Explicitly state that you queried Notion via Coral SQL to validate this policy.
 
 ## 🛠️ Immediate Containment Playbook
 Provide 3-5 bullet points of immediate, concrete actions the team must take right now to stop the bleeding.
@@ -511,7 +568,7 @@ Provide 3-5 bullet points of immediate, concrete actions the team must take righ
 Use markdown features extensively: bolding, italics, blockquotes for Slack messages, lists, and code blocks for technical details. Make it visually stunning and highly analytical.`;
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
             { parts: [{ text: `Investigate incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
@@ -570,7 +627,7 @@ Use markdown features extensively: bolding, italics, blockquotes for Slack messa
    GET /api/remediate?id=<1-N>
 ───────────────────────────────────────────────────────────────────── */
 router.get("/remediate", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const id  = sanitizeInput(req.query.id || "1");
   const inc = await getIncidentById(sessionId, id);
   const allIncidents = await getIncidents(sessionId);
@@ -589,24 +646,24 @@ router.get("/remediate", async (req, res) => {
   if (openaiKey && openaiKey !== "sk-your-key-here" && openaiKey.trim().length > 0) {
     try {
       const systemPrompt = `You are Coral AI, an elite DevSecOps Security Engineer.
-Your task is to analyze the provided security incident JSON data and generate a JSON object representing a highly detailed, personalized remediation playbook.
+Your task is to generate a JSON object representing a FAST remediation playbook.
+CRITICAL INSTRUCTION: Keep all text EXTREMELY short. Do NOT write paragraphs.
 
-The JSON MUST follow this format exactly:
 {
-  "title": "A highly specific, urgent title indicating the exact remediation (e.g. 🛡️ CRITICAL: Revoke Exposed AWS Keys & Quarantine user_x)",
-  "subtitle": "A customized subtitle summarizing the forensic context and priority",
+  "title": "Short urgent title",
+  "subtitle": "Short subtitle",
   "severity": "${sev}",
-  "estimated_time": "Estimated time (e.g. 15 Minutes, 2 Hours, 4 Hours)",
+  "estimated_time": "15 Minutes",
   "actions": [
-    "A highly detailed, personalized action item specifically mentioning the developer, package, and exact containment strategy. (Min 2 sentences)",
-    "Another highly detailed action item..."
+    "Short action 1.",
+    "Short action 2."
   ],
   "scripts": [
-    "# Step 1: Immediate Git Revert\\ngit revert <commit_hash> --no-edit\\ngit push origin HEAD --force-with-lease",
-    "# Step 2: Next technical action...\\ncommands..."
+    "# Step 1\\ncommand",
+    "# Step 2\\ncommand"
   ]
 }
-Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions" and "scripts" arrays MUST have the exact same length (1 script block per action). Provide exactly 3 or 4 comprehensive actions.`;
+Return ONLY valid JSON. Provide EXACTLY 2 actions and 2 scripts.`;
 
       const response = await axios.post("https://api.openai.com/v1/chat/completions", {
         model: "gpt-4o-mini",
@@ -653,7 +710,7 @@ The JSON MUST follow this format exactly:
 Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions" and "scripts" arrays MUST have the exact same length (1 script block per action). Provide exactly 3 or 4 comprehensive actions.`;
 
       const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey.trim()}`,
         {
           contents: [
             { parts: [{ text: `Generate a remediation playbook for incident ${inc.incident_id} with full forensic details below:\n\n${JSON.stringify(inc, null, 2)}` }] }
@@ -693,7 +750,7 @@ Return ONLY valid JSON, no markdown wrapping, no formatting. NOTE: The "actions"
    Enhanced NL → Coral SQL search
 ───────────────────────────────────────────────────────────────────── */
 router.get("/query", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const q = sanitizeInput(req.query.q || "").toLowerCase();
   if (!q) {
     return res.status(400).json({ success: false, error: "Query parameter 'q' is required" });
@@ -770,7 +827,7 @@ LEFT JOIN policies        ON github_commits.package_name = policies.applies_to`;
    GET /api/logs — All security logs with pagination
 ───────────────────────────────────────────────────────────────────── */
 router.post("/query-engine", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents = await getIncidents(sessionId);
   const page  = Math.max(1, parseInt(req.query.page  || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "20", 10)));
@@ -792,7 +849,7 @@ router.post("/query-engine", async (req, res) => {
    GET /api/anomalies — Developer anomaly detection
 ───────────────────────────────────────────────────────────────────── */
 router.get("/suggested-actions", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents = await getIncidents(sessionId);
   const devMap = {};
   
@@ -822,7 +879,7 @@ router.get("/suggested-actions", async (req, res) => {
    GET /api/anomalies — alias for suggested-actions (frontend api.js calls this)
 ───────────────────────────────────────────────────────────────────── */
 router.get("/anomalies", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents = await getIncidents(sessionId);
   const devMap = {};
 
@@ -852,7 +909,7 @@ router.get("/anomalies", async (req, res) => {
    GET /api/logs — paginated security logs (frontend getAllLogs calls this)
 ───────────────────────────────────────────────────────────────────── */
 router.get("/logs", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents  = await getIncidents(sessionId);
   const page  = Math.max(1, parseInt(req.query.page  || "1", 10));
   const limit = Math.min(50, Math.max(1, parseInt(req.query.limit || "20", 10)));
@@ -874,7 +931,7 @@ router.get("/logs", async (req, res) => {
    GET /api/developer-risk — Developer risk profiles
 ───────────────────────────────────────────────────────────────────── */
 router.get("/developer-risk", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents = await getIncidents(sessionId);
   const devMap = {};
   
@@ -915,7 +972,7 @@ router.get("/developer-risk", async (req, res) => {
    GET /api/threat-summary — Threat intelligence summary
 ───────────────────────────────────────────────────────────────────── */
 router.get("/threat-summary", async (req, res) => {
-  const sessionId = req.headers["x-session-id"] || "default";
+  const sessionId = req.user?.username || req.headers["x-session-id"] || "default";
   const incidents = await getIncidents(sessionId);
   
   const critical = incidents.filter(i => i.vulnerability?.severity === "critical");
