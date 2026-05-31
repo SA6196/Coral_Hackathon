@@ -19,7 +19,7 @@ const axios   = require("axios");
 
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
 const { AgentExecutor, createToolCallingAgent } = require("langchain/agents");
-const { ChatPromptTemplate } = require("@langchain/core/prompts");
+const { ChatPromptTemplate, MessagesPlaceholder } = require("@langchain/core/prompts");
 const { scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns } = require("../ai/tools");
 
 const { joinSecurityData, getCacheInfo } = require("../coral/joinData");
@@ -170,37 +170,46 @@ router.post("/chat", chatLimiter, async (req, res, next) => {
     const systemPrompt = `You are Coral AI, a highly intelligent DevSecOps Copilot for the Coral Security Command Center. 
 Your goal is to assist the developer with the current security incident ONLY IF their query is related to it.
 CRITICAL INSTRUCTION: If the user's query is a general greeting, small talk, or unrelated to the incident, just respond naturally and briefly, and DO NOT mention the incident context.
-Always be extremely concise and fast.`;
+Always be extremely concise and fast.
+Use the provided tools if the user asks questions that require looking up policies, scanning diffs, or querying vulnerabilities.`;
 
-    const requestBody = {
-      contents: [
-        { parts: [{ text: `Query: "${message}".\n\nCurrent Incident Context:\n${activeIncidentContext}` }] }
-      ],
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { temperature: 0.2, maxOutputTokens: 500 }
-    };
+    const llm = new ChatGoogleGenerativeAI({
+      modelName: "gemini-1.5-flash",
+      apiKey: geminiKey.trim(),
+      temperature: 0.2,
+      maxRetries: 1,
+    });
 
-    let replyText = "";
+    const tools = [scanCommitsForSecrets, searchNotionPolicies, queryOsv, checkGithubAccessRisk, scanCodeForMaliciousPatterns];
 
-    let response;
-    try {
-      response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey.trim()}`,
-        requestBody,
-        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
-      );
-    } catch (e) {
-      response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey.trim()}`,
-        requestBody,
-        { headers: { "Content-Type": "application/json" }, timeout: 15000 }
-      );
-    }
-    const candidate = response.data?.candidates?.[0];
-    replyText = candidate?.content?.parts?.[0]?.text || "";
+    const prompt = ChatPromptTemplate.fromMessages([
+      ["system", systemPrompt],
+      ["user", `Current Incident Context:\n{activeIncidentContext}`],
+      ["user", "{input}"],
+      new MessagesPlaceholder("agent_scratchpad"),
+    ]);
+
+    const agent = createToolCallingAgent({
+      llm,
+      tools,
+      prompt,
+    });
+
+    const agentExecutor = new AgentExecutor({
+      agent,
+      tools,
+      maxIterations: 3,
+    });
+
+    const result = await agentExecutor.invoke({
+      input: message,
+      activeIncidentContext: activeIncidentContext
+    });
+
+    let replyText = result.output;
 
     if (!replyText) {
-      throw new Error("Both AI models returned an empty response.");
+      throw new Error("Agent Executor returned an empty response.");
     }
 
     return res.json({
